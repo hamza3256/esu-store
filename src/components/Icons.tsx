@@ -2,7 +2,7 @@ import { LucideProps } from "lucide-react";
 
 export const Icons = {
   logo: (props: LucideProps) => (
-    <svg width="800px" height="800px" viewBox="0 0 1200 1200" {...props}>
+    <svg {...props} width="800px" height="800px" viewBox="0 0 1200 1200">
       <g>
         <path
           style={{
