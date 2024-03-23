@@ -4,15 +4,21 @@ import { ShoppingCartIcon } from "lucide-react";
 import {
   Sheet,
   SheetContent,
+  SheetFooter,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
 } from "./ui/sheet";
 import { Separator } from "./ui/separator";
 import { formatPrice } from "@/lib/utils";
+import { buttonVariants } from "./ui/button";
+import Link from "next/link";
+import Image from "next/image";
 
 const Cart = () => {
-  const itemCount = 1;
+  const itemCount = 0;
+
+  const fee = 1;
 
   return (
     <Sheet>
@@ -43,13 +49,40 @@ const Cart = () => {
                 </div>
                 <div className="flex">
                   <span className="flex-1">Transaction Fee</span>
-                  <span>{formatPrice(1)}</span>
+                  <span>{formatPrice(fee)}</span>
                 </div>
+                <div className="flex">
+                  <span className="flex-1">Total</span>
+                  <span>{formatPrice(fee)}</span>
+                </div>
+              </div>
+              <div>
+                <SheetFooter>
+                  <SheetTrigger asChild>
+                    <Link
+                      href="/cart"
+                      className={buttonVariants({ className: "w-full" })}
+                    >
+                      Continue to checkout
+                    </Link>
+                  </SheetTrigger>
+                </SheetFooter>
               </div>
             </div>
           </>
         ) : (
-          <div></div>
+          <div className="flex h-full flex-col items-center justify-center space-y-1">
+            <div
+              aria-hidden="true"
+              className="relative mb-4 h-60 w-60 text-muted-foreground"
+            >
+              <Image
+                src="/bear_empty_cart.png"
+                fill
+                alt="empty shopping cart bear"
+              />
+            </div>
+          </div>
         )}
       </SheetContent>
     </Sheet>
