@@ -63,7 +63,7 @@ const Page = () => {
                   />
                 </div>
                 <div className="grid gap-1 py-2">
-                  <Label htmlFor="email">Password</Label>
+                  <Label htmlFor="password">Password</Label>
                   <Input
                     {...register("password")}
                     type="password"
