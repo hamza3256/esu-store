@@ -1,3 +1,4 @@
+import VerifyEmail from "@/components/VerifyEmail";
 import Image from "next/image";
 
 interface PageProps {
@@ -12,7 +13,9 @@ const VerifyEmailPage = ({ searchParams }: PageProps) => {
     <div className="container relative flesx pt-20 flex-col items-center justify-center lg:px-0">
       <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
         {token && typeof token === "string" ? (
-          <div className="grip gap-6"></div>
+          <div className="grip gap-6">
+            <VerifyEmail token={token} />
+          </div>
         ) : (
           <div className="flex h-full flex-col items-center justify-center space-y-1">
             <div className="relative mb-4 h-60 w-60 text-muted-foreground">
