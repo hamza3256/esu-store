@@ -24,6 +24,14 @@ const Page = () => {
   const isSeller = searchParams.get("as") === "seller";
   const origin = searchParams.get("origin");
 
+  const continueAsSeller = () => {
+    router.push("?as=seller");
+  };
+
+  const continueAsBuyer = () => {
+    router.replace("/sign-in", undefined);
+  };
+
   const {
     register,
     handleSubmit,
@@ -32,10 +40,33 @@ const Page = () => {
     resolver: zodResolver(AuthCredentialsValidator),
   });
 
-  const { mutate, isLoading } = trpc.auth.signIn.useMutation({});
+  const { mutate: signIn, isLoading } = trpc.auth.signIn.useMutation({
+    onSuccess: () => {
+      toast.success("Signed in successfully");
+
+      router.refresh();
+
+      if (origin) {
+        router.push(`/${origin}`);
+        return;
+      }
+
+      if (isSeller) {
+        router.push("/sell");
+        return;
+      }
+
+      router.push("/");
+    },
+    onError: (err) => {
+      if (err.data?.code === "UNAUTHORIZED") {
+        toast.error("Invalid email or password");
+      }
+    },
+  });
 
   const onSubmit = ({ email, password }: TAuthCredentialsValidator) => {
-    mutate({ email, password });
+    signIn({ email, password });
   };
 
   return (
@@ -107,6 +138,23 @@ const Page = () => {
                 </span>
               </div>
             </div>
+            {isSeller ? (
+              <Button
+                onClick={continueAsBuyer}
+                variant="secondary"
+                disabled={isLoading}
+              >
+                Continue as customer
+              </Button>
+            ) : (
+              <Button
+                onClick={continueAsSeller}
+                variant="secondary"
+                disabled={isLoading}
+              >
+                Continue as seller
+              </Button>
+            )}
           </div>
         </div>
       </div>
