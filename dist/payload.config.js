@@ -45,7 +45,7 @@ exports.default = (0, config_1.buildConfig)({
   },
   editor: (0, richtext_slate_1.slateEditor)({}),
   db: (0, db_mongodb_1.mongooseAdapter)({
-    url: process.env.MONGODB_URL,
+    url: process.env.MONGODB_URI,
   }),
   typescript: {
     outputFile: path_1.default.resolve(__dirname, "payload-types.ts"),
