@@ -3,11 +3,12 @@ import { cookies } from "next/headers";
 import { getServerSideUser } from "@/lib/payload-utils";
 import { getPayloadClient } from "@/get-payload";
 import { notFound, redirect } from "next/navigation";
-import { Product, ProductFile } from "@/payload-types";
+import { Product, ProductFile, User } from "@/payload-types";
 import { ProductFiles } from "@/collections/ProductFile";
 import { PRODUCT_CATEGORIES } from "@/config";
 import { formatPrice } from "@/lib/utils";
 import Link from "next/link";
+import PaymentStatus from "@/components/PaymentStatus";
 
 interface PageProps {
   searchParams: { [key: string]: string | string[] | undefined };
@@ -153,6 +154,12 @@ const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
                   <p className="text-base">{formatPrice(orderTotal + 2.5)}</p>
                 </div>
               </div>
+
+              <PaymentStatus
+                isPaid={order._isPaid}
+                orderEmail={(order.user as User).email}
+                orderId={order.id}
+              />
 
               <div className="mt-16 border-t border-gray-200 text-right py-6">
                 <Link
