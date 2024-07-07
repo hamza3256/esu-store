@@ -61,7 +61,12 @@ const MobileNav = () => {
               </button>
             </div>
 
-            <div className="mt-2">
+            <div className="px-4 mt-2 -space-y-7">
+              <div className="-mb-px flex">
+                <p className="border-transparent text-gray-900 whitespace-nowrap text-base font-medium">
+                  MENU
+                </p>
+              </div>
               <ul>
                 {PRODUCT_CATEGORIES.map((category) => (
                   <li
