@@ -1,0 +1,42 @@
+version: "3"
+
+services:
+  esu-store:
+    container_name: esu-store
+    dockerfile: dev.dockerfile
+
+    environment:
+      NEXT_PUBLIC_SERVER_URL: ${NEXT_PUBLIC_SERVER_URL}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
+      PAYLOAD_SECRET: ${PAYLOAD_SECRET}
+      MONGODB_URI: ${MONGODB_URI}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      STRIPE_CUSTOM_TRANSACTION_FEE: ${STRIPE_CUSTOM_TRANSACTION_FEE}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+      DATABASE_URL: ${DATABASE_URL}
+      EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS}
+
+    env_file:
+      - ./.env
+    volumes:
+      - ./esu-store/src:/app/src
+      - ./esu-store/public:/app/public
+    restart: always
+    ports: 3000:3000
+    networks:
+      - esu-network
+
+  esu-db:
+    container_name: esu-db
+    image: mongo
+    restart: always
+    environment:
+      MONGODB_URI: ${MONGODB_URI}
+    env_file:
+      - ./.env
+    ports:
+      - "27017:27017"
+
+networks:
+  esu-network:
+    external: true
