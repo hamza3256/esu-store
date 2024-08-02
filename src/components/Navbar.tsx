@@ -21,7 +21,7 @@ const Navbar = async () => {
           <div className="border-b border-gray-300">
             <div className="flex h-16 items-center">
               <MobileNav />
-              <div className="ml-4 flex lg:ml-0">
+              <div className="ml-auto flex items-center lg:ml-0">
                 <Link href="/">
                   <Icons.logo className="h-20 w-20" />
                 </Link>
