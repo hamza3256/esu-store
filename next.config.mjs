@@ -5,7 +5,7 @@ import path from "path";
 /** @type {import('next').NextConfig} */
 const nextConfig = withPayload(
   {
-    // output: "standalone",
+    output: "standalone",
     images: {
       remotePatterns: [
         {
