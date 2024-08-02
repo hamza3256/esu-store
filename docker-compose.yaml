@@ -1,9 +1,7 @@
-version: "3.8"
-
 services:
   app:
     build:
-      context: .
+      context: ./
       dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_SERVER_URL: ${NEXT_PUBLIC_SERVER_URL}
@@ -11,32 +9,19 @@ services:
         PAYLOAD_SECRET: ${PAYLOAD_SECRET}
         MONGODB_URI: ${MONGODB_URI}
         RESEND_API_KEY: ${RESEND_API_KEY}
+        STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+        STRIPE_CUSTOM_TRANSACTION_FEE: ${STRIPE_CUSTOM_TRANSACTION_FEE}
+        STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+        EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS}
+        MONGODB_PORT: ${MONGODB_PORT}
     environment:
-      NEXT_PUBLIC_SERVER_URL: ${NEXT_PUBLIC_SERVER_URL}
-      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
-      PAYLOAD_SECRET: ${PAYLOAD_SECRET}
-      MONGODB_URI: ${MONGODB_URI}
-      RESEND_API_KEY: ${RESEND_API_KEY}
-      NODE_ENV: production
-      PORT: 3000
+      - .env
     ports:
       - "3000:3000"
-    volumes:
-      - ./src:/app/src
-      - ./public:/app/public
-      - ./components.json:/app/components.json
-      - ./next.config.mjs:/app/next.config.mjs
-      - ./nodemon.json:/app/nodemon.json
-      - ./postcss.config.cjs:/app/postcss.config.cjs
-      - ./tailwind.config.ts:/app/tailwind.config.ts
-      - ./tsconfig.json:/app/tsconfig.json
-      - ./tsconfig.server.json:/app/tsconfig.server.json
-      - ./.env:/app/.env
-      - ./package.json:/app/package.json
-      - ./yarn.lock:/app/yarn.lock
-    restart: unless-stopped
+    restart: always
+    networks:
+      - esu-network
 
 networks:
-  default:
+  esu-network:
     external: true
-    name: esu-network
