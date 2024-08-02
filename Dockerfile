@@ -1,42 +1,42 @@
-# Use official Node.js runtime as a parent image
 FROM node:20.11-alpine AS base
 
-# Set working directory
 WORKDIR /app
 
-# Install necessary dependencies including vips and sharp dependencies
-RUN apk add --no-cache libc6-compat vips vips-dev python3 make g++ pkgconfig \
-  && apk add --no-cache --virtual .build-deps build-base curl
+RUN apk add --no-cache libc6-compat vips vips-dev python3 make g++ pkgconfig
 
-# Stage 1: Dependencies
-FROM base AS deps
-WORKDIR /app
-COPY package.json yarn.lock ./
-RUN yarn install --frozen-lockfile
-
-# Install sharp with specific platform and architecture options
-RUN yarn add --platform=linuxmusl --arch=x64 sharp --verbose
-
-# Stage 2: Build the application
 FROM base AS builder
 WORKDIR /app
+COPY package.json yarn.lock* ./
+RUN yarn install --frozen-lockfile
 
-COPY --from=deps /app/node_modules ./node_modules
+COPY . .
 
-# Copy all necessary files for the build
-COPY src ./src
-COPY public ./public
-COPY components.json .
-COPY next.config.mjs .
-COPY nodemon.json .
-COPY postcss.config.cjs .
-COPY tailwind.config.ts .
-COPY tsconfig.json .
-COPY tsconfig.server.json .
-COPY .env .env
-COPY package.json .
+RUN yarn build
 
-# Pass build arguments and set environment variables
+FROM base AS runner
+WORKDIR /app
+ENV NODE_ENV production
+
+RUN addgroup --system nodejs && adduser --system --ingroup nodejs nextjs
+
+# allow permission to access images
+RUN mkdir -p /app/.next/cache/images
+
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/.next/cache ./.next/cache
+
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/build/ ./build
+COPY --from=builder /app/dist/ ./
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/next.config.mjs ./ 
+ 
+RUN chown -R nextjs:nodejs /app/.next/cache
+RUN chown -R nextjs:nodejs /app/.next/static
+
+USER nextjs
+
 ARG NEXT_PUBLIC_SERVER_URL
 ENV NEXT_PUBLIC_SERVER_URL=${NEXT_PUBLIC_SERVER_URL}
 ARG NEXT_PUBLIC_APP_URL
@@ -47,35 +47,20 @@ ARG MONGODB_URI
 ENV MONGODB_URI=${MONGODB_URI}
 ARG RESEND_API_KEY
 ENV RESEND_API_KEY=${RESEND_API_KEY}
+ARG STRIPE_SECRET_KEY
+ENV STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+ARG STRIPE_CUSTOM_TRANSACTION_FEE
+ENV STRIPE_CUSTOM_TRANSACTION_FEE=${STRIPE_CUSTOM_TRANSACTION_FEE}
+ARG STRIPE_WEBHOOK_SECRET
+ENV STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+ARG EMAIL_FROM_ADDRESS
+ENV EMAIL_FROM_ADDRESS=${EMAIL_FROM_ADDRESS}
+ARG MONGODB_PORT
+ENV MONGODB_PORT=${MONGODB_PORT}
 
-# Build the application
-RUN yarn build
+ENV PAYLOAD_CONFIG_PATH=/app/payload.config.js
+ENV NEXT_SHARP_PATH=/app/node_modules/sharp
 
-# Ensure the necessary directories exist
-RUN mkdir -p /app/.next/cache/images
+ENV HOSTNAME "0.0.0.0"
 
-# Stage 3: Create the final image
-FROM base AS runner
-WORKDIR /app
-
-ENV NODE_ENV production
-
-# Create necessary user and group
-RUN addgroup -S nodejs && adduser -S nextjs -G nodejs
-
-# Copy necessary files for production
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/dist ./dist
-
-# Set permissions after user creation
-RUN chown -R nextjs:nodejs /app/.next/cache
-
-USER nextjs
-
-EXPOSE 3000
-
-ENV PORT 3000
-
-CMD ["node", "dist/server.js"]
+CMD ["node", "server.js"]
