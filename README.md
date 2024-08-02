@@ -6,6 +6,10 @@
 
 # FEATURES TO ADD:
 
+- [] Use Drizzle ORM
+
+- [] Change DB to PostgreSQL
+
 - [] Add quantity box to select number of items to add to the cart
 
 - [] Hero section containing optimised video running on a loop
