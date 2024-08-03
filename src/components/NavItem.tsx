@@ -14,20 +14,32 @@ interface NavItemProps {
   handleOpen: () => void;
   isOpen: boolean;
   isAnyOpen: boolean;
+  isTransparent: boolean;
+  isHovered: boolean;
 }
 
-const NavItem = ({ isAnyOpen, category, handleOpen, isOpen }: NavItemProps) => {
+const NavItem = ({
+  isAnyOpen,
+  category,
+  handleOpen,
+  isOpen,
+  isTransparent,
+  isHovered,
+}: NavItemProps) => {
   return (
     <div className="flex">
       <div className="relative flex items-center">
         <Button
-          className="gap-1.5"
+          className={`gap-1.5 ${
+            isTransparent && !isHovered ? "text-white" : "text-black"
+          }`}
           onClick={handleOpen}
           variant={isOpen ? "secondary" : "ghost"}
         >
           {category.label}
           <ChevronDown
             className={cn("h-4 w-4 transition-all text-muted-foreground", {
+              "text-white": isTransparent && !isHovered,
               "-rotate-180": isOpen,
             })}
           ></ChevronDown>
