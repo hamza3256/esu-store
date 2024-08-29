@@ -1,79 +1,68 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import MaxWidthWrapper from "./MaxWidthWrapper";
 import { Icons } from "./Icons";
 import NavItems from "./NavItems";
-import { buttonVariants } from "./ui/button";
-import { Ghost } from "lucide-react";
-import Cart from "./Cart";
-import { getServerSideUser } from "@/lib/payload-utils";
-import { cookies } from "next/headers";
-import UserAccountNav from "./UserAccountNav";
 import MobileNav from "./MobileNav";
+import NavbarRight from "./NavbarRight";
+import { usePathname } from "next/navigation";
 
-const Navbar = async () => {
-  const nextCookies = cookies();
-  const { user } = await getServerSideUser(nextCookies);
+const Navbar = ({ user }: { user: any }) => {
+  const pathname = usePathname();
+  const [isHome, setIsHome] = useState(pathname === "/");
+  const [isTransparent, setIsTransparent] = useState(isHome && true);
+  const [isHovered, setIsHovered] = useState(false);
+
+  const handleScroll = () => {
+    if (isHome) {
+      setIsTransparent(window.scrollY === 0);
+    }
+  };
+
+  useEffect(() => {
+    const onScroll = () => handleScroll();
+    window.addEventListener("scroll", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+    };
+  }, [isHome]);
+
+  useEffect(() => {
+    const home = pathname === "/";
+    setIsHome(home);
+    setIsTransparent(home && window.scrollY === 0);
+  }, [pathname]);
 
   return (
-    <div className="bg-white sticky z-50 top-0 inset-x-0 h-16">
-      <header className="relative bg-white">
+    <div
+      className={`sticky top-0 inset-x-0 h-16 z-30 transition-colors duration-300 ${
+        isTransparent && !isHovered ? "bg-transparent" : "bg-white"
+      }`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <header className="relative">
         <MaxWidthWrapper>
-          <div className="border-b border-gray-300">
-            <div className="flex h-16 items-center">
+          <div className="border-b border-transparent hover:border-gray-300 transition-all duration-300">
+            <div className="flex h-16 items-center transition-all duration-300">
               <MobileNav />
               <div className="ml-auto flex items-center lg:ml-0">
                 <Link href="/">
-                  <Icons.logo className="h-20 w-20" />
+                  <div className="h-20 w-20">
+                    {isTransparent && !isHovered ? (
+                      <Icons.logoWhite className="text-white h-20 w-20" />
+                    ) : (
+                      <Icons.logoBlack className="text-black h-20 w-20" />
+                    )}
+                  </div>
                 </Link>
               </div>
               <div className="hidden z-50 lg:ml-8 lg:block lg:self-stretch">
-                <NavItems />
+                <NavItems isTransparent={isTransparent} isHovered={isHovered} />
               </div>
-              {/* right side of the navbar */}
-              <div className="ml-auto flex items-center">
-                <div className="hidden lg:flex lg:flex-1 lg:items-center lg:justify-end lg:space-x-6">
-                  {user ? null : (
-                    <Link
-                      href="/sign-in"
-                      className={buttonVariants({ variant: "ghost" })}
-                    >
-                      Sign in
-                    </Link>
-                  )}
-
-                  {user ? null : (
-                    <span className="h-6 w-px bg-gray-200" aria-hidden="true" />
-                  )}
-
-                  {user ? (
-                    <UserAccountNav user={user} />
-                  ) : (
-                    <Link
-                      href="sign-up"
-                      className={buttonVariants({ variant: "ghost" })}
-                    >
-                      Create Account
-                    </Link>
-                  )}
-
-                  {user ? (
-                    <span className="h-6 w-px bg-gray-200" aria-hidden="true" />
-                  ) : null}
-
-                  {user ? null : (
-                    <div className="flex lg:ml-6">
-                      <span
-                        className="h-6 w-px bg-gray-200"
-                        aria-hidden="true"
-                      />
-                    </div>
-                  )}
-
-                  <div className="ml-4 flow-root lg:ml-6">
-                    <Cart />
-                  </div>
-                </div>
-              </div>
+              <NavbarRight user={user} />
             </div>
           </div>
         </MaxWidthWrapper>

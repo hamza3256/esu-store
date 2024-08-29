@@ -1,0 +1,27 @@
+services:
+  app:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_SERVER_URL: ${NEXT_PUBLIC_SERVER_URL}
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
+        PAYLOAD_SECRET: ${PAYLOAD_SECRET}
+        MONGODB_URI: ${MONGODB_URI}
+        RESEND_API_KEY: ${RESEND_API_KEY}
+        STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+        STRIPE_CUSTOM_TRANSACTION_FEE: ${STRIPE_CUSTOM_TRANSACTION_FEE}
+        STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+        EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS}
+        MONGODB_PORT: ${MONGODB_PORT}
+    environment:
+      - .env
+    ports:
+      - "3000:3000"
+    restart: always
+    networks:
+      - esu-network
+
+networks:
+  esu-network:
+    external: true

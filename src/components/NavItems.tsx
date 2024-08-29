@@ -5,7 +5,13 @@ import { useEffect, useRef, useState } from "react";
 import NavItem from "./NavItem";
 import { useOnClickOutside } from "@/hooks/use-on-click-outside";
 
-const NavItems = () => {
+const NavItems = ({
+  isTransparent,
+  isHovered,
+}: {
+  isTransparent: boolean;
+  isHovered: boolean;
+}) => {
   const [activeIndex, setActiveIndex] = useState<null | number>(null);
 
   useEffect(() => {
@@ -48,6 +54,8 @@ const NavItems = () => {
             isOpen={isOpen}
             key={category.value}
             isAnyOpen={isAnyOpen}
+            isTransparent={isTransparent}
+            isHovered={isHovered}
           />
         );
       })}
