@@ -8,8 +8,9 @@ import NavItems from "./NavItems";
 import MobileNav from "./MobileNav";
 import NavbarRight from "./NavbarRight";
 import { usePathname } from "next/navigation";
+import { User } from "@/payload-types";
 
-const Navbar = ({ user }: { user: any }) => {
+const Navbar = ({ user }: { user: User | null }) => {
   const pathname = usePathname();
   const [isHome, setIsHome] = useState(pathname === "/");
   const [isTransparent, setIsTransparent] = useState(isHome && true);

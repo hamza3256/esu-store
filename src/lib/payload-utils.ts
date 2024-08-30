@@ -6,18 +6,34 @@ import { NextRequest } from "next/server";
 export const getServerSideUser = async (
   cookies?: ReadonlyRequestCookies
 ): Promise<{ user: User | null }> => {
-  const token = cookies?.get("payload-token")?.value;
+  try {
+    const token = cookies?.get("payload-token")?.value;
 
-  const meRes = await fetch(
-    `${process.env.NEXT_PUBLIC_SERVER_URL}/api/users/me`,
-    {
-      headers: {
-        Authorization: `JWT ${token}`,
-      },
+    if (!token) {
+      // No token, return null
+      return { user: null };
     }
-  );
 
-  const { user } = (await meRes.json()) as { user: User | null };
+    const meRes = await fetch(
+      `${process.env.NEXT_PUBLIC_SERVER_URL}/api/users/me`,
+      {
+        headers: {
+          Authorization: `JWT ${token}`,
+        },
+      }
+    );
 
-  return { user };
+    if (!meRes.ok) {
+      // Handle non-OK response
+      console.error('Failed to fetch user:', meRes.statusText);
+      return { user: null };
+    }
+
+    const { user } = (await meRes.json()) as { user: User | null };
+    
+    return { user };
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    return { user: null }; // Return null in case of error
+  }
 };

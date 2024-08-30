@@ -17,7 +17,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const user = await getServerSideUser();
+  const {user} = await getServerSideUser();
 
   return (
     <html lang="en" className="h-full">

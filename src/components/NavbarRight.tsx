@@ -2,8 +2,9 @@ import { buttonVariants } from "./ui/button";
 import Cart from "./Cart";
 import UserAccountNav from "./UserAccountNav";
 import Link from "next/link";
+import { User } from "@/payload-types";
 
-const NavbarRight = ({ user }: { user: any }) => {
+const NavbarRight = ({ user }: { user: User }) => {
   return (
     <div className="ml-auto flex items-center">
       <div className="hidden lg:flex lg:flex-1 lg:items-center lg:justify-end lg:space-x-6">
