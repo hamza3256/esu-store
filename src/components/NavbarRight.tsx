@@ -21,7 +21,7 @@ const NavbarRight = ({ user, isTransparent,
         )}
 
         {user ? null : (
-          <span className="h-6 w-px bg-gray-200" aria-hidden="true" />
+          <span className={cn("h-6 w-px bg-gray-200", `${isTransparent && !isHovered ? "bg-gray-400" : "bg-gray-200"}`)} aria-hidden="true" />
         )}
 
         {user ? (
@@ -33,12 +33,12 @@ const NavbarRight = ({ user, isTransparent,
         )}
 
         {user ? (
-          <span className="h-6 w-px bg-gray-200" aria-hidden="true" />
+          <span className={cn("h-6 w-px bg-gray-200", `${isTransparent && !isHovered ? "bg-gray-400" : "bg-gray-200"}`)} aria-hidden="true" />
         ) : null}
 
         {user ? null : (
           <div className="flex lg:ml-6">
-            <span className="h-6 w-px bg-gray-200" aria-hidden="true" />
+            <span className={cn("h-6 w-px bg-gray-200", `${isTransparent && !isHovered ? "bg-gray-400" : "bg-gray-200"}`)} aria-hidden="true" />
           </div>
         )}
 
