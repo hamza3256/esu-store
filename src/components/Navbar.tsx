@@ -9,6 +9,7 @@ import MobileNav from "./MobileNav";
 import NavbarRight from "./NavbarRight";
 import { usePathname } from "next/navigation";
 import { User } from "@/payload-types";
+import { cn } from "@/lib/utils";
 
 const Navbar = ({ user }: { user: User | null }) => {
   const pathname = usePathname();
@@ -46,7 +47,8 @@ const Navbar = ({ user }: { user: User | null }) => {
     >
       <header className="relative">
         <MaxWidthWrapper>
-          <div className="border-b border-transparent hover:border-gray-300 transition-all duration-300">
+          <div className={cn("border-b border-transparent hover:border-gray-300 transition-all duration-300", `${isTransparent && !isHovered ? "text-white" 
+            : "text-black border-transparent"}`)}>
             <div className="flex h-16 items-center transition-all duration-300">
               <MobileNav />
               <div className="ml-auto flex items-center lg:ml-0">
@@ -63,7 +65,7 @@ const Navbar = ({ user }: { user: User | null }) => {
               <div className="hidden z-50 lg:ml-8 lg:block lg:self-stretch">
                 <NavItems isTransparent={isTransparent} isHovered={isHovered} />
               </div>
-              <NavbarRight user={user} />
+              <NavbarRight user={user} isTransparent={isTransparent} isHovered={isHovered}/>
             </div>
           </div>
         </MaxWidthWrapper>

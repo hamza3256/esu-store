@@ -3,15 +3,18 @@ import Cart from "./Cart";
 import UserAccountNav from "./UserAccountNav";
 import Link from "next/link";
 import { User } from "@/payload-types";
+import { cn } from "@/lib/utils";
 
-const NavbarRight = ({ user }: { user: User | null }) => {
+const NavbarRight = ({ user, isTransparent,
+  isHovered }: { user: User | null; isTransparent: boolean;
+  isHovered: boolean; }) => {
   return (
     <div className="ml-auto flex items-center">
       <div className="hidden lg:flex lg:flex-1 lg:items-center lg:justify-end lg:space-x-6">
         {user ? null : (
           <Link
             href="/sign-in"
-            className={buttonVariants({ variant: "ghost" })}
+            className={cn(`${isTransparent && !isHovered ? "text-white" : "text-black"}`,buttonVariants({ variant: "ghost" }))}
           >
             Sign in
           </Link>
@@ -24,7 +27,7 @@ const NavbarRight = ({ user }: { user: User | null }) => {
         {user ? (
           <UserAccountNav user={user} />
         ) : (
-          <Link href="sign-up" className={buttonVariants({ variant: "ghost" })}>
+          <Link href="sign-up" className={cn(`${isTransparent && !isHovered ? "text-white" : "text-black"}`,buttonVariants({ variant: "ghost" }))}>
             Create Account
           </Link>
         )}
