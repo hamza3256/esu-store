@@ -4,7 +4,7 @@ import { ReadonlyRequestCookies } from "next/dist/server/web/spec-extension/adap
 import { NextRequest } from "next/server";
 
 export const getServerSideUser = async (
-  cookies?: ReadonlyRequestCookies
+  cookies: NextRequest["cookies"] | ReadonlyRequestCookies
 ): Promise<{ user: User | null }> => {
   try {
     const token = cookies?.get("payload-token")?.value;
@@ -29,7 +29,7 @@ export const getServerSideUser = async (
       return { user: null };
     }
 
-    const { user } = (await meRes.json()) as { user: User | null };
+    const { user } = (await meRes.json()) as { user: User };
     
     return { user };
   } catch (error) {

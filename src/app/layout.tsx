@@ -7,6 +7,7 @@ import Providers from "@/components/Providers";
 import { Toaster } from "sonner";
 import Footer from "@/components/Footer";
 import { getServerSideUser } from "@/lib/payload-utils";
+import { fetchUser } from "@/lib/server-utils";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -17,8 +18,8 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const {user} = await getServerSideUser();
-
+  const user = await fetchUser()
+  
   return (
     <html lang="en" className="h-full">
       <body
