@@ -74,4 +74,4 @@ ENV NEXT_SHARP_PATH=/app/node_modules/sharp
 
 ENV HOSTNAME "0.0.0.0"
 
-CMD ["node", "server.js"]
+CMD ["node", "--max-old-space-size=1024", "server.js"]
