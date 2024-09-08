@@ -11,6 +11,8 @@ COPY package.json yarn.lock* ./
 
 RUN yarn install --production --frozen-lockfile
 
+RUN yarn add -D @types/express
+
 COPY . .
 
 ARG NEXT_PUBLIC_SERVER_URL
