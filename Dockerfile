@@ -7,7 +7,9 @@ RUN apk add --no-cache libc6-compat vips vips-dev python3 make g++ pkgconfig
 FROM base AS builder
 WORKDIR /app
 COPY package.json yarn.lock* ./
-RUN yarn install --frozen-lockfile
+# RUN yarn install --frozen-lockfile
+
+RUN yarn install --production --frozen-lockfile
 
 COPY . .
 
@@ -75,4 +77,4 @@ ENV NEXT_SHARP_PATH=/app/node_modules/sharp
 ENV HOSTNAME "0.0.0.0"
 EXPOSE 8080
 
-CMD ["node", "--max-old-space-size=2048", "server.js"]
+CMD ["node", "--max-old-space-size=512", "server.js"]

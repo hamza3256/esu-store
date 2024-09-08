@@ -16,7 +16,7 @@ const nextConfig = withPayload(
         },
         {
           protocol: "https",
-          hostname: "esu-store.vercel.app",
+          hostname: "https://esu-store-production.up.railway.app",
           pathname: "/**",
         },
         {
