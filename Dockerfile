@@ -73,5 +73,6 @@ ENV PAYLOAD_CONFIG_PATH=/app/payload.config.js
 ENV NEXT_SHARP_PATH=/app/node_modules/sharp
 
 ENV HOSTNAME "0.0.0.0"
+EXPOSE 8080
 
 CMD ["node", "--max-old-space-size=2048", "server.js"]
