@@ -16,7 +16,7 @@ const nextConfig = withPayload(
         },
         {
           protocol: "https",
-          hostname: "https://esu-store-production.up.railway.app",
+          hostname: "https://www.esustore.com",
           pathname: "/**",
         },
         {
