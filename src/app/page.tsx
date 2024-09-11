@@ -60,9 +60,11 @@ export default function Home() {
           loop
           className="absolute top-0 left-0 w-full h-full object-cover -z-20"
           preload="auto"
-          onCanPlay={() => setVideoLoaded(true)} // Set video as loaded once it starts playing
+          onCanPlay={() => setVideoLoaded(true)}
+          playsInline
         >
-          <source src="/Morocco.mp4" type="video/mp4" />
+          <source src="/desktop-morocco.mp4" type="video/mp4" media="(min-width: 768px)"/>
+          <source src="/mobile-morocco.webm" type="video/mp4" media="(max-width: 767px)"/>
           Your browser does not support the video tag.
         </video>
 
@@ -75,7 +77,7 @@ export default function Home() {
             <div className="py-20 mx-auto flex flex-col items-center max-w-3xl">
               <h1 className="text-4xl font-bold tracking-tight sm:text-6xl">
                 Your marketplace for high-quality{" "}
-                <span className="text-blue-600">products</span>.
+                <span className="text-gray-800">products</span>.
               </h1>
               <p className="mt-6 text-lg max-w-prose">
                 Welcome to <span className="font-bold">esü</span>. Every product

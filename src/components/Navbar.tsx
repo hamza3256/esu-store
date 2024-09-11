@@ -20,9 +20,10 @@ const Navbar = ({ user }: NavbarProps) => {
   const [isHome, setIsHome] = useState(false);
   const [isTransparent, setIsTransparent] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false); // Track mobile menu state
 
   const handleScroll = () => {
-    if (isHome && typeof window !== "undefined") {
+    if (isHome && typeof window !== "undefined" && !isMenuOpen) { // Disable transparency when the mobile menu is open
       setIsTransparent(window.scrollY === 0);
     }
   };
@@ -38,12 +39,12 @@ const Navbar = ({ user }: NavbarProps) => {
     return () => {
       window.removeEventListener("scroll", onScroll);
     };
-  }, [pathname, isHome]);
+  }, [pathname, isHome, isMenuOpen]); // Listen for changes in isMenuOpen
 
   return (
     <div
       className={`sticky top-0 inset-x-0 h-16 z-50 transition-colors duration-300 shadow-md ${
-        isTransparent && !isHovered
+        isTransparent && !isHovered && !isMenuOpen // Disable transparent background when the menu is open
           ? "bg-transparent text-white"
           : "bg-white text-gray-800"
       }`}
@@ -55,13 +56,13 @@ const Navbar = ({ user }: NavbarProps) => {
           <div
             className={cn(
               "border-b border-transparent hover:border-gray-300 transition-all duration-300",
-              `${isTransparent && !isHovered ? "text-white" : "text-black"}`
+              `${isTransparent && !isHovered && !isMenuOpen ? "text-white" : "text-black"}`
             )}
           >
             <div className="flex h-16 items-center justify-between transition-all duration-300 relative">
               {/* Mobile Navigation Menu (left for mobile) */}
               <div className="lg:hidden flex items-center">
-                <MobileNav />
+                <MobileNav setIsMenuOpen={setIsMenuOpen} /> {/* Pass the menu state handler */}
               </div>
 
               {/* Logo (left for larger screens, centered on mobile) */}
@@ -70,7 +71,7 @@ const Navbar = ({ user }: NavbarProps) => {
                 className="lg:static absolute left-1/2 transform -translate-x-1/2 lg:transform-none flex items-center lg:left-0"
               >
                 <div className="h-14 w-auto">
-                  {isTransparent && !isHovered ? (
+                  {isTransparent && !isHovered && !isMenuOpen ? (
                     <Icons.logoWhite className="text-white h-14 w-auto" />
                   ) : (
                     <Icons.logoBlack className="text-black h-14 w-auto" />

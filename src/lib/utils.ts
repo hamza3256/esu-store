@@ -26,7 +26,7 @@ export function formatPrice(
 }
 
 export function constructMetadata({
-  title = "ESÜ - the marketplace for high-quality products",
+  title = "ESÜstore.com: the marketplace for high-quality products",
   description = "ESÜ is an open-source marketplace for high-quality products.",
   image = "/thumbnail.png",
   icons = "/favicon.ico",
