@@ -15,38 +15,37 @@ interface NavbarProps {
   user: User | null; // User is passed from server-side as a prop
 }
 
-const Navbar = ({ user } : NavbarProps) => {
+const Navbar = ({ user }: NavbarProps) => {
   const pathname = usePathname();
-  const [isHome, setIsHome] = useState(false);  // Initial false state, no assumption of being on the home page during SSR
-  const [isTransparent, setIsTransparent] = useState(false);  // Same as above for transparency
+  const [isHome, setIsHome] = useState(false);
+  const [isTransparent, setIsTransparent] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
-  
+
   const handleScroll = () => {
-    if (isHome && typeof window !== "undefined") {  // Ensure window is defined
+    if (isHome && typeof window !== "undefined") {
       setIsTransparent(window.scrollY === 0);
     }
   };
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const home = pathname === "/";
-      setIsHome(home);
-      setIsTransparent(home && window.scrollY === 0);
+    const home = pathname === "/";
+    setIsHome(home);
+    setIsTransparent(home && window.scrollY === 0);
 
-      const onScroll = () => handleScroll();
-      window.addEventListener("scroll", onScroll);
+    const onScroll = () => handleScroll();
+    window.addEventListener("scroll", onScroll);
 
-      // Cleanup the event listener on component unmount
-      return () => {
-        window.removeEventListener("scroll", onScroll);
-      };
-    }
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+    };
   }, [pathname, isHome]);
 
   return (
     <div
-      className={`sticky top-0 inset-x-0 h-16 z-30 transition-colors duration-300 ${
-        isTransparent && !isHovered ? "bg-transparent" : "bg-white"
+      className={`sticky top-0 inset-x-0 h-16 z-50 transition-colors duration-300 shadow-md ${
+        isTransparent && !isHovered
+          ? "bg-transparent text-white"
+          : "bg-white text-gray-800"
       }`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -56,26 +55,41 @@ const Navbar = ({ user } : NavbarProps) => {
           <div
             className={cn(
               "border-b border-transparent hover:border-gray-300 transition-all duration-300",
-              `${isTransparent && !isHovered ? "text-white" : "text-black border-transparent"}`
+              `${isTransparent && !isHovered ? "text-white" : "text-black"}`
             )}
           >
-            <div className="flex h-16 items-center transition-all duration-300">
-              <MobileNav />
-              <div className="ml-auto flex items-center lg:ml-0">
-                <Link href="/">
-                  <div className="h-20 w-20">
-                    {isTransparent && !isHovered ? (
-                      <Icons.logoWhite className="text-white h-20 w-20" />
-                    ) : (
-                      <Icons.logoBlack className="text-black h-20 w-20" />
-                    )}
-                  </div>
-                </Link>
+            <div className="flex h-16 items-center justify-between transition-all duration-300 relative">
+              {/* Mobile Navigation Menu (left for mobile) */}
+              <div className="lg:hidden flex items-center">
+                <MobileNav />
               </div>
+
+              {/* Logo (left for larger screens, centered on mobile) */}
+              <Link
+                href="/"
+                className="lg:static absolute left-1/2 transform -translate-x-1/2 lg:transform-none flex items-center lg:left-0"
+              >
+                <div className="h-14 w-auto">
+                  {isTransparent && !isHovered ? (
+                    <Icons.logoWhite className="text-white h-14 w-auto" />
+                  ) : (
+                    <Icons.logoBlack className="text-black h-14 w-auto" />
+                  )}
+                </div>
+              </Link>
+
               <div className="hidden z-50 lg:ml-8 lg:block lg:self-stretch">
                 <NavItems isTransparent={isTransparent} isHovered={isHovered} />
               </div>
-              <NavbarRight user={user} isTransparent={isTransparent} isHovered={isHovered} />
+
+              {/* Right-side content (Cart and User icons on mobile, other on large screens) */}
+              <div className="ml-auto flex items-center space-x-4">
+                <NavbarRight
+                  user={user}
+                  isTransparent={isTransparent}
+                  isHovered={isHovered}
+                />
+              </div>
             </div>
           </div>
         </MaxWidthWrapper>

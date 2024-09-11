@@ -10,7 +10,7 @@ import {
   SheetTrigger,
 } from "./ui/sheet";
 import { Separator } from "./ui/separator";
-import { formatPrice } from "@/lib/utils";
+import { cn, formatPrice } from "@/lib/utils";
 import { buttonVariants } from "./ui/button";
 import Link from "next/link";
 import Image from "next/image";
@@ -19,7 +19,13 @@ import { ScrollArea } from "./ui/scroll-area";
 import CartItem from "./CartItem";
 import { useEffect, useState } from "react";
 
-const Cart = () => {
+const Cart = ({
+  isTransparent,
+  isHovered,
+}: {
+  isTransparent: boolean;
+  isHovered: boolean;
+}) => {
   const { items } = useCart();
   const itemCount = items.length;
 
@@ -38,14 +44,20 @@ const Cart = () => {
 
   return (
     <Sheet>
-      <SheetTrigger className="group -m-2 flex items-center p-2">
+      <SheetTrigger className="group relative -m-2 flex items-center p-2">
         <ShoppingCartIcon
           aria-hidden="true"
-          className="h-6 w-6 flex-shrink-0 text-gray-400 group-hover:text-gray-500"
+          className={cn(
+            "h-6 w-6 flex-shrink-0 text-gray-400 group-hover:text-gray-400",
+            `${isTransparent && !isHovered ? "text-white" : "text-gray-600"}`
+          )}
         />
-        <span className="ml-2 text-sml font-medium text-gray-700 group-hover:text-gray-800">
-          {isMounted ? itemCount : 0}
-        </span>
+        {/* Badge for item count */}
+        {isMounted && itemCount > 0 && (
+          <span className="absolute -bottom-1 -right-1 inline-flex items-center justify-center rounded-full bg-gray-700 px-1.5 py-0.8 text-xs font-medium text-white">
+            {itemCount}
+          </span>
+        )}
       </SheetTrigger>
       <SheetContent className="flex w-full flex-col pr-0 sm:max-w-lg">
         <SheetHeader className="space-y-2.5 pr-6">
