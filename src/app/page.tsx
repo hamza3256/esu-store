@@ -38,7 +38,7 @@ export default function Home() {
       }
     }, 3000); // Fallback to show white background after 3 seconds if the video is not loaded
 
-    return () => clearTimeout(timeout);
+    return () => clearTimeout(timeout); // Clear timeout if the video loads earlier
   }, [videoLoaded]);
 
   return (
@@ -48,9 +48,10 @@ export default function Home() {
         {!videoLoaded && (
           <Image
             src="/medical-background.png"
-            alt="Placeholder"
+            alt="Loading video background"
             fill
             className="absolute top-0 left-0 w-full h-full object-cover -z-20"
+            loading="lazy" // Lazy loading to improve performance
           />
         )}
         <video
@@ -59,7 +60,7 @@ export default function Home() {
           loop
           className="absolute top-0 left-0 w-full h-full object-cover -z-20"
           preload="auto"
-          onCanPlay={() => setVideoLoaded(true)}
+          onCanPlay={() => setVideoLoaded(true)} // Set video as loaded once it starts playing
         >
           <source src="/Morocco.mp4" type="video/mp4" />
           Your browser does not support the video tag.
