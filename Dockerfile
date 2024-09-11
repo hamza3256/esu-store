@@ -1,15 +1,17 @@
+# Use Node.js image as a base
 FROM node:20.11-alpine AS base
 
 WORKDIR /app
 
+# Install system dependencies
 RUN apk add --no-cache libc6-compat vips vips-dev python3 make g++ pkgconfig
 
 FROM base AS builder
 WORKDIR /app
 COPY package.json yarn.lock* ./
 RUN yarn install --frozen-lockfile
-# RUN yarn add express
 
+# Copy the full project, including pages/app directory, public folder, etc.
 COPY . .
 
 ARG NEXT_PUBLIC_SERVER_URL
@@ -23,6 +25,7 @@ ARG STRIPE_WEBHOOK_SECRET
 ARG EMAIL_FROM_ADDRESS
 ARG MONGODB_PORT
 
+# Build the Next.js project
 RUN yarn build
 
 FROM base AS runner
@@ -31,25 +34,23 @@ ENV NODE_ENV production
 
 RUN addgroup --system nodejs && adduser --system --ingroup nodejs nextjs
 
-# allow permission to access images
+# Ensure required directories exist
 RUN mkdir -p /app/.next/cache/images
 
-# COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+# Copy the necessary build outputs and node_modules from the builder stage
 COPY --from=builder /app/.next ./.next
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-COPY --from=builder --chown=nextjs:nodejs /app/.next/cache ./.next/cache
-
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/build/ ./build
-COPY --from=builder /app/dist/ ./dist
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/next.config.mjs ./ 
- 
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/dist/ ./dist
+COPY --from=builder /app/next.config.mjs ./
+
+# Set ownership for caching directories
 RUN chown -R nextjs:nodejs /app/.next/cache
 RUN chown -R nextjs:nodejs /app/.next/static
 
 USER nextjs
 
+# Environment variables
 ARG NEXT_PUBLIC_SERVER_URL
 ENV NEXT_PUBLIC_SERVER_URL=${NEXT_PUBLIC_SERVER_URL}
 ARG NEXT_PUBLIC_APP_URL
@@ -75,8 +76,8 @@ ENV PAYLOAD_CONFIG_PATH=/app/dist/payload.config.js
 ENV NEXT_SHARP_PATH=/app/node_modules/sharp
 ENV NODE_ENV=production
 
-ENV HOSTNAME "0.0.0.0"
-
+# Expose the application port
 EXPOSE 3000
 
+# Run the Next.js application using the built server
 CMD ["node", "dist/server.js"]
