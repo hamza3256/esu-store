@@ -49,7 +49,7 @@ const Cart = ({
           aria-hidden="true"
           className={cn(
             "h-6 w-6 flex-shrink-0 text-gray-400 group-hover:text-gray-400",
-            `${isTransparent && !isHovered ? "text-white" : "text-gray-600"}`
+            `${isTransparent && !isHovered ? "text-gray-400" : "text-gray-600"}`
           )}
         />
         {/* Badge for item count */}

@@ -35,8 +35,8 @@ const NavbarRight = ({
               <Link
                 href="/sign-in"
                 className={cn(
-                  "relative inline-flex items-center p-2 text-gray-400 hover:text-gray-400 transition-colors",
-                  `${isTransparent && !isHovered ? "text-white" : "text-gray-800"}`
+                  "relative inline-flex items-center p-2 hover:text-gray-400 transition-colors",
+                  `${isTransparent && !isHovered ? "text-gray-400" : "text-gray-800"}`
                 )}
               >
                 <UserIcon className="h-7 w-7" aria-hidden="true" />
