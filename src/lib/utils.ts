@@ -27,7 +27,7 @@ export function formatPrice(
 
 export function constructMetadata({
   title = "ESÜstore.com: the marketplace for high-quality products",
-  description = "ESÜ is an open-source marketplace for high-quality products.",
+  description = "ESÜ is an open-source marketplace for high-quality clothes for men and women",
   image = "/thumbnail.png",
   icons = "/favicon.ico",
   noIndex = false,
@@ -58,7 +58,7 @@ export function constructMetadata({
       creator: "@MuhammadHamza",
     },
     icons,
-    metadataBase: new URL("https://esu-store.vercel.app"),
+    metadataBase: new URL("https://esustore.com"),
     ...(noIndex && {
       robots: {
         index: false,
