@@ -5,9 +5,9 @@ import { NextRequest } from "next/server";
 
 export const getServerSideUser = async (
   cookies: NextRequest["cookies"] | ReadonlyRequestCookies
-): Promise<{ user: User | null }> => {
+) => {
   try {
-    const token = cookies?.get("payload-token")?.value;
+    const token = cookies.get("payload-token")?.value;
 
     if (!token) {
       // No token, return null

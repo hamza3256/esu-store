@@ -1,3 +1,5 @@
+"use client"
+
 import { buttonVariants } from "./ui/button";
 import Cart from "./Cart";
 import UserAccountNav from "./UserAccountNav";

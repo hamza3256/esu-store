@@ -1,24 +1,31 @@
-import { useEffect } from "react";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Providers from "@/components/Providers";
 import { Toaster } from "sonner";
 import Footer from "@/components/Footer";
+import { cn, constructMetadata } from "@/lib/utils"
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import { cookies } from "next/headers";
 import { getServerSideUser } from "@/lib/payload-utils";
-import { fetchUser } from "@/lib/server-utils";
+
+const inter = Inter({ subsets: ["latin"] });
+
+export const metadata = constructMetadata();
 
 export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const user = await fetchUser();
+
+  const nextCookies = cookies();
+  const { user } = await getServerSideUser(nextCookies);
 
   return (
     <html lang="en" className="h-full">
       <body
-        className="relative h-full font-sans antialiased"
-        style={{ fontFamily: "'Inter', sans-serif" }}
+        className={cn("relative h-full font-sans antialiased", inter.className)}
       >
         <main className="relative flex flex-col min-h-screen">
           <Providers>

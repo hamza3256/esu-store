@@ -11,31 +11,37 @@ import { usePathname } from "next/navigation";
 import { User } from "@/payload-types";
 import { cn } from "@/lib/utils";
 
-const Navbar = ({ user }: { user: User | null }) => {
-  const pathname = usePathname();
-  const [isHome, setIsHome] = useState(pathname === "/");
-  const [isTransparent, setIsTransparent] = useState(isHome && true);
-  const [isHovered, setIsHovered] = useState(false);
+interface NavbarProps {
+  user: User | null; // User is passed from server-side as a prop
+}
 
+const Navbar = ({ user } : NavbarProps) => {
+  const pathname = usePathname();
+  const [isHome, setIsHome] = useState(false);  // Initial false state, no assumption of being on the home page during SSR
+  const [isTransparent, setIsTransparent] = useState(false);  // Same as above for transparency
+  const [isHovered, setIsHovered] = useState(false);
+  
   const handleScroll = () => {
-    if (isHome) {
+    if (isHome && typeof window !== "undefined") {  // Ensure window is defined
       setIsTransparent(window.scrollY === 0);
     }
   };
 
   useEffect(() => {
-    const onScroll = () => handleScroll();
-    window.addEventListener("scroll", onScroll);
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-    };
-  }, [isHome]);
+    if (typeof window !== "undefined") {
+      const home = pathname === "/";
+      setIsHome(home);
+      setIsTransparent(home && window.scrollY === 0);
 
-  useEffect(() => {
-    const home = pathname === "/";
-    setIsHome(home);
-    setIsTransparent(home && window.scrollY === 0);
-  }, [pathname]);
+      const onScroll = () => handleScroll();
+      window.addEventListener("scroll", onScroll);
+
+      // Cleanup the event listener on component unmount
+      return () => {
+        window.removeEventListener("scroll", onScroll);
+      };
+    }
+  }, [pathname, isHome]);
 
   return (
     <div
@@ -47,8 +53,12 @@ const Navbar = ({ user }: { user: User | null }) => {
     >
       <header className="relative">
         <MaxWidthWrapper>
-          <div className={cn("border-b border-transparent hover:border-gray-300 transition-all duration-300", `${isTransparent && !isHovered ? "text-white" 
-            : "text-black border-transparent"}`)}>
+          <div
+            className={cn(
+              "border-b border-transparent hover:border-gray-300 transition-all duration-300",
+              `${isTransparent && !isHovered ? "text-white" : "text-black border-transparent"}`
+            )}
+          >
             <div className="flex h-16 items-center transition-all duration-300">
               <MobileNav />
               <div className="ml-auto flex items-center lg:ml-0">
@@ -65,7 +75,7 @@ const Navbar = ({ user }: { user: User | null }) => {
               <div className="hidden z-50 lg:ml-8 lg:block lg:self-stretch">
                 <NavItems isTransparent={isTransparent} isHovered={isHovered} />
               </div>
-              <NavbarRight user={user} isTransparent={isTransparent} isHovered={isHovered}/>
+              <NavbarRight user={user} isTransparent={isTransparent} isHovered={isHovered} />
             </div>
           </div>
         </MaxWidthWrapper>
