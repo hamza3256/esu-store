@@ -10,6 +10,7 @@ import NavbarRight from "./NavbarRight";
 import { usePathname } from "next/navigation";
 import { User } from "@/payload-types";
 import { cn } from "@/lib/utils";
+import SearchBar from "./SearchBar";
 
 interface NavbarProps {
   user: User | null; // User is passed from server-side as a prop
@@ -83,7 +84,16 @@ const Navbar = ({ user }: NavbarProps) => {
                 <NavItems isTransparent={isTransparent} isHovered={isHovered} />
               </div>
 
-              {/* Right-side content (Cart and User icons on mobile, other on large screens) */}
+              {/* For large devices */}
+              <div className="hidden lg:block flex-grow max-w-xl mx-4">
+                <SearchBar isTransparent={isTransparent} isHovered={isHovered} isMobile={false} />
+              </div>
+
+              {/* For mobile */}
+              <div className="lg:hidden">
+                <SearchBar isTransparent={isTransparent} isHovered={isHovered} isMobile={true} />
+              </div>
+
               <div className="ml-auto flex items-center space-x-4">
                 <NavbarRight
                   user={user}

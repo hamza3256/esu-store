@@ -95,3 +95,11 @@
   src: url("/fonts/Inter/Inter-Regular.woff2") format("woff2");
 }
 
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.animate-blink {
+  animation: blink 0.7s step-end infinite;
+}
