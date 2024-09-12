@@ -26,15 +26,10 @@ const Cart = ({
   isTransparent: boolean;
   isHovered: boolean;
 }) => {
-  const { items } = useCart();
-  const itemCount = items.length;
+  const { items, cartTotal, updateQuantity, removeItem } = useCart();
+  const itemCount = items.length
 
-  const cartTotal = items.reduce(
-    (total, { product }) => total + product.price,
-    0
-  );
-
-  const fee = 1;
+  const shippingFee = 1;
 
   const [isMounted, setIsMounted] = useState<boolean>(false);
 
@@ -67,8 +62,12 @@ const Cart = ({
           <>
             <div className="flex w-full flex-col pr-6">
               <ScrollArea>
-                {items.map(({ product }) => (
-                  <CartItem key={product.id} product={product} />
+                {items.map(({ product, quantity }) => (
+                  <CartItem
+                    key={product.id}
+                    product={product}
+                    quantity={quantity}
+                  />
                 ))}
               </ScrollArea>
             </div>
@@ -81,11 +80,11 @@ const Cart = ({
                 </div>
                 <div className="flex">
                   <span className="flex-1">Transaction Fee</span>
-                  <span>{formatPrice(fee)}</span>
+                  <span>{formatPrice(shippingFee)}</span>
                 </div>
                 <div className="flex">
                   <span className="flex-1">Total</span>
-                  <span>{formatPrice(cartTotal + fee)}</span>
+                  <span>{formatPrice(cartTotal() + shippingFee)}</span>
                 </div>
               </div>
               <div>

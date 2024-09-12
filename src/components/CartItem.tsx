@@ -2,17 +2,28 @@ import { PRODUCT_CATEGORIES } from "@/config";
 import { useCart } from "@/hooks/use-cart";
 import { formatPrice } from "@/lib/utils";
 import { Product } from "@/payload-types";
-import { ImageIcon, X } from "lucide-react";
+import { ImageIcon, X, Minus, Plus, Star } from "lucide-react";
 import Image from "next/image";
 
-const CartItem = ({ product }: { product: Product }) => {
+const CartItem = ({ product, quantity }: { product: Product; quantity: number }) => {
   const { image } = product.images[0];
-
   const label = PRODUCT_CATEGORIES.find(
     ({ value }) => value === product.category
   )?.label;
 
-  const { removeItem } = useCart();
+  const { removeItem, updateQuantity } = useCart();
+
+  const handleDecrement = () => {
+    if (quantity > 1) {
+      updateQuantity(product.id, quantity - 1);
+    }
+  };
+
+  const handleIncrement = () => {
+    if (quantity < product.inventory) {
+      updateQuantity(product.id, quantity + 1);
+    }
+  };
 
   return (
     <div className="space-y-3 py-2">
@@ -40,6 +51,32 @@ const CartItem = ({ product }: { product: Product }) => {
               {label}
             </span>
 
+            <div className="mt-1 flex items-center">
+              <Star className="h-4 w-4 text-yellow-500" />
+              <span className="ml-1 text-xs text-gray-500">
+                {product.rating} ({product.numReviews} reviews)
+              </span>
+            </div>
+
+            {/* Quantity controls */}
+            <div className="mt-2 flex items-center space-x-2">
+              <button
+                onClick={handleDecrement}
+                className="flex items-center justify-center w-5 h-5 border rounded-md text-gray-500"
+                disabled={quantity <= 1}
+              >
+                <Minus className="h-4 w-4" />
+              </button>
+              <span className="text-sm font-medium">{quantity}</span>
+              <button
+                onClick={handleIncrement}
+                className="flex items-center justify-center w-5 h-5 border rounded-md text-gray-500"
+                disabled={quantity >= product.inventory}
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+            </div>
+
             <div className="mt-4 text-xs text-muted-foreground">
               <button
                 onClick={() => removeItem(product.id)}
@@ -53,8 +90,13 @@ const CartItem = ({ product }: { product: Product }) => {
 
         <div className="flex flex-col space-y-1 font-medium">
           <div className="ml-auto line-clamp-1 text-sm">
-            {formatPrice(product.price)}
+            {formatPrice(product.price * quantity)} {/* Total for the item */}
           </div>
+          <span className="text-xs text-gray-500">
+            {product.inventory > 0
+              ? `In stock: ${product.inventory}`
+              : "Out of stock"}
+          </span>
         </div>
       </div>
     </div>

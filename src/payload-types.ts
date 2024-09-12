@@ -26,7 +26,7 @@ export interface User {
   id: string;
   products?: (string | Product)[] | null;
   product_files?: (string | ProductFile)[] | null;
-  role?: ('superadmin' | 'admin' | 'user') | null;
+  role?: ('admin' | 'user') | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -50,7 +50,10 @@ export interface Product {
   name: string;
   description?: string | null;
   price: number;
-  category: 'clothing' | 'jewellery';
+  category: 'clothing' | 'jewellery' | 'accessories';
+  inventory: number;
+  numReviews: number;
+  rating: number;
   product_files: string | ProductFile;
   approvedForSale?: ('pending' | 'approved' | 'denied') | null;
   priceId?: string | null;
@@ -128,7 +131,11 @@ export interface Order {
   id: string;
   _isPaid: boolean;
   user: string | User;
-  products: (string | Product)[];
+  productItems: {
+    product: string | Product;
+    quantity: number;
+    id?: string | null;
+  }[];
   updatedAt: string;
   createdAt: string;
 }

@@ -22,7 +22,8 @@ interface ReceiptEmailProps {
   email: string;
   date: Date;
   orderId: string;
-  products: Product[];
+  products: Array<{ product: Product; quantity: number }>;
+  transactionFee?: number; // Optional transaction fee passed in as a prop
 }
 
 export const ReceiptEmail = ({
@@ -30,8 +31,12 @@ export const ReceiptEmail = ({
   date,
   orderId,
   products,
+  transactionFee = 2.5, // Default to 2.5 if not provided
 }: ReceiptEmailProps) => {
-  const total = products.reduce((acc, curr) => acc + curr.price, 0) + 1;
+  const total = products.reduce(
+    (acc, { product, quantity }) => acc + product.price * quantity,
+    0
+  ) + transactionFee;
 
   return (
     <Html>
@@ -89,7 +94,7 @@ export const ReceiptEmail = ({
           <Section style={productTitleTable}>
             <Text style={productsTitle}>Order Summary</Text>
           </Section>
-          {products.map((product) => {
+          {products.map(({ product, quantity }) => {
             const { image } = product.images[0];
 
             return (
@@ -103,14 +108,22 @@ export const ReceiptEmail = ({
                       alt="Product Image"
                       style={productIcon}
                     />
-                  ) : null}
+                  ) : (
+                    <Img
+                      src="/placeholder-image.png"
+                      width="64"
+                      height="64"
+                      alt="Product Placeholder"
+                      style={productIcon}
+                    />
+                  )}
                 </Column>
                 <Column style={{ paddingLeft: "22px" }}>
                   <Text style={productTitle}>{product.name}</Text>
                   {product.description ? (
                     <Text style={productDescription}>
                       {product.description.length > 50
-                        ? product.description?.slice(0, 50) + "..."
+                        ? product.description.slice(0, 50) + "..."
                         : product.description}
                     </Text>
                   ) : null}
@@ -123,7 +136,9 @@ export const ReceiptEmail = ({
                 </Column>
 
                 <Column style={productPriceWrapper} align="right">
-                  <Text style={productPrice}>{formatPrice(product.price)}</Text>
+                  <Text style={productPrice}>
+                    {formatPrice(product.price * quantity)}
+                  </Text>
                 </Column>
               </Section>
             );
@@ -136,8 +151,7 @@ export const ReceiptEmail = ({
             </Column>
 
             <Column style={productPriceWrapper} align="right">
-              <Text style={productPrice}>{formatPrice(2.5)}</Text>{" "}
-              {/*TODO: custom transaction fee*/}
+              <Text style={productPrice}>{formatPrice(transactionFee)}</Text>
             </Column>
           </Section>
 
@@ -170,6 +184,7 @@ export const ReceiptEmail = ({
 
 export const ReceiptEmailHtml = (props: ReceiptEmailProps) =>
   render(<ReceiptEmail {...props} />, { pretty: true });
+
 
 const main = {
   fontFamily: '"Helvetica Neue",Helvetica,Arial,sans-serif',

@@ -7,22 +7,23 @@ import type Stripe from "stripe";
 
 export const paymentRouter = router({
   createSession: privateProcedure
-    .input(z.object({ productIds: z.array(z.string()) }))
+    .input(z.object({ productItems: z.array(z.object({ productId: z.string(), quantity: z.number() })) }))
     .mutation(async ({ ctx, input }) => {
       const { user } = ctx;
-      const { productIds } = input;
+      const { productItems } = input;
 
-      if (productIds.length === 0) {
+      if (productItems.length === 0) {
         throw new TRPCError({ code: "BAD_REQUEST" });
       }
 
       const payload = await getPayloadClient();
 
+      // Fetch the products
       const { docs: products } = await payload.find({
         collection: "products",
         where: {
           id: {
-            in: productIds,
+            in: productItems.map((item) => item.productId),
           },
         },
       });
@@ -31,23 +32,34 @@ export const paymentRouter = router({
         Boolean(product.priceId)
       );
 
+      // Create the order with productItems
       const order = await payload.create({
         collection: "orders",
         data: {
           _isPaid: false,
-          products: filteredProductsHavePrice.map((product) => product.id),
+          productItems: productItems.map((item) => ({
+            product: item.productId,
+            quantity: item.quantity,
+          })),
           user: user.id,
         },
       });
 
       const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
 
-      filteredProductsHavePrice.forEach((product) => {
-        line_items.push({
-          price: product.priceId!,
-          quantity: 1, // TODO: implement product quantity
-        });
+      // Prepare Stripe line items
+      productItems.forEach((item) => {
+        const product = filteredProductsHavePrice.find(
+          (p) => p.id === item.productId
+        );
+        if (product) {
+          line_items.push({
+            price: product.priceId!,
+            quantity: item.quantity,
+          });
+        }
       });
+
       line_items.push({
         price: process.env.STRIPE_CUSTOM_TRANSACTION_FEE,
         quantity: 1,
@@ -75,7 +87,7 @@ export const paymentRouter = router({
         return { url: null };
       }
     }),
-  pollOrderStatus: privateProcedure
+    pollOrderStatus: privateProcedure
     .input(z.object({ orderId: z.string() }))
     .query(async ({ input }) => {
       const { orderId } = input;

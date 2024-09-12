@@ -5,15 +5,15 @@ import { PRODUCT_CATEGORIES } from "@/config";
 import { useCart } from "@/hooks/use-cart";
 import { cn, formatPrice } from "@/lib/utils";
 import { trpc } from "@/trpc/client";
-import { Check, Loader2, X } from "lucide-react";
+import { Check, Loader2, Minus, Plus, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { Input } from "@/components/ui/input"; // For quantity input
 
 const Page = () => {
-  const { items, removeItem } = useCart();
-
+  const { items, updateQuantity, removeItem, cartTotal } = useCart();
   const router = useRouter();
   const { mutate: createCheckoutSession, isLoading } =
     trpc.payment.createSession.useMutation({
@@ -22,18 +22,16 @@ const Page = () => {
       },
     });
 
-  const productIds = items.map(({ product }) => product.id);
+  const productItems = items.map(({ product, quantity }) => ({
+    productId: product.id,
+    quantity,
+  }));
 
   const [isMounted, setIsMounted] = useState<boolean>(false);
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
-
-  const cartTotal = items.reduce(
-    (total, { product }) => total + product.price,
-    0
-  );
 
   const fee = 5;
 
@@ -80,7 +78,7 @@ const Page = () => {
               })}
             >
               {isMounted &&
-                items.map(({ product }) => {
+                items.map(({ product, quantity }) => {
                   const label = PRODUCT_CATEGORIES.find(
                     (c) => c.value === product.category
                   )?.label;
@@ -124,6 +122,7 @@ const Page = () => {
                               {formatPrice(product.price)}
                             </p>
                           </div>
+
                           <div className="mt-4 sm:mt-0 sm:pr-9 w-20">
                             <div className="absolute right-0 top-0">
                               <Button
@@ -134,14 +133,47 @@ const Page = () => {
                                 <X className="h-5 w-5" aria-hidden="true" />
                               </Button>
                             </div>
+
+                            {/* Quantity Input */}
+                            <div className="flex items-center mt-4 space-x-2">
+                              <Button
+                                size="icon"
+                                variant="outline"
+                                onClick={() => updateQuantity(product.id, quantity - 1)}
+                                disabled={quantity <= 1}
+                                className="p-2 transition-all duration-150 ease-in-out hover:bg-gray-100 active:bg-gray-200"
+                              >
+                                <Minus className="w-4 h-4 text-gray-700" />
+                              </Button>
+
+                              <Input
+                                type="text"
+                                readOnly
+                                value={quantity}
+                                className="mx-2 w-12 text-center bg-gray-50 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                              />
+
+                              <Button
+                                size="icon"
+                                variant="outline"
+                                onClick={() => updateQuantity(product.id, quantity + 1)}
+                                disabled={quantity >= product.inventory}
+                                className="p-2 transition-all duration-150 ease-in-out hover:bg-gray-100 active:bg-gray-200"
+                              >
+                                <Plus className="w-4 h-4 text-gray-700" />
+                              </Button>
+                            </div>
                           </div>
                         </div>
                         <p className="mt-4 flex space-x-2 text-gray-700">
                           <Check className="h-5 w-5 flex-shrink-0 text-green-500" />
-
                           <span>Eligible for shipping</span>
-                          {/* Check database for shipping eligibility */}
                         </p>
+                        <span className="text-xs text-gray-500">
+                          {product.inventory > 0
+                            ? `In stock: ${product.inventory}`
+                            : "Out of stock"}
+                        </span>
                       </div>
                     </li>
                   );
@@ -157,7 +189,7 @@ const Page = () => {
                 <p className="text-sm text-gray-600">Subtotal</p>
                 <p className="text-sm font-medium text-gray-900">
                   {isMounted ? (
-                    formatPrice(cartTotal)
+                    formatPrice(cartTotal())
                   ) : (
                     <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                   )}
@@ -183,7 +215,7 @@ const Page = () => {
                 </div>
                 <div className="text-base font-medium text-gray-900">
                   {isMounted ? (
-                    formatPrice(cartTotal + fee)
+                    formatPrice(cartTotal() + fee)
                   ) : (
                     <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                   )}
@@ -192,8 +224,10 @@ const Page = () => {
             </div>
             <div className="mt-6">
               <Button
-                disabled={items.length === 0 || isLoading}
-                onClick={() => createCheckoutSession({ productIds })}
+                disabled={
+                  items.length === 0 || isLoading || items.some((i) => i.product.inventory === 0)
+                }
+                onClick={() => createCheckoutSession({ productItems })}
                 className="w-full"
                 size="lg"
               >
