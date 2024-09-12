@@ -9,7 +9,7 @@ export function cn(...inputs: ClassValue[]) {
 export function formatPrice(
   price: number | string,
   options: {
-    currency?: "GBP" | "USD" | "EUR" | "PKR" | "JPY" | "INR";
+    currency?: "USD" | "GBP" | "EUR" | "PKR" | "JPY" | "INR";
     locale?: string; // For regional price formatting
     minimumFractionDigits?: number;
     maximumFractionDigits?: number;

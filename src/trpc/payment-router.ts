@@ -7,10 +7,20 @@ import type Stripe from "stripe";
 
 export const paymentRouter = router({
   createSession: privateProcedure
-    .input(z.object({ productItems: z.array(z.object({ productId: z.string(), quantity: z.number() })) }))
+    .input(z.object({
+      productItems: z.array(z.object({ productId: z.string(), quantity: z.number() })),
+      shippingAddress: z.object({
+        line1: z.string(),
+        line2: z.string().optional(),
+        city: z.string(),
+        state: z.string(),
+        postalCode: z.string(),
+        country: z.string(),
+      }),
+    }))
     .mutation(async ({ ctx, input }) => {
       const { user } = ctx;
-      const { productItems } = input;
+      const { productItems, shippingAddress } = input;
 
       if (productItems.length === 0) {
         throw new TRPCError({ code: "BAD_REQUEST" });
@@ -28,11 +38,9 @@ export const paymentRouter = router({
         },
       });
 
-      const filteredProductsHavePrice = products.filter((product) =>
-        Boolean(product.priceId)
-      );
+      const filteredProductsHavePrice = products.filter((product) => Boolean(product.priceId));
 
-      // Create the order with productItems
+      // Create the order with productItems and the shipping address from the cart
       const order = await payload.create({
         collection: "orders",
         data: {
@@ -42,12 +50,12 @@ export const paymentRouter = router({
             quantity: item.quantity,
           })),
           user: user.id,
+          shippingAddress, // Save shipping address from the cart page
         },
       });
 
       const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
 
-      // Prepare Stripe line items
       productItems.forEach((item) => {
         const product = filteredProductsHavePrice.find(
           (p) => p.id === item.productId
@@ -60,19 +68,11 @@ export const paymentRouter = router({
         }
       });
 
-      line_items.push({
-        price: process.env.STRIPE_CUSTOM_TRANSACTION_FEE,
-        quantity: 1,
-        adjustable_quantity: {
-          enabled: false,
-        },
-      });
-
       try {
         const stripeSession = await stripe.checkout.sessions.create({
           success_url: `${process.env.NEXT_PUBLIC_SERVER_URL}/order-confirmation?orderId=${order.id}`,
           cancel_url: `${process.env.NEXT_PUBLIC_SERVER_URL}/cart`,
-          payment_method_types: ["card", "paypal"],
+          payment_method_types: ["card"],
           mode: "payment",
           metadata: {
             userId: user.id,
@@ -87,24 +87,22 @@ export const paymentRouter = router({
         return { url: null };
       }
     }),
-    pollOrderStatus: privateProcedure
+
+  pollOrderStatus: privateProcedure
     .input(z.object({ orderId: z.string() }))
     .query(async ({ input }) => {
       const { orderId } = input;
-
       const payload = await getPayloadClient();
 
       const { docs: orders } = await payload.find({
         collection: "orders",
         where: {
-          id: {
-            equals: orderId,
-          },
+          id: { equals: orderId },
         },
       });
 
-      if (!orders.length) {
-        throw new TRPCError({ code: "NOT_FOUND" });
+      if (orders.length === 0) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Order not found" });
       }
 
       const [order] = orders;

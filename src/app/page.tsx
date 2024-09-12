@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import MaxWidthWrapper from "@/components/MaxWidthWrapper";
 import ProductReel from "@/components/ProductReel";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -30,43 +30,64 @@ const perks = [
 
 export default function Home() {
   const [videoLoaded, setVideoLoaded] = useState(false);
+  const [videoInView, setVideoInView] = useState(false);
+  const videoRef = useRef(null);
 
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      if (!videoLoaded) {
-        setVideoLoaded(true);
-      }
-    }, 3000); // Fallback to show white background after 3 seconds if the video is not loaded
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setVideoInView(true);
+          }
+        });
+      },
+      { threshold: 0.5 } // Trigger when 50% of the video is in view
+    );
 
-    return () => clearTimeout(timeout); // Clear timeout if the video loads earlier
-  }, [videoLoaded]);
+    if (videoRef.current) {
+      observer.observe(videoRef.current);
+    }
+
+    return () => {
+      if (videoRef.current) {
+        observer.unobserve(videoRef.current);
+      }
+    };
+  }, [videoRef]);
 
   return (
     <>
       <div className="relative h-screen overflow-hidden -mt-16">
-        {/* Show fallback image until video is loaded */}
+        {/* Fallback image until video is loaded */}
         {!videoLoaded && (
           <Image
             src="/medical-background.png"
             alt="Loading video background"
             fill
             className="absolute top-0 left-0 w-full h-full object-cover -z-20"
-            loading="lazy" // Lazy loading to improve performance
+            loading="lazy"
           />
         )}
-        <video
-          autoPlay
-          muted
-          loop
-          className="absolute top-0 left-0 w-full h-full object-cover -z-20"
-          preload="auto"
-          onCanPlay={() => setVideoLoaded(true)}
-          playsInline
-        >
-          <source src="/desktop-morocco.mp4" type="video/mp4" media="(min-width: 768px)"/>
-          <source src="/mobile-morocco.webm" type="video/mp4" media="(max-width: 767px)"/>
-          Your browser does not support the video tag.
-        </video>
+
+        {/* Lazy load the video */}
+        {videoInView && (
+          <video
+            ref={videoRef}
+            autoPlay
+            muted
+            loop
+            className="absolute top-0 left-0 w-full h-full object-cover -z-20"
+            preload="auto"
+            onCanPlay={() => setVideoLoaded(true)}
+            playsInline
+          >
+            <source src="/desktop-morocco.mp4" type="video/mp4" media="(min-width: 768px)" />
+            <source src="/mobile-morocco.webm" type="video/webm" media="(max-width: 767px)" />
+            Your browser does not support the video tag.
+          </video>
+        )}
+      
 
         {/* Overlay */}
         <div className="absolute top-0 left-0 w-full h-full bg-black opacity-30 -z-10"></div>

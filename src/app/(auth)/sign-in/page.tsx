@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import {
@@ -124,8 +124,11 @@ const Page = () => {
                     </p>
                   )}
                 </div>
-
-                <Button>Sign In</Button>
+                
+                  <Button>Sign In {isLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin ml-1.5" />
+                  ) : null}</Button>
+                
               </div>
             </form>
             <div className="relative">

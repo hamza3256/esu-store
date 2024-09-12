@@ -28,7 +28,7 @@ const PaymentStatus = ({ orderEmail, orderId, isPaid }: PaymentStatusProps) => {
   return (
     <div className="mt-16 grid grid-cols-2 gap-x-4 text-gray-600">
       <div>
-        <p className="font-medium text-gray-900">Shipping To</p>
+        <p className="font-medium text-gray-900">Email has been sent to</p>
         <p>{orderEmail}</p>
       </div>
 

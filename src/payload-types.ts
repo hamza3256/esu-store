@@ -136,6 +136,15 @@ export interface Order {
     quantity: number;
     id?: string | null;
   }[];
+  shippingAddress: {
+    line1: string;
+    line2?: string | null;
+    city: string;
+    state: string;
+    postalCode: string;
+    country: string;
+  };
+  status?: ('pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled') | null;
   updatedAt: string;
   createdAt: string;
 }

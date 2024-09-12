@@ -63,5 +63,30 @@ export const Orders: CollectionConfig = {
       ],
       required: true,
     },
+    {
+      name: "shippingAddress",
+      type: "group",
+      fields: [
+        { name: "line1", type: "text", required: true },
+        { name: "line2", type: "text" },
+        { name: "city", type: "text", required: true },
+        { name: "state", type: "text", required: true },
+        { name: "postalCode", type: "text", required: true },
+        { name: "country", type: "text", required: true },
+      ],
+    },
+    // Add order status field
+    {
+      name: "status",
+      type: "select",
+      options: [
+        { label: "Pending", value: "pending" },
+        { label: "Processing", value: "processing" },
+        { label: "Shipped", value: "shipped" },
+        { label: "Delivered", value: "delivered" },
+        { label: "Cancelled", value: "cancelled" },
+      ],
+      defaultValue: "pending",
+    },
   ],
 };

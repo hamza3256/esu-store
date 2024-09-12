@@ -11,16 +11,26 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input"; // For quantity input
+import ShippingAddressForm from "@/components/ShippingAddressForm";
 
 const Page = () => {
   const { items, updateQuantity, removeItem, cartTotal } = useCart();
   const router = useRouter();
-  const { mutate: createCheckoutSession, isLoading } =
-    trpc.payment.createSession.useMutation({
-      onSuccess: ({ url }) => {
-        if (url) router.push(url);
-      },
-    });
+
+  const { mutate: createCheckoutSession, isLoading } = trpc.payment.createSession.useMutation({
+    onSuccess: ({ url }) => {
+      if (url) router.push(url);
+    },
+  });
+
+  const [shippingAddress, setShippingAddress] = useState({
+    line1: "",
+    line2: "",
+    city: "",
+    state: "",
+    postalCode: "",
+    country: "",
+  });
 
   const productItems = items.map(({ product, quantity }) => ({
     productId: product.id,
@@ -33,56 +43,49 @@ const Page = () => {
     setIsMounted(true);
   }, []);
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setShippingAddress((prevState) => ({
+      ...prevState,
+      [name]: value,
+    }));
+  };
+
+  const handleCheckout = () => {
+    if (!shippingAddress.line1 || !shippingAddress.city || !shippingAddress.state || !shippingAddress.postalCode || !shippingAddress.country) {
+      alert("Please fill out all required fields.");
+      return;
+    }
+
+    createCheckoutSession({ productItems, shippingAddress });
+  };
+
   const fee = 5;
 
   return (
     <div className="bg-white">
       <div className="mx-auto max-w-2xl px-4 pb-24 pt-16 sm:px-6 lg:max-w-7xl lg:px-8">
-        <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-          Shopping Cart
-        </h1>
+        <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">Shopping Cart</h1>
 
         <div className="mt-12 lg:grid lg:grid-cols-12 lg:items-start lg:gap-x-12 xl:gap-x-16">
-          <div
-            className={cn("lg:col-span-7", {
-              "rounded-lg border-2 border-dashed border-zinc-200 p-12":
-                isMounted && items.length === 0,
-            })}
-          >
+          {/* Cart Items */}
+          <div className={cn("lg:col-span-7", { "rounded-lg border-2 border-dashed border-zinc-200 p-12": isMounted && items.length === 0 })}>
             <h2 className="sr-only">Items in your shopping cart</h2>
 
             {isMounted && items.length === 0 ? (
               <div className="flex h-full flex-col items-center justify-center space-y-1">
-                <div
-                  aria-hidden="true"
-                  className="relative mb-4 h-40 w-40 text-muted-foreground"
-                >
-                  <Image
-                    src="/bear_empty_cart.png"
-                    fill
-                    loading="eager"
-                    alt="empty shopping cart bear"
-                  />
+                <div aria-hidden="true" className="relative mb-4 h-40 w-40 text-muted-foreground">
+                  <Image src="/bear_empty_cart.png" fill loading="eager" alt="empty shopping cart bear" />
                 </div>
                 <h3 className="font-semibold text-2xl">Your cart is empty</h3>
-                <p className="text-muted-foreground text-center">
-                  Whoops! Nothing to show here yet.
-                </p>
+                <p className="text-muted-foreground text-center">Whoops! Nothing to show here yet.</p>
               </div>
             ) : null}
 
-            <ul
-              className={cn({
-                "divide-y divide-gray-200 border-b border-t border-gray-200":
-                  isMounted && items.length > 0,
-              })}
-            >
+            <ul className={cn({ "divide-y divide-gray-200 border-b border-t border-gray-200": isMounted && items.length > 0 })}>
               {isMounted &&
                 items.map(({ product, quantity }) => {
-                  const label = PRODUCT_CATEGORIES.find(
-                    (c) => c.value === product.category
-                  )?.label;
-
+                  const label = PRODUCT_CATEGORIES.find((c) => c.value === product.category)?.label;
                   const { image } = product.images[0];
 
                   return (
@@ -90,12 +93,7 @@ const Page = () => {
                       <div className="flex-shrink-0">
                         <div className="relative h-24 w-24">
                           {typeof image !== "string" && image.url ? (
-                            <Image
-                              fill
-                              src={image.url}
-                              alt="product image"
-                              className="h-full w-full rounded-md object-cover object-center sm:h-48 sm:w-48"
-                            />
+                            <Image fill src={image.url} alt="product image" className="h-full w-full rounded-md object-cover object-center sm:h-48 sm:w-48" />
                           ) : null}
                         </div>
                       </div>
@@ -105,36 +103,24 @@ const Page = () => {
                           <div>
                             <div className="flex justify-between">
                               <h3 className="text-sm">
-                                <Link
-                                  href={`/product/${product.id}`}
-                                  className="font-medium text-gray-700 hover:text-gray-800"
-                                >
+                                <Link href={`/product/${product.id}`} className="font-medium text-gray-700 hover:text-gray-800">
                                   {product.name}
                                 </Link>
                               </h3>
                             </div>
                             <div className="mt-1 flex text-sm">
-                              <p className="text-muted-foreground">
-                                Category: {label}
-                              </p>
+                              <p className="text-muted-foreground">Category: {label}</p>
                             </div>
-                            <p className="mt-1 text-sm font-medium text-gray-900">
-                              {formatPrice(product.price)}
-                            </p>
+                            <p className="mt-1 text-sm font-medium text-gray-900">{formatPrice(product.price)}</p>
                           </div>
 
                           <div className="mt-4 sm:mt-0 sm:pr-9 w-20">
                             <div className="absolute right-0 top-0">
-                              <Button
-                                aria-label="remove product"
-                                onClick={() => removeItem(product.id)}
-                                variant="ghost"
-                              >
+                              <Button aria-label="remove product" onClick={() => removeItem(product.id)} variant="ghost">
                                 <X className="h-5 w-5" aria-hidden="true" />
                               </Button>
                             </div>
 
-                            {/* Quantity Input */}
                             <div className="flex items-center mt-4 space-x-2">
                               <Button
                                 size="icon"
@@ -146,12 +132,7 @@ const Page = () => {
                                 <Minus className="w-4 h-4 text-gray-700" />
                               </Button>
 
-                              <Input
-                                type="text"
-                                readOnly
-                                value={quantity}
-                                className="mx-2 w-12 text-center bg-gray-50 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                              />
+                              <Input type="text" readOnly value={quantity} className="mx-2 w-12 text-center bg-gray-50 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" />
 
                               <Button
                                 size="icon"
@@ -169,11 +150,7 @@ const Page = () => {
                           <Check className="h-5 w-5 flex-shrink-0 text-green-500" />
                           <span>Eligible for shipping</span>
                         </p>
-                        <span className="text-xs text-gray-500">
-                          {product.inventory > 0
-                            ? `In stock: ${product.inventory}`
-                            : "Out of stock"}
-                        </span>
+                        <span className="text-xs text-gray-500">{product.inventory > 0 ? `In stock: ${product.inventory}` : "Out of stock"}</span>
                       </div>
                     </li>
                   );
@@ -181,59 +158,24 @@ const Page = () => {
             </ul>
           </div>
 
+          {/* Shipping Form */}
           <section className="mt-16 rounded-lg bg-gray-50 px-4 py-6 sm:p-6 lg:col-span-5 lg:mt-0 lg:p-8">
-            <h2 className="text-lg font-medium text-gray-900">Order Summary</h2>
+            <ShippingAddressForm shippingAddress={shippingAddress} handleInputChange={handleInputChange} />
 
             <div className="mt-6 space-y-4">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-gray-600">Subtotal</p>
-                <p className="text-sm font-medium text-gray-900">
-                  {isMounted ? (
-                    formatPrice(cartTotal())
-                  ) : (
-                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                  )}
-                </p>
+                <p className="text-sm font-medium text-gray-900">{isMounted ? formatPrice(cartTotal()) : <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}</p>
               </div>
 
               <div className="flex items-center justify-between border-t border-gray-200 pt-4">
-                <div className="flex items-center text-sm text-muted-foreground">
-                  <span>Flat Transaction Fee</span>
-                </div>
-                <div className="text-sm font-medium text-gray-900">
-                  {isMounted ? (
-                    formatPrice(fee)
-                  ) : (
-                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between border-t border-gray-200 pt-4">
-                <div className="text-base font-medium text-gray-900">
-                  Order Total
-                </div>
-                <div className="text-base font-medium text-gray-900">
-                  {isMounted ? (
-                    formatPrice(cartTotal() + fee)
-                  ) : (
-                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                  )}
-                </div>
+                <div className="text-base font-medium text-gray-900">Order Total</div>
+                <div className="text-base font-medium text-gray-900">{isMounted ? formatPrice(cartTotal() + fee) : <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}</div>
               </div>
             </div>
             <div className="mt-6">
-              <Button
-                disabled={
-                  items.length === 0 || isLoading || items.some((i) => i.product.inventory === 0)
-                }
-                onClick={() => createCheckoutSession({ productItems })}
-                className="w-full"
-                size="lg"
-              >
-                {isLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin mr-1.5" />
-                ) : null}
+              <Button disabled={items.length === 0 || isLoading || items.some((i) => i.product.inventory === 0)} onClick={handleCheckout} className="w-full" size="lg">
+                {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : null}
                 Checkout
               </Button>
             </div>
