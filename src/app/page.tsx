@@ -30,19 +30,20 @@ const perks = [
 
 export default function Home() {
   const [videoLoaded, setVideoLoaded] = useState(false);
-  const [videoInView, setVideoInView] = useState(false);
-  const videoRef = useRef(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setVideoInView(true);
+          if (entry.isIntersecting && videoRef.current) {
+            videoRef.current.play(); // Play the video when it comes into view
+          } else if (videoRef.current) {
+            videoRef.current.pause(); // Pause video when out of view to save resources
           }
         });
       },
-      { threshold: 0.5 } // Trigger when 50% of the video is in view
+      { threshold: 0.5 }
     );
 
     if (videoRef.current) {
@@ -54,7 +55,7 @@ export default function Home() {
         observer.unobserve(videoRef.current);
       }
     };
-  }, [videoRef]);
+  }, []);
 
   return (
     <>
@@ -71,23 +72,30 @@ export default function Home() {
         )}
 
         {/* Lazy load the video */}
-        {videoInView && (
-          <video
-            ref={videoRef}
-            autoPlay
-            muted
-            loop
-            className="absolute top-0 left-0 w-full h-full object-cover -z-20"
-            preload="auto"
-            onCanPlay={() => setVideoLoaded(true)}
-            playsInline
-          >
-            <source src="/desktop-morocco.mp4" type="video/mp4" media="(min-width: 768px)" />
-            <source src="/mobile-morocco.webm" type="video/webm" media="(max-width: 767px)" />
-            Your browser does not support the video tag.
-          </video>
-        )}
-      
+        <video
+          ref={videoRef}
+          autoPlay
+          muted
+          loop
+          className="absolute top-0 left-0 w-full h-full object-cover -z-20"
+          preload="auto"
+          onCanPlay={() => setVideoLoaded(true)}
+          playsInline
+          poster="/medical-background.png" // Fallback image
+        >
+          <source
+            src="/desktop-morocco.mp4"
+            type="video/mp4"
+            media="(min-width: 768px)"
+          />
+          <source
+            src="/mobile-morocco.webm"
+            type="video/webm"
+            media="(max-width: 767px)"
+          />
+          {/* Fallback for browsers that don't support video formats */}
+          <p>Your browser does not support the video tag.</p>
+        </video>
 
         {/* Overlay */}
         <div className="absolute top-0 left-0 w-full h-full bg-black opacity-30 -z-10"></div>
@@ -118,7 +126,7 @@ export default function Home() {
 
       {/* Perks Section */}
       <section className="border border-gray-200 bg-gray-50">
-        <MaxWidthWrapper className="">
+        <MaxWidthWrapper>
           <ProductReel
             title="Brand New"
             href="/products"
