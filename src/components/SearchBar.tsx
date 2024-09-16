@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Search, X } from "lucide-react";
 import Link from "next/link";
 import { trpc } from "@/trpc/client"; // Import tRPC client
+import Image from "next/image";
 
 const searchSuggestions = [
   "Search for... Shirts",
@@ -265,7 +266,7 @@ export default function SearchBar({
                     href={`/product/${result.id}`}
                     className="flex items-center mb-2 p-2 hover:bg-gray-100 rounded-md"
                   >
-                    <img
+                    <Image
                       src={result.imageUrl}
                       alt={result.name}
                       className="w-12 h-12 object-cover rounded-md mr-4"

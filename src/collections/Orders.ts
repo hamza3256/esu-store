@@ -88,5 +88,16 @@ export const Orders: CollectionConfig = {
       ],
       defaultValue: "pending",
     },
+    {
+      name: "total",
+      type: "number",
+      required: true
+    },
+    {
+      name: "orderNumber",
+      type: "text",
+      unique: true, // Ensures the order number is unique
+      required: true,
+    },
   ],
 };

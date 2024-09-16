@@ -145,6 +145,8 @@ export interface Order {
     country: string;
   };
   status?: ('pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled') | null;
+  total: number;
+  orderNumber: string;
   updatedAt: string;
   createdAt: string;
 }

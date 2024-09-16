@@ -33,29 +33,31 @@ export default function Home() {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
+    const currentVideoRef = videoRef.current; // Save ref to a local variable
+
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (entry.isIntersecting && videoRef.current) {
-            videoRef.current.play(); // Play the video when it comes into view
-          } else if (videoRef.current) {
-            videoRef.current.pause(); // Pause video when out of view to save resources
+          if (entry.isIntersecting && currentVideoRef) {
+            currentVideoRef.play(); // Play the video when it comes into view
+          } else if (currentVideoRef) {
+            currentVideoRef.pause(); // Pause video when out of view to save resources
           }
         });
       },
       { threshold: 0.5 }
     );
 
-    if (videoRef.current) {
-      observer.observe(videoRef.current);
+    if (currentVideoRef) {
+      observer.observe(currentVideoRef);
     }
 
     return () => {
-      if (videoRef.current) {
-        observer.unobserve(videoRef.current);
+      if (currentVideoRef) {
+        observer.unobserve(currentVideoRef);
       }
     };
-  }, []);
+  }, []); // Empty dependency array to ensure this effect only runs once
 
   return (
     <>

@@ -4,10 +4,14 @@ import { publicProcedure, router } from "./trpc";
 import { QueryValidator } from "../lib/validators/query-validator";
 import { getPayloadClient } from "../get-payload";
 import { paymentRouter } from "./payment-router";
+import { ordersRouter } from "./orders";
+import { TRPCError } from "@trpc/server";
+import { Product } from "@/payload-types";
 
 export const appRouter = router({
   auth: authRouter,
   payment: paymentRouter,
+  order: ordersRouter,
 
   getInfiniteProducts: publicProcedure
     .input(
@@ -82,6 +86,32 @@ export const appRouter = router({
 
       // Return search results and metadata
       return { items, totalDocs, totalPages };
+    }),
+
+    getProductById: publicProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ input }) => {
+      const payload = await getPayloadClient();
+
+      const { docs: products } = await payload.find({
+        collection: "products",
+        where: {
+          id: {
+            equals: input.id,
+          },
+          // user: {
+          //   equals: ctx.user.id, // Ensure the user only sees their own orders
+          // },
+        },
+        depth: 2, // Fetch relationships deeply (products, etc.)
+      });
+
+      const product = products[0];
+      if (!product) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Product not found" });
+      }
+
+      return product;
     }),
 });
 

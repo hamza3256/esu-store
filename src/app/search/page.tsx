@@ -61,7 +61,7 @@ const SearchPage = () => {
         {/* Heading */}
         <div className="text-center mb-10">
           <h1 className="text-4xl font-bold text-gray-800">
-            Search Results for <span className="text-blue-600">"{query}"</span>
+            Search Results for <span className="text-blue-600">&quot;{query}&quot;</span>
           </h1>
           <p className="text-gray-500 mt-2">
             {data?.totalDocs ?? 0} products found

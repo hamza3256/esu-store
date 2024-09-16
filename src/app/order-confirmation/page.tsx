@@ -8,6 +8,7 @@ import { PRODUCT_CATEGORIES } from "@/config";
 import { formatPrice } from "@/lib/utils";
 import Link from "next/link";
 import PaymentStatus from "@/components/PaymentStatus";
+import { Order } from "@/lib/types";
 
 interface PageProps {
   searchParams: { [key: string]: string | string[] | undefined };
@@ -37,7 +38,7 @@ const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
     },
   });
 
-  const [order] = orders;
+  const [order] = orders as Order[];
   if (!order) return notFound();
 
   const orderUserId = typeof order.user === "string" ? order.user : (order.user as User)?.id;
@@ -97,7 +98,7 @@ const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
 
             {isPaid ? (
               <p className="mt-2 text-base text-gray-600">
-                Your order was successfully processed. We've sent your receipt and order details to{" "}
+                Your order was successfully processed. We&apos;ve sent your receipt and order details to{" "}
                 <span className="font-medium text-gray-900">
                   {(order.user as User)?.email}
                 </span>
@@ -105,7 +106,7 @@ const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
               </p>
             ) : (
               <p className="mt-2 text-base text-gray-600">
-                We're currently processing your order. We'll send you a confirmation email shortly.
+                We&apos;re currently processing your order. We&apos;ll send you a confirmation email shortly.
               </p>
             )}
 
@@ -134,7 +135,7 @@ const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
 
             <div className="mt-16 text-sm font-medium">
               <div className="text-gray-500">Order no.</div>
-              <div className="mt-2 text-gray-900">{order.id}</div>
+              <div className="mt-2 text-gray-900">{order.orderNumber}</div>
 
               {/* Product List */}
               <ul className="mt-6 divide-y divide-gray-200 border-t text-sm font-medium text-gray-600">
@@ -143,12 +144,21 @@ const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
                     (c) => c.value === product.category
                   )?.label;
 
-                  const downloadUrl = product.product_files?.url;
+                  let downloadUrl: string | undefined;
+
+                  if (typeof product.product_files === 'object' && 'url' in product.product_files) {
+                    downloadUrl = product.product_files.url!;
+                  } else if (typeof product.product_files === 'string') {
+                    downloadUrl = product.product_files;
+                  } else {
+                    downloadUrl = undefined; // Fallback case
+                  }
 
                   return (
                     <li key={product.id} className="flex space-x-6 py-6">
                       <div className="relative h-24 w-24">
-                        {product.images && product.images[0]?.image.url ? (
+                        {product.images && product.images[0]?.image && typeof product.images[0].image === 'object' && 'url' in product.images[0].image
+                        && product.images[0].image.url ? (
                           <Image
                             fill
                             src={product.images[0].image.url}

@@ -5,6 +5,13 @@ import { getPayloadClient } from "../get-payload";
 import { stripe } from "../lib/stripe";
 import type Stripe from "stripe";
 
+// Function to generate a simple unique order number
+const generateOrderNumber = () => {
+  const timestamp = Date.now().toString(); // Current timestamp in milliseconds
+  const randomPart = Math.floor(1000 + Math.random() * 9000).toString(); // Generate a random 4-digit number
+  return `${timestamp.slice(-6)}-${randomPart}`; // Use last 6 digits of timestamp + random number
+};
+
 export const paymentRouter = router({
   createSession: privateProcedure
     .input(z.object({
@@ -22,6 +29,7 @@ export const paymentRouter = router({
       const { user } = ctx;
       const { productItems, shippingAddress } = input;
 
+      console.log("Payment router");
       if (productItems.length === 0) {
         throw new TRPCError({ code: "BAD_REQUEST" });
       }
@@ -40,7 +48,19 @@ export const paymentRouter = router({
 
       const filteredProductsHavePrice = products.filter((product) => Boolean(product.priceId));
 
-      // Create the order with productItems and the shipping address from the cart
+      const total = productItems.reduce((acc, item) => {
+        const product = filteredProductsHavePrice.find((p) => p.id === item.productId);
+        if (product) {
+          return acc + product.price * item.quantity;
+        }
+        return acc;
+      }, 0);
+
+
+      // Generate unique order number
+      const orderNumber = generateOrderNumber();
+
+      // Create the order with productItems, shipping address, and orderNumber
       const order = await payload.create({
         collection: "orders",
         data: {
@@ -51,6 +71,8 @@ export const paymentRouter = router({
           })),
           user: user.id,
           shippingAddress, // Save shipping address from the cart page
+          orderNumber, // Save the generated order number
+          total,
         },
       });
 
@@ -61,6 +83,9 @@ export const paymentRouter = router({
           (p) => p.id === item.productId
         );
         if (product) {
+          console.log("in product");
+          console.log("price id: " + product.priceId);
+          console.log("quantity: " + product.priceId);
           line_items.push({
             price: product.priceId!,
             quantity: item.quantity,
@@ -77,6 +102,7 @@ export const paymentRouter = router({
           metadata: {
             userId: user.id,
             orderId: order.id,
+            orderNumber: orderNumber, // Pass the order number to Stripe metadata
           },
           line_items,
         });
