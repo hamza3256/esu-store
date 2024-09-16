@@ -6,7 +6,7 @@ import UserAccountNav from "./UserAccountNav";
 import Link from "next/link";
 import { User } from "@/payload-types";
 import { cn } from "@/lib/utils";
-import { ShoppingCart, User as UserIcon } from "lucide-react";
+import { User as UserIcon } from "lucide-react";
 import { useMediaQuery } from "@/hooks/use-media-query";
 
 const NavbarRight = ({

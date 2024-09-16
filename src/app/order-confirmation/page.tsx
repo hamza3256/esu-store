@@ -4,14 +4,19 @@ import { getServerSideUser } from "@/lib/payload-utils";
 import { getPayloadClient } from "@/get-payload";
 import { notFound, redirect } from "next/navigation";
 import { Product, ProductFile, User } from "@/payload-types";
-import { ProductFiles } from "@/collections/ProductFile";
 import { PRODUCT_CATEGORIES } from "@/config";
 import { formatPrice } from "@/lib/utils";
 import Link from "next/link";
 import PaymentStatus from "@/components/PaymentStatus";
+import { Order } from "@/lib/types";
 
 interface PageProps {
   searchParams: { [key: string]: string | string[] | undefined };
+}
+
+interface OrderProduct {
+  product: Product;
+  quantity: number;
 }
 
 const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
@@ -19,6 +24,7 @@ const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
   const nextCookies = cookies();
 
   const { user } = await getServerSideUser(nextCookies);
+  if (!user) return redirect("/sign-in");
 
   const payload = await getPayloadClient();
 
@@ -32,25 +38,47 @@ const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
     },
   });
 
-  const [order] = orders;
-
+  const [order] = orders as Order[];
   if (!order) return notFound();
 
-  const orderUserId =
-    typeof order.user === "string" ? order.user : order.user.id;
-
+  const orderUserId = typeof order.user === "string" ? order.user : (order.user as User)?.id;
   if (orderUserId !== user?.id) {
     return redirect(`/sign-in?origin=order-confirmation?orderId=${order.id}`);
   }
 
-  const products = order.products as Product[];
+  const isPaid = Boolean(order._isPaid);
+  const products = order.productItems as OrderProduct[];
 
-  const orderTotal = products.reduce((total, currentProduct) => {
-    return total + currentProduct.price;
-  }, 0);
+  const orderTotal = products.reduce(
+    (total, { product, quantity }) => total + product.price * quantity,
+    0
+  );
+
+  const transactionFee = 5;
+
+  // Structured Address Display
+  const shippingAddress = order.shippingAddress || {
+    line1: "N/A",
+    line2: "",
+    city: "N/A",
+    state: "N/A",
+    postalCode: "N/A",
+    country: "N/A",
+  };
+
+  const formattedAddress = [
+    shippingAddress.line1,
+    shippingAddress.line2, // Only include line2 if it exists
+    `${shippingAddress.city}, ${shippingAddress.state} ${shippingAddress.postalCode}`,
+    shippingAddress.country,
+  ]
+    .filter(Boolean) // Remove empty values (like line2 if it's missing)
+    .join(", ");
+
+  const orderStatus = order.status || "Processing";
 
   return (
-    <main className="relative lg:min-h-full">
+    <main className="relative lg:min-h-full bg-gray-50">
       <div className="hidden lg:block h-80 overflow-hidden lg:absolute lg:h-full lg:w-1/2 lg:pr-4 xl:pr-12">
         <Image
           fill
@@ -63,65 +91,95 @@ const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
       <div>
         <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6 sm:py-24 lg:grid lg:max-w-7xl lg:grid-cols-2 lg:gap-x-8 lg:px-8 lg:py-32 xl:gap-x-24">
           <div className="lg:col-start-2">
-            <p className="text-sm font-medium text-gray-600">
-              Order successful
-            </p>
+            <p className="text-sm font-medium text-gray-600">Order successful</p>
             <h1 className="mt-2 text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
               Thank you for shopping
             </h1>
-            {order._isPaid ? (
-              <p className="mt-2 text-base text-muted-foreground">
-                Your order was successfully processed. We&apos;ve sent your
-                receipt and order details to{" "}
-                {typeof order.user !== "string" ? (
-                  <span className="font-medium text-gray-900">
-                    {order.user.email}
-                  </span>
-                ) : null}
+
+            {isPaid ? (
+              <p className="mt-2 text-base text-gray-600">
+                Your order was successfully processed. We&apos;ve sent your receipt and order details to{" "}
+                <span className="font-medium text-gray-900">
+                  {(order.user as User)?.email}
+                </span>
                 .
               </p>
             ) : (
-              <p className="mt-2 text-base text-muted-foreground">
-                We&apos;re currently processing your order. We&apos;ll send you
-                a confirmation email shortly.
+              <p className="mt-2 text-base text-gray-600">
+                We&apos;re currently processing your order. We&apos;ll send you a confirmation email shortly.
               </p>
             )}
-            <div className="mt-16 text-sm font-medium">
-              <div className="text-muted-foreground">Order no.</div>
-              <div className="mt-2 text-gray-900">{order.id}</div>
 
-              <ul className="mt-6 divide-y divide-gray-200 border-t text-sm font-medium text-muted-foreground">
-                {(order.products as Product[]).map((product) => {
+            {/* Order Status and Shipping Address */}
+            <div className="mt-8">
+              <div className="mb-6">
+                <h3 className="text-lg font-medium text-gray-900">Order Status</h3>
+                <span className={`px-3 py-1 inline-block text-sm font-medium rounded-lg ${
+                  orderStatus === "delivered"
+                    ? "bg-green-100 text-green-800"
+                    : orderStatus === "shipped"
+                    ? "bg-yellow-100 text-yellow-800"
+                    : "bg-blue-100 text-blue-800"
+                }`}>
+                  {orderStatus}
+                </span>
+              </div>
+
+              <div className="mb-6">
+                <h3 className="text-lg font-medium text-gray-900">Shipping Address</h3>
+                <p className="text-sm text-gray-600">
+                  {formattedAddress}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-16 text-sm font-medium">
+              <div className="text-gray-500">Order no.</div>
+              <div className="mt-2 text-gray-900">{order.orderNumber}</div>
+
+              {/* Product List */}
+              <ul className="mt-6 divide-y divide-gray-200 border-t text-sm font-medium text-gray-600">
+                {products.map(({ product, quantity }) => {
                   const label = PRODUCT_CATEGORIES.find(
                     (c) => c.value === product.category
                   )?.label;
 
-                  const downloadUrl = (product.product_files as ProductFile)
-                    .url as string;
+                  let downloadUrl: string | undefined;
 
-                  const { image } = product.images[0];
+                  if (typeof product.product_files === 'object' && 'url' in product.product_files) {
+                    downloadUrl = product.product_files.url!;
+                  } else if (typeof product.product_files === 'string') {
+                    downloadUrl = product.product_files;
+                  } else {
+                    downloadUrl = undefined; // Fallback case
+                  }
 
                   return (
                     <li key={product.id} className="flex space-x-6 py-6">
                       <div className="relative h-24 w-24">
-                        {typeof image !== "string" && image.url ? (
+                        {product.images && product.images[0]?.image && typeof product.images[0].image === 'object' && 'url' in product.images[0].image
+                        && product.images[0].image.url ? (
                           <Image
                             fill
-                            src={image.url}
+                            src={product.images[0].image.url}
                             alt={`${product.name} image`}
                             className="flex-none rounded-md bg-gray-100 object-cover object-center"
                           />
-                        ) : null}
+                        ) : (
+                          <div>No Image Available</div>
+                        )}
                       </div>
 
                       <div className="flex-auto flex flex-col justify-between">
                         <div className="space-y-1">
-                          <h3 className="text-gray-900">{product.name}</h3>
-
-                          <p className="my-1">Category: {label}</p>
+                          <h3 className="text-gray-900">{product.name || "Unknown Product"}</h3>
+                          <p className="my-1">Category: {label || "Unknown"}</p>
+                          <p className="text-sm text-gray-500">
+                            Quantity: {quantity || 1}
+                          </p>
                         </div>
 
-                        {order._isPaid ? (
+                        {isPaid && downloadUrl ? (
                           <a
                             href={downloadUrl}
                             download={product.name}
@@ -133,32 +191,33 @@ const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
                       </div>
 
                       <p className="flex-none font-medium text-gray-900">
-                        {formatPrice(product.price)}
+                        {formatPrice(product.price * quantity)}
                       </p>
                     </li>
                   );
                 })}
               </ul>
 
-              <div className="space-y-6 border-t border-gray-200 pt-6 text-sm font-medium text-muted-foreground">
+              {/* Pricing Summary */}
+              <div className="space-y-6 border-t border-gray-200 pt-6 text-sm font-medium text-gray-600">
                 <div className="flex justify-between">
                   <p>Subtotal</p>
                   <p className="text-gray-900">{formatPrice(orderTotal)}</p>
                 </div>
                 <div className="flex justify-between">
                   <p>Transaction Fee</p>
-                  <p className="text-gray-900">{formatPrice(2.5)}</p>
+                  <p className="text-gray-900">{formatPrice(transactionFee)}</p>
                 </div>
                 <div className="flex items-center justify-between border-t border-gray-200 pt-6 text-gray-900">
                   <p className="text-base">Total</p>
-                  <p className="text-base">{formatPrice(orderTotal + 2.5)}</p>
+                  <p className="text-base">{formatPrice(orderTotal + transactionFee)}</p>
                 </div>
               </div>
 
               <PaymentStatus
-                isPaid={order._isPaid}
-                orderEmail={(order.user as User).email}
-                orderId={order.id}
+                isPaid={isPaid}
+                orderEmail={typeof order.user !== "string" ? (order.user as User)?.email : ""}
+                orderId={order.id.toString()}
               />
 
               <div className="mt-16 border-t border-gray-200 text-right py-6">

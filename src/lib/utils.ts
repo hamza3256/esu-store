@@ -9,21 +9,37 @@ export function cn(...inputs: ClassValue[]) {
 export function formatPrice(
   price: number | string,
   options: {
-    currency?: "GBP" | "USD" | "EUR" | "PKR";
+    currency?: "USD" | "GBP" | "EUR" | "PKR" | "JPY" | "INR";
+    locale?: string; // For regional price formatting
+    minimumFractionDigits?: number;
+    maximumFractionDigits?: number;
     notation?: Intl.NumberFormatOptions["notation"];
   } = {}
 ) {
-  const { currency = "GBP", notation = "compact" } = options;
+  const {
+    currency = "USD", // Default to USD if not specified
+    locale = "en-US", // Default to US English formatting
+    minimumFractionDigits = 2, // Ensure decimal places for most currencies
+    maximumFractionDigits = 2,
+    notation = "standard", // Use standard notation for eCommerce stores
+  } = options;
 
+  // Convert string price to a number if necessary
   const numericPrice = typeof price === "string" ? parseFloat(price) : price;
 
-  return new Intl.NumberFormat("en-US", {
+  // If price is not a valid number, fallback to zero
+  const safePrice = isNaN(numericPrice) ? 0 : numericPrice;
+
+  // Format the price with internationalization support
+  return new Intl.NumberFormat(locale, {
     style: "currency",
     currency,
+    minimumFractionDigits,
+    maximumFractionDigits,
     notation,
-    maximumFractionDigits: 2,
-  }).format(numericPrice);
+  }).format(safePrice);
 }
+
 
 export function constructMetadata({
   title = "ESÜstore.com: the marketplace for high-quality products",

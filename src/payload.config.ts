@@ -14,6 +14,23 @@ dotenv.config({
   path: path.resolve(__dirname, "../.env"),
 });
 
+console.log("Environment: " + process.env.NODE_ENV)
+
+// const db = (() => {
+//   if (process.env.NODE_ENV === "development") {
+//     console.log("Connecting to development database...")
+//     return process.env.MONGODB_DEV!;
+//   } else if (process.env.NODE_ENV === "production") {
+//     console.log("Connecting to production database...")
+//     return process.env.MONGODB_PROD!; // TODO: use production url
+//   } else {
+//     console.log("Connecting to default testing database...")
+//     return process.env.MONGODB_URI!;
+//   }
+// })();
+
+const db = process.env.MONGODB_URI!
+
 export default buildConfig({
   serverURL: process.env.NEXT_PUBLIC_SERVER_URL || "",
   collections: [Users, Products, Media, ProductFiles, Orders],
@@ -34,7 +51,7 @@ export default buildConfig({
   },
   editor: slateEditor({}),
   db: mongooseAdapter({
-    url: process.env.MONGODB_URI!,
+    url: db,
   }),
   typescript: {
     outputFile: path.resolve(__dirname, "payload-types.ts"),

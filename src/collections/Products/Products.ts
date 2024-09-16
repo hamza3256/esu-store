@@ -79,45 +79,7 @@ export const Products: CollectionConfig = {
     delete: isAdminOrHasAccess(),
   },
   hooks: {
-    beforeChange: [
-      addUser,
-      async (args) => {
-        if (args.operation === "create") {
-          const data = args.data as Product;
-
-          const createdProduct = await stripe.products.create({
-            name: data.name,
-            default_price_data: {
-              currency: "GBP",
-              unit_amount: Math.round(data.price * 100),
-            },
-          });
-
-          const updated: Product = {
-            ...data,
-            stripeId: createdProduct.id,
-            priceId: createdProduct.default_price as string,
-          };
-
-          return updated;
-        } else if (args.operation === "update") {
-          const data = args.data as Product;
-
-          const updatedProduct = await stripe.products.update(data.stripeId!, {
-            name: data.name,
-            default_price: data.priceId!,
-          });
-
-          const updated: Product = {
-            ...data,
-            stripeId: updatedProduct.id,
-            priceId: updatedProduct.default_price as string,
-          };
-
-          return updated;
-        }
-      },
-    ],
+    beforeChange: [addUser],
     afterChange: [syncUser],
   },
   fields: [
@@ -139,12 +101,12 @@ export const Products: CollectionConfig = {
     },
     {
       name: "description",
-      type: "textarea", // use rich for better formatted text, requires more development
+      type: "textarea",
       label: "Product details",
     },
     {
       name: "price",
-      label: "Price in GBP",
+      label: "Price in USD",
       min: 0,
       max: 5000,
       type: "number",
@@ -154,8 +116,34 @@ export const Products: CollectionConfig = {
       name: "category",
       label: "Category",
       type: "select",
-      options: PRODUCT_CATEGORIES.map(({ label, value }) => ({ label, value })),
+      options: PRODUCT_CATEGORIES.map(({ label, value }) => ({
+        label,
+        value,
+      })),
       required: true,
+    },
+    {
+      name: "inventory",
+      label: "Inventory",
+      type: "number",
+      required: true,
+      defaultValue: 0,
+    },
+    {
+      name: "numReviews",
+      label: "Number of Reviews",
+      type: "number",
+      defaultValue: 0,
+      required: true,
+    },
+    {
+      name: "rating",
+      label: "Rating",
+      type: "number",
+      required: true,
+      min: 0,
+      max: 5,
+      defaultValue: 0,
     },
     {
       name: "product_files",

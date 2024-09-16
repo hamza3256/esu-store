@@ -41,4 +41,25 @@ export const PRODUCT_CATEGORIES = [
       },
     ],
   },
+  {
+    label: "Accessories",
+    value: "accessories" as const,
+    featured: [
+      {
+        name: "Favourite Jewellery Picks",
+        href: "#",
+        imageSrc: "/nav/jewelleries/picks.jpg",
+      },
+      {
+        name: "New Arrivals",
+        href: "#",
+        imageSrc: "/nav/jewelleries/new.jpg",
+      },
+      {
+        name: "Bestselling Jewelleries",
+        href: "#",
+        imageSrc: "/nav/jewelleries/bestsellers.jpg",
+      },
+    ],
+  },
 ];

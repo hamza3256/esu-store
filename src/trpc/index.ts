@@ -4,10 +4,14 @@ import { publicProcedure, router } from "./trpc";
 import { QueryValidator } from "../lib/validators/query-validator";
 import { getPayloadClient } from "../get-payload";
 import { paymentRouter } from "./payment-router";
+import { ordersRouter } from "./orders";
+import { TRPCError } from "@trpc/server";
+import { Product } from "@/payload-types";
 
 export const appRouter = router({
   auth: authRouter,
   payment: paymentRouter,
+  order: ordersRouter,
 
   getInfiniteProducts: publicProcedure
     .input(
@@ -52,6 +56,62 @@ export const appRouter = router({
       });
 
       return { items, nextPage: hasNextPage ? nextPage : null };
+    }),
+
+    searchProducts: publicProcedure
+    .input(
+      z.object({
+        query: z.string().min(1, "Search query cannot be empty"),
+        limit: z.number().min(1).max(100).default(10),
+        page: z.number().default(1),
+      })
+    )
+    .query(async ({ input }) => {
+      const { query, limit, page } = input;
+      const payload = await getPayloadClient();
+
+      // Perform the search query with a "contains" condition on relevant fields
+      const { docs: items, totalDocs, totalPages } = await payload.find({
+        collection: "products",
+        where: {
+          or: [
+            { name: { contains: query } },         // Search by product name
+            { description: { contains: query } },  // Search by product description
+          ],
+        },
+        limit,
+        page,
+        depth: 1,
+      });
+
+      // Return search results and metadata
+      return { items, totalDocs, totalPages };
+    }),
+
+    getProductById: publicProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ input }) => {
+      const payload = await getPayloadClient();
+
+      const { docs: products } = await payload.find({
+        collection: "products",
+        where: {
+          id: {
+            equals: input.id,
+          },
+          // user: {
+          //   equals: ctx.user.id, // Ensure the user only sees their own orders
+          // },
+        },
+        depth: 2, // Fetch relationships deeply (products, etc.)
+      });
+
+      const product = products[0];
+      if (!product) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Product not found" });
+      }
+
+      return product;
     }),
 });
 

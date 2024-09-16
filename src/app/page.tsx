@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import MaxWidthWrapper from "@/components/MaxWidthWrapper";
 import ProductReel from "@/components/ProductReel";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -30,31 +30,52 @@ const perks = [
 
 export default function Home() {
   const [videoLoaded, setVideoLoaded] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      if (!videoLoaded) {
-        setVideoLoaded(true);
-      }
-    }, 3000); // Fallback to show white background after 3 seconds if the video is not loaded
+    const currentVideoRef = videoRef.current; // Save ref to a local variable
 
-    return () => clearTimeout(timeout); // Clear timeout if the video loads earlier
-  }, [videoLoaded]);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && currentVideoRef) {
+            currentVideoRef.play(); // Play the video when it comes into view
+          } else if (currentVideoRef) {
+            currentVideoRef.pause(); // Pause video when out of view to save resources
+          }
+        });
+      },
+      { threshold: 0.5 }
+    );
+
+    if (currentVideoRef) {
+      observer.observe(currentVideoRef);
+    }
+
+    return () => {
+      if (currentVideoRef) {
+        observer.unobserve(currentVideoRef);
+      }
+    };
+  }, []); // Empty dependency array to ensure this effect only runs once
 
   return (
     <>
       <div className="relative h-screen overflow-hidden -mt-16">
-        {/* Show fallback image until video is loaded */}
+        {/* Fallback image until video is loaded */}
         {!videoLoaded && (
           <Image
             src="/medical-background.png"
             alt="Loading video background"
             fill
             className="absolute top-0 left-0 w-full h-full object-cover -z-20"
-            loading="lazy" // Lazy loading to improve performance
+            loading="lazy"
           />
         )}
+
+        {/* Lazy load the video */}
         <video
+          ref={videoRef}
           autoPlay
           muted
           loop
@@ -62,10 +83,20 @@ export default function Home() {
           preload="auto"
           onCanPlay={() => setVideoLoaded(true)}
           playsInline
+          poster="/medical-background.png" // Fallback image
         >
-          <source src="/desktop-morocco.mp4" type="video/mp4" media="(min-width: 768px)"/>
-          <source src="/mobile-morocco.webm" type="video/mp4" media="(max-width: 767px)"/>
-          Your browser does not support the video tag.
+          <source
+            src="/desktop-morocco.mp4"
+            type="video/mp4"
+            media="(min-width: 768px)"
+          />
+          <source
+            src="/mobile-morocco.webm"
+            type="video/webm"
+            media="(max-width: 767px)"
+          />
+          {/* Fallback for browsers that don't support video formats */}
+          <p>Your browser does not support the video tag.</p>
         </video>
 
         {/* Overlay */}
@@ -97,7 +128,7 @@ export default function Home() {
 
       {/* Perks Section */}
       <section className="border border-gray-200 bg-gray-50">
-        <MaxWidthWrapper className="">
+        <MaxWidthWrapper>
           <ProductReel
             title="Brand New"
             href="/products"

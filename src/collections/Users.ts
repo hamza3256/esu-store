@@ -2,7 +2,7 @@ import { PrimaryActionEmailHtml } from "../components/emails/PrimaryActionEmail"
 import { Access, CollectionConfig } from "payload/types";
 
 const adminsAndUser: Access = ({ req: { user } }) => {
-  if (user.role === "admin") return true;
+  if (user.role === "admin" || user.role === "superadmin") return true;
 
   return { id: { equals: user.id } };
 };
@@ -56,14 +56,16 @@ export const Users: CollectionConfig = {
       defaultValue: "user",
       required: true,
       admin: {
-        condition: ({ req }) => req.user.role === "admin" || req.user.role === "superadmin",
+        condition: ({ req }) => {
+          console.log("req: " + req)
+          if (req?.user?.role === "admin" || req?.user?.role === "superadmin") {
+            return true;
+          }
+          return false;
+        },
       },
       type: "select",
       options: [
-        {
-          label: "Super Admin",
-          value: "superadmin",
-        },
         {
           label: "Admin",
           value: "admin",

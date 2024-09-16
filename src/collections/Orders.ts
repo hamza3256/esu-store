@@ -45,11 +45,59 @@ export const Orders: CollectionConfig = {
       required: true,
     },
     {
-      name: "products",
-      type: "relationship",
-      relationTo: "products",
+      name: "productItems", // Store both product and quantity
+      type: "array",
+      fields: [
+        {
+          name: "product",
+          type: "relationship",
+          relationTo: "products",
+          required: true,
+        },
+        {
+          name: "quantity",
+          type: "number",
+          required: true,
+          defaultValue: 1,
+        },
+      ],
       required: true,
-      hasMany: true,
+    },
+    {
+      name: "shippingAddress",
+      type: "group",
+      fields: [
+        { name: "line1", type: "text", required: true },
+        { name: "line2", type: "text" },
+        { name: "city", type: "text", required: true },
+        { name: "state", type: "text", required: true },
+        { name: "postalCode", type: "text", required: true },
+        { name: "country", type: "text", required: true },
+      ],
+    },
+    // Add order status field
+    {
+      name: "status",
+      type: "select",
+      options: [
+        { label: "Pending", value: "pending" },
+        { label: "Processing", value: "processing" },
+        { label: "Shipped", value: "shipped" },
+        { label: "Delivered", value: "delivered" },
+        { label: "Cancelled", value: "cancelled" },
+      ],
+      defaultValue: "pending",
+    },
+    {
+      name: "total",
+      type: "number",
+      required: true
+    },
+    {
+      name: "orderNumber",
+      type: "text",
+      unique: true, // Ensures the order number is unique
+      required: true,
     },
   ],
 };

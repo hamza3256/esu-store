@@ -36,6 +36,10 @@ const UserAccountNav = ({ user }: { user: User }) => {
         <DropdownMenuSeparator />
 
         <DropdownMenuItem asChild>
+          <Link href="/orders">Orders</Link>
+        </DropdownMenuItem>
+
+        <DropdownMenuItem asChild>
           <Link href="/sell">Seller Dashboard</Link>
         </DropdownMenuItem>
 
