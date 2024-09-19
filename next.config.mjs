@@ -4,20 +4,13 @@ import path from "path";
 
 const isProduction = process.env.NODE_ENV === "production";
 
+// Derive the hostname from NEXT_PUBLIC_SERVER_URL, or use a default for production
 const productionHostname = process.env.NEXT_PUBLIC_SERVER_URL
-  ? process.env.NEXT_PUBLIC_SERVER_URL.replace(/^https?:\/\//, '')
+  ? new URL(process.env.NEXT_PUBLIC_SERVER_URL).hostname
   : "esustore.com";
 
-const protocol = (() => {
-  if (process.env.NEXT_PUBLIC_SERVER_URL) {
-    if (process.env.NEXT_PUBLIC_SERVER_URL.startsWith('https')) {
-      return 'https';
-    } else if (process.env.NEXT_PUBLIC_SERVER_URL.startsWith('http')) {
-      return 'http';
-    }
-  }
-  return 'https';
-})();
+// Determine the protocol based on NEXT_PUBLIC_SERVER_URL
+const protocol = process.env.NEXT_PUBLIC_SERVER_URL?.startsWith('https') ? 'https' : 'http';
 
 /** @type {import('next').NextConfig} */
 const nextConfig = withPayload(
@@ -41,11 +34,10 @@ const nextConfig = withPayload(
     },
   },
   {
+    // Define the path to the Payload configuration
     configPath: path.resolve(
       fileURLToPath(new URL(".", import.meta.url)),
-      process.env.PAYLOAD_CONFIG_PATH
-        ? process.env.PAYLOAD_CONFIG_PATH
-        : "src/payload.config.ts"
+      process.env.PAYLOAD_CONFIG_PATH || "src/payload.config.ts"
     ),
   }
 );
