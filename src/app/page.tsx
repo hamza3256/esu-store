@@ -65,7 +65,7 @@ export default function Home() {
         {/* Fallback image until video is loaded */}
         {!videoLoaded && (
           <Image
-            src="/medical-background.png"
+            src="/background.png"
             alt="Loading video background"
             fill
             className="absolute top-0 left-0 w-full h-full object-cover -z-20"
@@ -83,7 +83,7 @@ export default function Home() {
           preload="auto"
           onCanPlay={() => setVideoLoaded(true)}
           playsInline
-          poster="/medical-background.png" // Fallback image
+          poster="/background.png"
         >
           <source
             src="/desktop-morocco.mp4"

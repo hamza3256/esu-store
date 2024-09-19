@@ -32,6 +32,8 @@ console.log("Environment: " + process.env.NODE_ENV)
 const db = process.env.MONGODB_URI!
 
 export default buildConfig({
+  cors: [process.env.NEXT_PUBLIC_SERVER_URL!],
+  csrf: [process.env.NEXT_PUBLIC_SERVER_URL!],
   serverURL: process.env.NEXT_PUBLIC_SERVER_URL || "",
   collections: [Users, Products, Media, ProductFiles, Orders],
   routes: {
