@@ -63,7 +63,7 @@ export const Media: CollectionConfig = {
         position: "centre",
       },
     ],
-    mimeTypes: ["image/*"],
+    mimeTypes: ["image/*", "video/*"],
   },
   fields: [
     {

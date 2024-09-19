@@ -26,9 +26,8 @@ const nextConfig = withPayload(
         },
         // For production
         {
-          protocol: protocol,
-          hostname: productionHostname, // Dynamically set production hostname
-          pathname: "/media/**",
+          protocol: "https",
+          hostname: "esustore.com", // Dynamically set production hostname
         },
       ],
     },
