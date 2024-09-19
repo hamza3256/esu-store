@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Check, Shield, Minus, Plus, Star, ShoppingBag } from "lucide-react";
+import { Check, Minus, Plus, Star, ShoppingBag } from "lucide-react";
 import { notFound } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -16,9 +15,13 @@ import { PRODUCT_CATEGORIES } from "@/config";
 import ProductReel from "@/components/ProductReel";
 import Link from "next/link";
 import { toast } from "sonner";
-import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip"; // Ensure TooltipProvider is imported
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+  TooltipProvider,
+} from "@/components/ui/tooltip";
 import { useCart } from "@/hooks/use-cart";
-import { Product } from "@/payload-types";
 
 interface PageProps {
   params: {
@@ -33,7 +36,6 @@ const BREADCRUMBS = [
 
 const Page = ({ params }: PageProps) => {
   const { productId } = params;
-  const router = useRouter();
   const [quantity, setQuantity] = useState(1);
   const { addItem } = useCart();
 
@@ -67,24 +69,28 @@ const Page = ({ params }: PageProps) => {
   };
 
   const handleAddToCart = () => {
-    addItem(product, quantity);
-    toast.success(`Added ${quantity} ${quantity > 1 ? "items" : "item"} to cart`);
+    if (quantity <= product.inventory) {
+      addItem(product, quantity);
+      toast.success(`Added ${quantity} ${quantity > 1 ? "items" : "item"} to cart`);
+    } else {
+      toast.error(`Cannot add more than ${product.inventory} items`);
+    }
   };
 
   return (
-    <TooltipProvider> {/* Ensure TooltipProvider wraps your component */}
+    <TooltipProvider>
       <MaxWidthWrapper className="bg-white">
         <div className="bg-white">
-          <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6 sm:py-24 lg:grid lg:max-w-7xl lg:grid-cols-2 lg:gap-x-8 lg:px-8">
-            {/* Product details */}
+          {/* Product details */}
+          <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6 sm:py-16 lg:grid lg:max-w-7xl lg:grid-cols-2 lg:gap-x-12 lg:px-8">
             <div className="lg:max-w-lg lg:self-end">
-              <ol className="flex items-center space-x-2">
+              <ol className="flex items-center space-x-2 text-xs sm:text-sm">
                 {BREADCRUMBS.map((breadcrumb, i) => (
                   <li key={breadcrumb.href}>
-                    <div className="flex items-center text-sm">
+                    <div className="flex items-center">
                       <Link
                         href={breadcrumb.href}
-                        className="font-medium text-sm text-muted-foreground hover:text-gray-900"
+                        className="font-medium text-gray-500 hover:text-gray-900"
                       >
                         {breadcrumb.name}
                       </Link>
@@ -93,7 +99,7 @@ const Page = ({ params }: PageProps) => {
                           viewBox="0 0 20 20"
                           fill="currentColor"
                           aria-hidden="true"
-                          className="ml-2 h-5 w-5 flex-shrink-0 text-gray-300"
+                          className="ml-2 h-4 w-4 flex-shrink-0 text-gray-300"
                         >
                           <path d="M5.555 17.776l8-16 .894.448-8 16-.894-.448z" />
                         </svg>
@@ -104,48 +110,50 @@ const Page = ({ params }: PageProps) => {
               </ol>
 
               <div className="mt-4">
-                <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+                <h1 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
                   {product.name}
                 </h1>
               </div>
 
               <section className="mt-4">
                 <div className="flex items-center justify-between">
-                  <p className="font-medium text-gray-900 text-2xl">
+                  <p className="text-lg sm:text-xl font-medium text-gray-900">
                     {formatPrice(product.price)}
                   </p>
-                  <div className="ml-4 border-l text-muted-foreground border-gray-300 pl-4">
+                  <div className="ml-4 border-l text-gray-500 pl-4 text-sm sm:text-base">
                     {label}
                   </div>
                 </div>
 
-                <div className="mt-4 flex items-center space-x-2">
+                <div className="mt-4 flex items-center space-x-1 sm:space-x-2">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <Star
                       key={star}
-                      className={`w-5 h-5 ${
+                      className={`w-4 h-4 sm:w-5 sm:h-5 ${
                         star <= Math.round(product.rating)
                           ? "text-yellow-400 fill-yellow-400"
                           : "text-gray-300"
                       }`}
                     />
                   ))}
-                  <span className="ml-2 text-sm text-gray-500">
+                  <span className="ml-1 sm:ml-2 text-xs sm:text-sm text-gray-500">
                     ({product.numReviews} reviews)
                   </span>
                 </div>
 
-                <div className="mt-4 space-y-6">
-                  <p className="text-base text-muted-foreground">
-                    {product.description}
+                <div className="mt-4 space-y-3">
+                  <p className="text-sm text-gray-600 sm:text-base">
+                    {product.description?.length > 100
+                      ? product.description.slice(0, 100) + "..."
+                      : product.description}
                   </p>
                 </div>
                 <div className="mt-6 flex items-center">
                   <Check
                     aria-hidden="true"
-                    className="h-5 w-5 flex-shrink-0 text-green-500"
+                    className="h-4 w-4 sm:h-5 sm:w-5 text-green-500"
                   />
-                  <p className="ml-2 text-sm text-muted-foreground">
+                  <p className="ml-2 text-xs sm:text-sm text-gray-600">
                     Eligible for delivery
                   </p>
                 </div>
@@ -153,17 +161,17 @@ const Page = ({ params }: PageProps) => {
             </div>
 
             {/* Product images */}
-            <div className="mt-10 lg:col-start-2 lg:row-span-2 lg:mt-0 lg:self-center">
-              <div className="aspect-square rounded-lg overflow-hidden">
+            <div className="mt-8 lg:col-start-2 lg:row-span-2 lg:mt-0 lg:self-center">
+              <div className="aspect-square rounded-lg overflow-hidden shadow-md">
                 <ImageSlider urls={validUrls} />
               </div>
             </div>
 
             {/* Add to cart section */}
-            <div className="mt-10 lg:col-start-1 lg:row-start-2 lg:max-w-lg lg:self-start">
-              <div>
+            <div className="mt-8 lg:col-start-1 lg:row-start-2 lg:max-w-lg lg:self-start">
+              <div className="border-t pt-6 mt-6 border-gray-200">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center space-x-2 border border-gray-200 rounded-full">
+                  <div className="flex items-center space-x-2 border border-gray-200 rounded-full px-4 py-2 shadow-sm">
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <button
@@ -184,7 +192,7 @@ const Page = ({ params }: PageProps) => {
                       max={product.inventory as number}
                       value={quantity}
                       onChange={(e) => setQuantity(Number(e.target.value))}
-                      className="w-16 text-center"
+                      className="w-12 text-center text-sm sm:w-16 sm:text-base"
                     />
 
                     <Tooltip>
@@ -202,7 +210,7 @@ const Page = ({ params }: PageProps) => {
                     </Tooltip>
                   </div>
 
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs sm:text-sm text-gray-500">
                     {product.inventory} available
                   </p>
                 </div>
@@ -212,11 +220,13 @@ const Page = ({ params }: PageProps) => {
                     <Button
                       onClick={handleAddToCart}
                       disabled={product.inventory === 0}
-                      className="flex-grow bg-black text-white hover:bg-gray-800 transition-colors duration-200"
+                      className="flex items-center justify-center w-full py-3 bg-black text-white font-semibold rounded-full hover:bg-gray-800 transition-all duration-200"
                     >
-                      <ShoppingBag className="w-5 h-5" />
-                      <span className="hidden sm:inline ml-1">
-                        {product.inventory === 0 ? "Out of Stock" : "Add to Bag"}
+                      <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5" />
+                      <span className="ml-2 sm:ml-3">
+                        {product.inventory === 0
+                          ? "Out of Stock"
+                          : "Add to Bag"}
                       </span>
                     </Button>
                   </TooltipTrigger>
@@ -229,8 +239,29 @@ const Page = ({ params }: PageProps) => {
           </div>
         </div>
 
+        {/* Mobile sticky cart button */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              onClick={handleAddToCart}
+              disabled={product.inventory === 0 || quantity > product.inventory}
+              className="fixed bottom-4 right-4 z-50 bg-black text-white rounded-full p-4 shadow-lg hover:bg-gray-800 focus:outline-none sm:hidden transition-transform hover:scale-105"
+            >
+              <ShoppingBag className="w-6 h-6" />
+              {quantity > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full px-2 text-xs">
+                  {quantity}
+                </span>
+              )}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            {product.inventory === 0 ? "Out of stock" : "Add to bag"}
+          </TooltipContent>
+        </Tooltip>
+
         {/* Product details tabs */}
-        <div className="mt-16 lg:mt-24 lg:max-w-7xl lg:mx-auto lg:px-8">
+        <div className="mt-12 lg:mt-20 lg:max-w-7xl lg:mx-auto lg:px-8">
           <Tabs defaultValue="description" className="w-full">
             <TabsList className="w-full justify-start">
               <TabsTrigger value="description">Description</TabsTrigger>
@@ -238,10 +269,12 @@ const Page = ({ params }: PageProps) => {
               <TabsTrigger value="reviews">Reviews</TabsTrigger>
             </TabsList>
             <TabsContent value="description" className="mt-4">
-              <p className="text-muted-foreground">{product.description}</p>
+              <p className="text-gray-600 text-sm sm:text-base">
+                {product.description}
+              </p>
             </TabsContent>
             <TabsContent value="specifications" className="mt-4">
-              <ul className="list-disc pl-5 text-muted-foreground">
+              <ul className="list-disc pl-4 sm:pl-5 text-gray-600 text-sm sm:text-base">
                 <li>High-quality materials</li>
                 <li>Adjustable height and tilt</li>
                 <li>Breathable mesh back</li>
@@ -250,7 +283,9 @@ const Page = ({ params }: PageProps) => {
               </ul>
             </TabsContent>
             <TabsContent value="reviews" className="mt-4">
-              <p className="text-muted-foreground">No reviews yet.</p>
+              <p className="text-gray-600 text-sm sm:text-base">
+                No reviews yet.
+              </p>
             </TabsContent>
           </Tabs>
         </div>
