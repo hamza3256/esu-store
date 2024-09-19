@@ -15,7 +15,7 @@ const MobileNav = ({ setIsMenuOpen }: { setIsMenuOpen: (isOpen: boolean) => void
   useEffect(() => {
     setIsOpen(false);
     setIsMenuOpen(false); // Close the menu when navigating away
-  }, [pathname]);
+  }, [pathname, setIsMenuOpen]);
 
   const closeOnCurrent = (href: string) => {
     if (pathname === href) {

@@ -130,7 +130,8 @@ export interface Media {
 export interface Order {
   id: string;
   _isPaid: boolean;
-  user: string | User;
+  user?: (string | null) | User;
+  email: string;
   productItems: {
     product: string | Product;
     quantity: number;

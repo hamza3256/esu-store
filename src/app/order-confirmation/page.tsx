@@ -21,13 +21,14 @@ interface OrderProduct {
 
 const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
   const orderId = searchParams.orderId;
+  const guestEmail = searchParams.guestEmail; // New param for guest email
   const nextCookies = cookies();
 
   const { user } = await getServerSideUser(nextCookies);
-  if (!user) return redirect("/sign-in");
-
+  
   const payload = await getPayloadClient();
 
+  // Fetch order details by order ID
   const { docs: orders } = await payload.find({
     collection: "orders",
     depth: 2,
@@ -41,8 +42,11 @@ const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
   const [order] = orders as Order[];
   if (!order) return notFound();
 
+  // Determine if the user is the order owner (guest or logged-in user)
   const orderUserId = typeof order.user === "string" ? order.user : (order.user as User)?.id;
-  if (orderUserId !== user?.id) {
+  
+  // If no logged-in user, validate the guest email
+  if (!user && (!guestEmail || guestEmail !== order.email)) {
     return redirect(`/sign-in?origin=order-confirmation?orderId=${order.id}`);
   }
 
@@ -100,7 +104,7 @@ const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
               <p className="mt-2 text-base text-gray-600">
                 Your order was successfully processed. We&apos;ve sent your receipt and order details to{" "}
                 <span className="font-medium text-gray-900">
-                  {(order.user as User)?.email}
+                  {order.email || (order.user as User)?.email}
                 </span>
                 .
               </p>
@@ -216,7 +220,7 @@ const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
 
               <PaymentStatus
                 isPaid={isPaid}
-                orderEmail={typeof order.user !== "string" ? (order.user as User)?.email : ""}
+                orderEmail={order.email || (order.user as User)?.email}
                 orderId={order.id.toString()}
               />
 

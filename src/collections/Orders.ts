@@ -16,10 +16,10 @@ export const Orders: CollectionConfig = {
     description: "A summary of all your orders on ESU Store.",
   },
   access: {
-    read: yourOwn,
-    update: ({ req }) => req.user.role === "admin",
-    delete: ({ req }) => req.user.role === "admin",
-    create: ({ req }) => req.user.role === "admin",
+    read: ({ req }) => req.user?.role === "admin" || !!req.user, // Allow admin and authenticated users to access orders
+    update: ({ req }) => req.user?.role === "admin", // Only admin can update
+    delete: ({ req }) => req.user?.role === "admin", // Only admin can delete
+    create: () => true, // Allow creation without a logged-in user
   },
   fields: [
     {
@@ -42,6 +42,11 @@ export const Orders: CollectionConfig = {
         hidden: true,
       },
       relationTo: "users",
+      required: false,
+    },
+    {
+      name: "email", // Collect email for anonymous orders
+      type: "email",
       required: true,
     },
     {

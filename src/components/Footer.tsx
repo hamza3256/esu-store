@@ -63,6 +63,12 @@ const Footer = () => {
           {/* Legal Links */}
           <div className="flex justify-center mt-4 lg:mt-0 space-x-4">
             <Link
+              href="/track-order"
+              className="text-sm text-gray-400 hover:text-white transition-colors duration-200"
+            >
+              Track Order
+            </Link>
+            <Link
               href="/terms"
               className="text-sm text-gray-400 hover:text-white transition-colors duration-200"
             >

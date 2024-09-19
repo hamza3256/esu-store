@@ -1,12 +1,13 @@
 import { z } from "zod";
 import { authRouter } from "./auth-router";
-import { publicProcedure, router } from "./trpc";
+import { privateProcedure, publicProcedure, router } from "./trpc";
 import { QueryValidator } from "../lib/validators/query-validator";
 import { getPayloadClient } from "../get-payload";
 import { paymentRouter } from "./payment-router";
-import { ordersRouter } from "./orders";
+import { ordersRouter } from "./order-router";
 import { TRPCError } from "@trpc/server";
-import { Product } from "@/payload-types";
+import { Product, User } from "@/payload-types";
+import { PayloadRequest } from "payload/types";
 
 export const appRouter = router({
   auth: authRouter,
@@ -103,7 +104,7 @@ export const appRouter = router({
           //   equals: ctx.user.id, // Ensure the user only sees their own orders
           // },
         },
-        depth: 2, // Fetch relationships deeply (products, etc.)
+        depth: 1, // Fetch relationships deeply (products, etc.)
       });
 
       const product = products[0];
@@ -112,6 +113,18 @@ export const appRouter = router({
       }
 
       return product;
+    }),
+    
+    getUserInfo: privateProcedure.query(({ ctx }) => {
+      const req = ctx.req as PayloadRequest;
+
+      const { user } = req as { user: User | null };
+  
+      if (!user) {
+        throw new TRPCError({ code: 'UNAUTHORIZED', message: 'User not logged in' });
+      }
+  
+      return { user };
     }),
 });
 

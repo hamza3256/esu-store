@@ -7,13 +7,22 @@ import { Access, CollectionConfig } from "payload/types";
 import { Product, User } from "../../payload-types";
 import { stripe } from "../../lib/stripe";
 
+// Add User Hook: Allow for guest checkouts by handling cases where there's no logged-in user
 const addUser: BeforeChangeHook<Product> = async ({ req, data }) => {
   const user = req.user;
+
+  // If there is no user (guest checkout), skip attaching the user
+  if (!user || !user.id) {
+    return data; // Skip attaching the user for guest checkout
+  }
 
   return { ...data, user: user.id };
 };
 
+// Sync User Hook: Ensure that the user-related data is only updated for logged-in users, skip for guests
 const syncUser: AfterChangeHook<Product> = async ({ req, doc }) => {
+  if (!req.user || !req.user.id) return; // Skip syncing for guest checkouts
+
   const fullUserObject = await req.payload.findByID({
     collection: "users",
     id: req.user.id,
@@ -44,6 +53,7 @@ const syncUser: AfterChangeHook<Product> = async ({ req, doc }) => {
   }
 };
 
+// Access control modification to accommodate guest operations
 const isAdminOrHasAccess =
   (): Access =>
   ({ req: { user: _user } }) => {
@@ -74,7 +84,7 @@ export const Products: CollectionConfig = {
     useAsTitle: "name",
   },
   access: {
-    read: isAdminOrHasAccess(),
+    read: () => true, // Allow all users, including guests, to read the products
     update: isAdminOrHasAccess(),
     delete: isAdminOrHasAccess(),
   },
@@ -87,10 +97,10 @@ export const Products: CollectionConfig = {
       name: "user",
       type: "relationship",
       relationTo: "users",
-      required: true,
+      required: false, // Make user field optional to allow guest purchases
       hasMany: false,
       admin: {
-        condition: () => false,
+        condition: () => false, // Hide this field from admin panel
       },
     },
     {
@@ -159,9 +169,9 @@ export const Products: CollectionConfig = {
       type: "select",
       defaultValue: "pending",
       access: {
-        create: ({ req }) => req.user.role === "admin",
-        read: ({ req }) => req.user.role === "admin",
-        update: ({ req }) => req.user.role === "admin",
+        create: ({ req }) => req.user?.role === "admin", // Allow only admins to create
+        read: () => true, // Allow guests to read product status
+        update: ({ req }) => req.user?.role === "admin", // Allow only admins to update
       },
       options: [
         {

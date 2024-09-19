@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import MaxWidthWrapper from "./MaxWidthWrapper";
 import { Icons } from "./Icons";
@@ -21,13 +21,14 @@ const Navbar = ({ user }: NavbarProps) => {
   const [isHome, setIsHome] = useState(false);
   const [isTransparent, setIsTransparent] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
-  const [isMenuOpen, setIsMenuOpen] = useState(false); // Track mobile menu state
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const handleScroll = () => {
-    if (isHome && typeof window !== "undefined" && !isMenuOpen) { // Disable transparency when the mobile menu is open
+  // Using useCallback to define handleScroll
+  const handleScroll = useCallback(() => {
+    if (isHome && typeof window !== "undefined" && !isMenuOpen) {
       setIsTransparent(window.scrollY === 0);
     }
-  };
+  }, [isHome, isMenuOpen]);
 
   useEffect(() => {
     const home = pathname === "/";
@@ -40,7 +41,7 @@ const Navbar = ({ user }: NavbarProps) => {
     return () => {
       window.removeEventListener("scroll", onScroll);
     };
-  }, [pathname, isHome, isMenuOpen]); // Listen for changes in isMenuOpen
+  }, [pathname, handleScroll, isMenuOpen]);
 
   return (
     <div
