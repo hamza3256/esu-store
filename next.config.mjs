@@ -3,9 +3,21 @@ import { fileURLToPath } from "url";
 import path from "path";
 
 const isProduction = process.env.NODE_ENV === "production";
+
 const productionHostname = process.env.NEXT_PUBLIC_SERVER_URL
-  ? new URL(process.env.NEXT_PUBLIC_SERVER_URL).hostname
-  : "esustore.com"; // Default production hostname if environment variable is not set
+  ? process.env.NEXT_PUBLIC_SERVER_URL.replace(/^https?:\/\//, '')
+  : "esustore.com";
+
+const protocol = (() => {
+  if (process.env.NEXT_PUBLIC_SERVER_URL) {
+    if (process.env.NEXT_PUBLIC_SERVER_URL.startsWith('https')) {
+      return 'https';
+    } else if (process.env.NEXT_PUBLIC_SERVER_URL.startsWith('http')) {
+      return 'http';
+    }
+  }
+  return 'https';
+})();
 
 /** @type {import('next').NextConfig} */
 const nextConfig = withPayload(
@@ -21,7 +33,7 @@ const nextConfig = withPayload(
         },
         // For production
         {
-          protocol: "https",
+          protocol: protocol,
           hostname: productionHostname, // Dynamically set production hostname
           pathname: "/media/**",
         },
