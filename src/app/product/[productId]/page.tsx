@@ -37,7 +37,7 @@ const Page = ({ params }: PageProps) => {
   const [quantity, setQuantity] = useState(1);
   const { addItem } = useCart();
 
-  const { data: product, isLoading, error } = trpc.getProductById.useQuery<{ id: string }, Product>({
+  const { data: product, isLoading, error } = trpc.getProductById.useQuery({
     id: productId,
   });
 
