@@ -26,8 +26,10 @@ const nextConfig = withPayload(
         },
         // For production
         {
-          protocol: "https",
-          hostname: "esustore.com", // Dynamically set production hostname
+          protocol: protocol,
+          hostname: productionHostname, // Dynamically set production hostname
+          port: process.env.PORT || 8080,
+          pathname: "/media/**",
         },
       ],
     },
