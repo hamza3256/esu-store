@@ -14,6 +14,7 @@ const protocol = process.env.NEXT_PUBLIC_SERVER_URL?.startsWith('https') ? 'http
 const nextConfig = withPayload(
   {
     images: {
+      domains: ['localhost', productionHostname],
       remotePatterns: [
         // For local development (localhost)
         {
@@ -26,11 +27,13 @@ const nextConfig = withPayload(
         {
           protocol: protocol,
           hostname: productionHostname, // Dynamically set production hostname
-          port: process.env.PORT?.toString() || "8080",
+          // port: process.env.PORT?.toString() || "8080",
           pathname: "/media/**",
         },
       ],
     },
+    reactStrictMode: true,
+    swcMinify: true,
   },
   {
     // Define the path to the Payload configuration
