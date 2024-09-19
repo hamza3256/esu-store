@@ -2,8 +2,6 @@ import { withPayload } from "@payloadcms/next-payload";
 import { fileURLToPath } from "url";
 import path from "path";
 
-const isProduction = process.env.NODE_ENV === "production";
-
 // Derive the hostname from NEXT_PUBLIC_SERVER_URL, or use a default for production
 const productionHostname = process.env.NEXT_PUBLIC_SERVER_URL
   ? new URL(process.env.NEXT_PUBLIC_SERVER_URL).hostname
@@ -28,7 +26,7 @@ const nextConfig = withPayload(
         {
           protocol: protocol,
           hostname: productionHostname, // Dynamically set production hostname
-          port: process.env.PORT || 8080,
+          port: process.env.PORT.toString() || "8080",
           pathname: "/media/**",
         },
       ],
