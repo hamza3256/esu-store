@@ -143,9 +143,7 @@ const Page = ({ params }: PageProps) => {
 
                 <div className="mt-4 space-y-3">
                   <p className="text-sm text-gray-600 sm:text-base">
-                    {product.description?.length > 100
-                      ? product.description.slice(0, 100) + "..."
-                      : product.description}
+                    {product.description}
                   </p>
                 </div>
                 <div className="mt-6 flex items-center">
