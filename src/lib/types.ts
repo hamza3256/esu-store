@@ -5,6 +5,7 @@ import { Media, Product, ProductFile, User } from "@/payload-types";
 export type Order = {
     id: string;
     orderNumber: string;
+    email: string;
     createdAt: string;
     updatedAt: string;
     status?: ('pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled') | null;

@@ -23,10 +23,16 @@ export const authRouter = router({
 
       if (users.length !== 0) throw new TRPCError({ code: "CONFLICT" });
 
-      await payload.create({
+      const user = await payload.create({
         collection: "users",
         data: { email, password, role: "user" },
       });
+
+      await payload.update({
+        collection: "orders",
+        where: { email: { equals: email}},
+        data: { user: user.id.toString()},
+      })
 
       return { success: true, sentToEmail: email };
     }),

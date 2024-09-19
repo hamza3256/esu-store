@@ -1,7 +1,9 @@
 import { z } from "zod";
-import { router, privateProcedure } from "./trpc";
+import { router, privateProcedure, publicProcedure } from "./trpc";
 import { getPayloadClient } from "../get-payload";
 import { TRPCError } from "@trpc/server";
+import Stripe from "stripe";
+import { stripe } from "../lib/stripe";
 
 const shippingAddressSchema = z.object({
   line1: z.string(),
@@ -13,20 +15,18 @@ const shippingAddressSchema = z.object({
 });
 
 const generateOrderNumber = () => {
-    const timestamp = Date.now().toString(); // Current timestamp in milliseconds
-    const randomPart = Math.floor(1000 + Math.random() * 9000).toString(); // Generate a random 4-digit number
-    return `${timestamp.slice(-6)}-${randomPart}`; // Use last 6 digits of timestamp + random number
-  };
-  
+  const timestamp = Date.now().toString(); 
+  const randomPart = Math.floor(1000 + Math.random() * 9000).toString(); 
+  return `ESU-2410${timestamp.slice(-3)}-${randomPart}`; 
+};
 
 export const ordersRouter = router({
   getOrders: privateProcedure
-    .input(z.object({ range: z.string().optional() })) // Accepting range as input
+    .input(z.object({ range: z.string().optional() })) 
     .query(async ({ input, ctx }) => {
       const payload = await getPayloadClient();
       const now = new Date();
 
-      // Define dateFilter with a more specific type
       let dateFilter: { greater_than?: string } = {};
 
       switch (input.range) {
@@ -155,6 +155,148 @@ export const ordersRouter = router({
 
       return updatedOrder;
     }),
+
+    createPublicSession: publicProcedure
+      .input(z.object({
+        productItems: z.array(z.object({ productId: z.string(), quantity: z.number() })),
+        shippingAddress: z.object({
+          line1: z.string(),
+          line2: z.string().optional(),
+          city: z.string(),
+          state: z.string(),
+          postalCode: z.string(),
+          country: z.string(),
+        }),
+        email: z.string().email()
+      }))
+      .mutation(async ({ input }) => {
+        const { productItems, shippingAddress, email } = input;
+
+        if (productItems.length === 0) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "No products in the order." });
+        }
+
+        const payload = await getPayloadClient();
+
+        // Fetch the products
+        const { docs: products } = await payload.find({
+          collection: "products",
+          where: {
+            id: {
+              in: productItems.map((item) => item.productId),
+            },
+          },
+        });
+
+        const filteredProductsHavePrice = products.filter((product) => Boolean(product.priceId));
+
+        const total = productItems.reduce((acc, item) => {
+          const product = filteredProductsHavePrice.find((p) => p.id === item.productId);
+          if (product) {
+            return acc + (product.price as number) * item.quantity;
+          }
+          return acc;
+        }, 0);
+
+        // Generate unique order number
+        const orderNumber = generateOrderNumber();
+
+        // Create the order with productItems, shipping address, and orderNumber
+        const order = await payload.create({
+          collection: "orders",
+          data: {
+            _isPaid: false,
+            productItems: productItems.map((item) => ({
+              product: item.productId,
+              quantity: item.quantity,
+            })),
+            email,
+            shippingAddress, // Save shipping address from the cart page
+            orderNumber, // Save the generated order number
+            total,
+          },
+        });
+
+        const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
+
+        // Use for...of to handle async operations
+        for (const item of productItems) {
+          const product = filteredProductsHavePrice.find((p) => p.id === item.productId);
+          if (product) {
+            const updatedInventory = Math.max((product.inventory as number) - item.quantity, 0);
+
+            // Deduct the quantity from the product's inventory
+            await payload.update({
+              collection: "products",
+              id: product.id,
+              data: {
+                inventory: updatedInventory,
+              },
+            });
+
+            // Prepare line item for Stripe
+            line_items.push({
+              price: product.priceId!.toString(),
+              quantity: item.quantity,
+            });
+          }
+        }
+
+        if (line_items.length === 0) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "No valid products in the order." });
+        }
+
+        try {
+          const stripeSession = await stripe.checkout.sessions.create({
+            success_url: `${process.env.NEXT_PUBLIC_SERVER_URL}/order-confirmation?orderId=${order.id}&guestEmail=${email}`,
+            cancel_url: `${process.env.NEXT_PUBLIC_SERVER_URL}/cart`,
+            payment_method_types: ["card"],
+            mode: "payment",
+            metadata: {
+              email,
+              orderId: order.id,
+              orderNumber,
+            },
+            line_items,
+          });
+
+          return { url: stripeSession.url };
+        } catch (error) {
+          console.log("Error creating stripe payment session:", error);
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to create Stripe payment session." });
+        }
+      }),
+
+
+    trackOrder: publicProcedure
+      .input(
+        z.object({
+          email: z.string().email(),
+          orderNumber: z.string(),
+        })
+      )
+      .query(async ({ input }) => {
+        const { email, orderNumber } = input;
+        const payload = await getPayloadClient();
+    
+        // Query to find the order by both email and orderNumber
+        const { docs: orders } = await payload.find({
+          collection: "orders",
+          where: {
+            orderNumber: { equals: orderNumber },
+            email: { equals: email }, // Ensure the email matches as well
+          },
+        });
+    
+        // If no orders are found, return a 404 error
+        if (orders.length === 0) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Order not found" });
+        }
+    
+        const [order] = orders;
+        return order;
+      }),
+    
 
   // Admin: Create an order (for testing purposes)
 //   createOrder: privateProcedure
