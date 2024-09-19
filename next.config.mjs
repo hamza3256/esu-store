@@ -26,7 +26,7 @@ const nextConfig = withPayload(
         {
           protocol: protocol,
           hostname: productionHostname, // Dynamically set production hostname
-          port: process.env.PORT.toString() || "8080",
+          port: process.env.PORT?.toString() || "3000",
           pathname: "/media/**",
         },
       ],
