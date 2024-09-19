@@ -86,7 +86,8 @@ ENV PAYLOAD_CONFIG_PATH=/app/dist/payload.config.js
 ENV NEXT_SHARP_PATH=/app/node_modules/sharp
 
 # Expose the application port
-EXPOSE PORT
+EXPOSE 3000
 
 # Start the application
-CMD ["node", "dist/server.js"]
+# CMD ["node", "dist/server.js"]
+CMD ["yarn", "start"]
