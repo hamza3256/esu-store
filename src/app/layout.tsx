@@ -1,12 +1,12 @@
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Providers from "@/components/Providers";
-import { Toaster } from "sonner";
 import Footer from "@/components/Footer";
 import { cn, constructMetadata } from "@/lib/utils"
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { getServerSideUser } from "@/lib/payload-utils";
+import { Toaster } from "@/components/ui/sonner"
 
 export const metadata = constructMetadata();
 
@@ -31,7 +31,7 @@ export default async function RootLayout({
             <Footer />
           </Providers>
         </main>
-        <Toaster position="top-center" richColors />
+        <Toaster theme="light" position="top-center" richColors />
       </body>
     </html>
   );

@@ -1,86 +1,88 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import Link from "next/link"
-import { Heart, Minus, Plus, Star, ShoppingBag } from "lucide-react"
-import { toast } from "sonner"
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
+import { Heart, Minus, Plus, Star, ShoppingBag } from "lucide-react";
+import { toast } from "sonner";
 
-import { Product } from "@/payload-types"
-import { cn, formatPrice } from "@/lib/utils"
-import { PRODUCT_CATEGORIES } from "@/config"
-import { useCart } from "@/hooks/use-cart"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Skeleton } from "@/components/ui/skeleton"
-import ImageSlider from "@/components/ImageSlider"
+import { Product } from "@/payload-types";
+import { cn, formatPrice } from "@/lib/utils";
+import { PRODUCT_CATEGORIES } from "@/config";
+import { useCart } from "@/hooks/use-cart";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import ImageSlider from "@/components/ImageSlider";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip"
+} from "@/components/ui/tooltip";
 
 interface ProductListingProps {
-  product: Product | null
-  index: number
+  product: Product | null;
+  index: number;
 }
 
 export default function ProductListing({ product, index }: ProductListingProps) {
-  const [isVisible, setIsVisible] = useState<boolean>(false)
-  const [quantity, setQuantity] = useState(1)
-  const [isFavorite, setIsFavorite] = useState(false)
-  const { addItem } = useCart()
+  const [isVisible, setIsVisible] = useState<boolean>(false);
+  const [quantity, setQuantity] = useState(1);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const { addItem } = useCart();
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      setIsVisible(true)
-    }, index * 75)
+      setIsVisible(true);
+    }, index * 75);
 
-    return () => clearTimeout(timer)
-  }, [index])
+    return () => clearTimeout(timer);
+  }, [index]);
 
-  if (!product || !isVisible) return <ProductPlaceholder />
+  if (!product || !isVisible) return <ProductPlaceholder />;
 
   const label = PRODUCT_CATEGORIES.find(
     ({ value }) => value === product.category
-  )?.label
+  )?.label;
 
   const validUrls = product.images
     .map(({ image }) => (typeof image === "string" ? image : image.url))
-    .filter(Boolean) as string[]
+    .filter(Boolean) as string[];
 
   const handleAddToCart = () => {
-    addItem(product, quantity)
-    toast.success(`Added ${quantity} ${quantity > 1 ? "items" : "item"} to cart`)
-  }
+    addItem(product, quantity);
+    toast.success(`Added ${quantity} ${quantity > 1 ? "items" : "item"} to cart`);
+  };
 
   const handleQuantityChange = (action: "increment" | "decrement") => {
     setQuantity((prev) => {
       if (action === "increment") {
-        return Math.min(prev + 1, product.inventory)
+        return Math.min(prev + 1, product.inventory);
       }
-      return Math.max(prev - 1, 1)
-    })
-  }
+      return Math.max(prev - 1, 1);
+    });
+  };
 
   const toggleFavorite = () => {
-    setIsFavorite(!isFavorite)
-    toast.success(isFavorite ? "Removed from favorites" : "Added to favorites")
-  }
+    setIsFavorite(!isFavorite);
+    toast.success(isFavorite ? "Removed from favorites" : "Added to favorites");
+  };
 
   return (
     <TooltipProvider>
-      <div
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 20 }}
+        transition={{ duration: 0.3 }}
         className={cn(
-          "group w-full cursor-pointer rounded-xl overflow-hidden shadow-lg transition-all duration-300 hover:shadow-xl relative bg-white",
-          {
-            "visible animate-in fade-in-5": isVisible,
-          }
+          "group w-full cursor-pointer rounded-xl overflow-hidden shadow-lg transition-all duration-300 hover:shadow-xl relative bg-white"
         )}
       >
         {/* Image Section */}
         <div className="relative overflow-hidden">
-          <ImageSlider urls={validUrls} productId={product.id}/>
+          <ImageSlider urls={validUrls} productId={product.id} />
           <Badge className="absolute top-2 left-2 z-10 text-xs bg-black text-white px-2 py-1 rounded-full">
             {label}
           </Badge>
@@ -109,16 +111,13 @@ export default function ProductListing({ product, index }: ProductListingProps) 
         </div>
 
         {/* Product Info */}
-        <div className="p-4 sm:p-6 space-y-2 sm:space-y-4">
-          <div className="space-y-1 sm:space-y-2">
+        <div className="p-4 space-y-2">
+          <div className="space-y-1">
             <Link href={`/product/${product.id}`} className="block">
-              <h3 className="font-semibold text-sm sm:text-lg text-gray-900 line-clamp-1 sm:line-clamp-2 hover:underline transition-colors duration-200">
+              <h3 className="font-semibold text-sm sm:text-lg text-gray-900 hover:underline transition-colors duration-200">
                 {product.name}
               </h3>
             </Link>
-            {/* <p className="text-xs sm:text-sm text-gray-500 line-clamp-2 hidden sm:block">
-              {product.description}
-            </p> */}
           </div>
 
           <div className="flex items-center justify-between">
@@ -143,81 +142,95 @@ export default function ProductListing({ product, index }: ProductListingProps) 
           </div>
 
           {/* Quantity and Add to Cart */}
-          <div className="flex items-center justify-between mt-2 sm:mt-4 space-x-2">
-            <div className="flex items-center space-x-1 sm:space-x-2 border border-gray-200 rounded-full">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={() => handleQuantityChange("decrement")}
-                    disabled={quantity <= 1}
-                    className="p-1 sm:p-2 text-gray-500 hover:text-gray-700 disabled:opacity-50"
-                    aria-label="Decrease quantity"
-                  >
-                    <Minus className="w-3 h-3 sm:w-4 sm:h-4" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>Decrease quantity</TooltipContent>
-              </Tooltip>
+          <AnimatePresence>
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <div className="flex flex-col space-y-3 mt-4">
+                {/* Quantity control section */}
+                <div className="flex items-center justify-between space-x-2">
+                  <div className="flex items-center space-x-1 border border-gray-200 rounded-full px-2 py-1">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={() => handleQuantityChange("decrement")}
+                          disabled={quantity <= 1}
+                          className="p-1 sm:p-2 text-gray-500 hover:text-gray-700 disabled:opacity-50"
+                          aria-label="Decrease quantity"
+                        >
+                          <Minus className="w-4 h-4 sm:w-5 sm:h-5" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>Decrease quantity</TooltipContent>
+                    </Tooltip>
 
-              <span className="w-6 sm:w-8 text-center text-xs sm:text-sm font-medium text-gray-900">
-                {quantity}
-              </span>
+                    <span className="w-8 sm:w-10 text-center text-sm sm:text-base font-medium text-gray-900">
+                      {quantity}
+                    </span>
 
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={() => handleQuantityChange("increment")}
-                    disabled={quantity >= product.inventory}
-                    className="p-1 sm:p-2 text-gray-500 hover:text-gray-700 disabled:opacity-50"
-                    aria-label="Increase quantity"
-                  >
-                    <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>Increase quantity</TooltipContent>
-              </Tooltip>
-            </div>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={() => handleQuantityChange("increment")}
+                          disabled={quantity >= product.inventory}
+                          className="p-1 sm:p-2 text-gray-500 hover:text-gray-700 disabled:opacity-50"
+                          aria-label="Increase quantity"
+                        >
+                          <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>Increase quantity</TooltipContent>
+                    </Tooltip>
+                  </div>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  onClick={handleAddToCart}
-                  disabled={product.inventory === 0}
-                  className="flex-grow bg-black text-white hover:bg-gray-800 transition-colors duration-200 text-xs sm:text-sm py-1 sm:py-2 px-2 sm:px-4"
+                  {/* Add to Cart button */}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        onClick={handleAddToCart}
+                        disabled={product.inventory === 0}
+                        className="flex items-center justify-center w-full h-10 sm:h-12 bg-black text-white hover:bg-gray-800 transition-colors duration-200 rounded-full"
+                      >
+                        {/* Larger icon on mobile */}
+                        <ShoppingBag className="w-6 h-6 sm:w-5 sm:h-5" />
+                        <span className="hidden sm:inline ml-2">
+                          {product.inventory === 0 ? "Out of Stock" : "Add to Bag"}
+                        </span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {product.inventory === 0 ? "Out of stock" : "Add to bag"}
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+
+                {/* Inventory Status */}
+                <p
+                  className={cn(
+                    "text-xs sm:text-sm mt-2",
+                    product.inventory > 0
+                      ? product.inventory < 5
+                        ? "text-orange-600"
+                        : "text-green-600"
+                      : "text-red-600"
+                  )}
                 >
-                  <ShoppingBag className="w-3 h-3 sm:w-4 sm:h-4" />
-                  <span className="ml-1 sm:ml-2 hidden sm:inline">
-                    {product.inventory === 0 ? "Out of Stock" : "Add to Bag"}
-                  </span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                {product.inventory === 0 ? "Out of stock" : "Add to bag"}
-              </TooltipContent>
-            </Tooltip>
-          </div>
-
-          {/* Inventory Status */}
-          <p
-            className={cn(
-              "text-xs sm:text-sm",
-              product.inventory > 0
-                ? product.inventory < 5
-                  ? "text-orange-600"
-                  : "text-green-600"
-                : "text-red-600"
-            )}
-          >
-            {product.inventory === 0
-              ? "Out of stock"
-              : product.inventory < 5
-              ? `Only ${product.inventory} left`
-              : `${product.inventory} available`}
-          </p>
+                  {product.inventory === 0
+                    ? "Out of stock"
+                    : product.inventory < 5
+                    ? `Only ${product.inventory} left`
+                    : `${product.inventory} available`}
+                </p>
+              </div>
+            </motion.div>
+          </AnimatePresence>
         </div>
-      </div>
+      </motion.div>
     </TooltipProvider>
-  )
+  );
 }
 
 function ProductPlaceholder() {
