@@ -4,17 +4,20 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import Image from "next/image";
 import "swiper/css";
 import "swiper/css/pagination";
+import "swiper/css/navigation"; // Include navigation styles
 import type SwiperType from "swiper";
 import { useEffect, useState } from "react";
-import { Pagination } from "swiper/modules";
+import { Pagination, Navigation } from "swiper/modules"; // Import the Navigation module for buttons
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 
 interface ImageSliderProps {
   urls: string[];
+  productId: string; // Add productId as a prop to create the product link
 }
 
-const ImageSlider = ({ urls }: ImageSliderProps) => {
+const ImageSlider = ({ urls, productId }: ImageSliderProps) => {
   const [swiper, setSwiper] = useState<null | SwiperType>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [sliderConfig, setSlideConfig] = useState({
@@ -75,29 +78,33 @@ const ImageSlider = ({ urls }: ImageSliderProps) => {
       </div>
       <Swiper
         pagination={{
+          clickable: true,
           renderBullet: (_, className) => {
             return `<span class="rounded-full transition ${className}"></span>`;
           },
-          bulletClass: "swiper-pagination-bullet", // Swiper's default class
-          bulletActiveClass: "swiper-pagination-bullet-active", // Active class
+          bulletClass: "swiper-pagination-bullet",
+          bulletActiveClass: "swiper-pagination-bullet-active",
         }}
-        onSwiper={(swiper) => setSwiper(swiper)}
+        onSwiper={(swiperInstance) => setSwiper(swiperInstance)}
         spaceBetween={50}
         slidesPerView={1}
-        modules={[Pagination]}
+        modules={[Pagination, Navigation]} // Added Navigation for desktop controls
         className="h-full w-full"
-        touchEventsTarget="container" // Ensure touch events are enabled
+        touchEventsTarget="container" // Ensure touch events are enabled for mobile
       >
         {urls.map((url, i) => (
           <SwiperSlide key={i} className="-z-10 relative h-full w-full">
-            <Image
-              fill
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              loading="eager"
-              className="-z-10 h-full w-full object-cover object-center "
-              src={url}
-              alt="Product image"
-            />
+            <Link href={`/product/${productId}`} className="block" passHref>
+              <Image
+                fill
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                loading="eager"
+                className="-z-10 h-full w-full object-cover object-center"
+                src={url}
+                alt={`Product image ${i + 1}`}
+                priority={i === 0} // Prioritize loading of the first image
+              />
+            </Link>
           </SwiperSlide>
         ))}
       </Swiper>

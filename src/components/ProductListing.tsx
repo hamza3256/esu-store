@@ -80,7 +80,7 @@ export default function ProductListing({ product, index }: ProductListingProps) 
       >
         {/* Image Section */}
         <div className="relative overflow-hidden">
-          <ImageSlider urls={validUrls} />
+          <ImageSlider urls={validUrls} productId={product.id}/>
           <Badge className="absolute top-2 left-2 z-10 text-xs bg-black text-white px-2 py-1 rounded-full">
             {label}
           </Badge>
@@ -116,9 +116,9 @@ export default function ProductListing({ product, index }: ProductListingProps) 
                 {product.name}
               </h3>
             </Link>
-            <p className="text-xs sm:text-sm text-gray-500 line-clamp-2 hidden sm:block">
+            {/* <p className="text-xs sm:text-sm text-gray-500 line-clamp-2 hidden sm:block">
               {product.description}
-            </p>
+            </p> */}
           </div>
 
           <div className="flex items-center justify-between">
