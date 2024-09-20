@@ -57,7 +57,6 @@ export const Users: CollectionConfig = {
       required: true,
       admin: {
         condition: ({ req }) => {
-          console.log("req: " + req)
           if (req?.user?.role === "admin" || req?.user?.role === "superadmin") {
             return true;
           }
