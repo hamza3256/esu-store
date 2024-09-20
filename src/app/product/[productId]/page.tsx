@@ -165,7 +165,7 @@ const Page = ({ params }: PageProps) => {
             {/* Product images */}
             <div className="mt-8 lg:col-start-2 lg:row-span-2 lg:mt-0 lg:self-center">
               <div className="aspect-square rounded-lg overflow-hidden shadow-md">
-                <ImageSlider urls={validUrls} />
+                <ImageSlider urls={validUrls} productId={productId}/>
               </div>
             </div>
 
