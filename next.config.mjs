@@ -14,7 +14,6 @@ const protocol = process.env.NEXT_PUBLIC_SERVER_URL?.startsWith('https') ? 'http
 const nextConfig = withPayload(
   {
     images: {
-      domains: ['localhost', productionHostname],
       remotePatterns: [
         // For local development (localhost)
         {

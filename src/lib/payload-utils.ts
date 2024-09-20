@@ -1,4 +1,3 @@
-// lib/payload-utils.ts
 import { User } from "../payload-types";
 import { ReadonlyRequestCookies } from "next/dist/server/web/spec-extension/adapters/request-cookies";
 import { NextRequest } from "next/server";

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import {
@@ -115,7 +115,9 @@ const Page = () => {
                   )}
                 </div>
 
-                <Button>Sign Up</Button>
+                <Button>{isLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-muted-foreground mr-1.5" />
+                  ) : null} Sign Up</Button>
               </div>
             </form>
           </div>
