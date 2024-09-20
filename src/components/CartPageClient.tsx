@@ -19,7 +19,7 @@ interface CartPageProps {
 }
 
 const CartPageClient = ({ user }: CartPageProps) => {
-  const { items, updateQuantity, removeItem, cartTotal } = useCart();
+  const { items, updateQuantity, removeItem, cartTotal, clearCart } = useCart();
   const router = useRouter();
   const [userTypeSelected, setUserTypeSelected] = useState(Boolean(user));
   const [isGuest, setIsGuest] = useState(!user); // Track if the user is a guest, based on server-side user prop
@@ -59,7 +59,10 @@ const CartPageClient = ({ user }: CartPageProps) => {
   // TRPC mutation for logged-in user
   const { mutate: createCheckoutSession, isLoading: isCheckoutLoading } = trpc.payment.createSession.useMutation({
     onSuccess: ({ url }) => {
-      if (url) router.push(url);
+      if (url) {
+        clearCart()
+        router.push(url);
+      }
     },
     onError: (error) => {
       console.error("Error creating checkout session:", error);
@@ -69,9 +72,12 @@ const CartPageClient = ({ user }: CartPageProps) => {
   // TRPC mutation for guest users
   const { mutate: createPublicSession, isLoading: isGuestCheckoutLoading } = trpc.order.createPublicSession.useMutation({
     onSuccess: ({ url }) => {
-      if (url) router.push(url);
+      if (url) {
+        clearCart()
+        router.push(url);
+      } 
     },
-    onError: (error) => {
+      onError: (error) => {
       console.error("Error creating guest checkout session:", error);
     },
   });
