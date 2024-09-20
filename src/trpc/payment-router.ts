@@ -150,6 +150,43 @@ export const paymentRouter = router({
           orderNumber,
         },
         line_items,
+        shipping_options: [
+          {
+            shipping_rate_data: {
+              type: 'fixed_amount',
+              fixed_amount: {
+                amount: 500, // Example shipping cost in cents
+                currency: 'usd',
+              },
+              display_name: 'Standard shipping',
+              delivery_estimate: {
+                minimum: {
+                  unit: 'business_day',
+                  value: 5,
+                },
+                maximum: {
+                  unit: 'business_day',
+                  value: 7,
+                },
+              },
+            },
+          },
+        ],
+        customer_email: user.email,
+        billing_address_collection: 'auto', // Optional, collect the billing address
+        payment_intent_data: {
+          shipping: {
+            name: user.name ? user.name : user.email,
+            address: {
+              line1: shippingAddress.line1,
+              line2: shippingAddress.line2 || '',
+              city: shippingAddress.city,
+              state: shippingAddress.state,
+              postal_code: shippingAddress.postalCode,
+              country: shippingAddress.country,
+            },
+          },
+        },
       });
     } catch (error) {
       // Enhanced error logging for debugging

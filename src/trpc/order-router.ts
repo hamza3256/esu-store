@@ -240,11 +240,10 @@ export const ordersRouter = router({
           throw new TRPCError({ code: "BAD_REQUEST", message: "No valid products in the order." });
         }
 
-        // Step 2: Create Stripe session
         let stripeSession;
         try {
           stripeSession = await stripe.checkout.sessions.create({
-            success_url: `${process.env.NEXT_PUBLIC_SERVER_URL}/order-confirmation?orderId=${order.id}&guestEmail=${email}`,
+            success_url: `${process.env.NEXT_PUBLIC_SERVER_URL}/order-confirmation?orderId=${order.id}`,
             cancel_url: `${process.env.NEXT_PUBLIC_SERVER_URL}/cart`,
             payment_method_types: ["card"],
             mode: "payment",
@@ -254,6 +253,43 @@ export const ordersRouter = router({
               orderNumber,
             },
             line_items,
+            shipping_options: [
+              {
+                shipping_rate_data: {
+                  type: 'fixed_amount',
+                  fixed_amount: {
+                    amount: 500, // Example shipping cost in cents
+                    currency: 'usd',
+                  },
+                  display_name: 'Standard shipping',
+                  delivery_estimate: {
+                    minimum: {
+                      unit: 'business_day',
+                      value: 5,
+                    },
+                    maximum: {
+                      unit: 'business_day',
+                      value: 7,
+                    },
+                  },
+                },
+              },
+            ],
+            customer_email: email,
+            billing_address_collection: 'auto', // Optional, collect the billing address
+            payment_intent_data: {
+              shipping: {
+                name: email,
+                address: {
+                  line1: shippingAddress.line1,
+                  line2: shippingAddress.line2 || '',
+                  city: shippingAddress.city,
+                  state: shippingAddress.state,
+                  postal_code: shippingAddress.postalCode,
+                  country: shippingAddress.country,
+                },
+              },
+            },
           });
         } catch (error) {
           // If Stripe session creation fails, rollback the order and return error
