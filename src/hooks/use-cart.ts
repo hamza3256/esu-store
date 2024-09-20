@@ -15,6 +15,7 @@ type CartState = {
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
   cartTotal: () => number; // Change cartTotal to a function
+  getItemCount: (productId: string) => number; 
 };
 
 export const useCart = create<CartState>()(
@@ -63,6 +64,12 @@ export const useCart = create<CartState>()(
           (total, item) => total + item.product.price * item.quantity,
           0
         ),
+
+         // Get the quantity of a specific item by its productId
+        getItemCount: (id) => {
+          const item = get().items.find((item) => item.product.id === id);
+          return item ? item.quantity : 0; // Return 0 if item is not found
+        },
     }),
     {
       name: "cart-storage",

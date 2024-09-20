@@ -22,6 +22,7 @@ import {
   TooltipProvider,
 } from "@/components/ui/tooltip";
 import { useCart } from "@/hooks/use-cart";
+import { Product } from "@/payload-types";
 
 interface PageProps {
   params: {
@@ -37,7 +38,7 @@ const BREADCRUMBS = [
 const Page = ({ params }: PageProps) => {
   const { productId } = params;
   const [quantity, setQuantity] = useState(1);
-  const { addItem } = useCart();
+  const { addItem, getItemCount } = useCart();
 
   const { data: product, isLoading, error } = trpc.getProductById.useQuery({
     id: productId,
@@ -55,9 +56,12 @@ const Page = ({ params }: PageProps) => {
     ({ value }) => value === product.category
   )?.label;
 
-  const validUrls = product.images
-    ?.map(({ image }) => (typeof image === "string" ? image : image.url))
+  const validUrls: string[] = product.images
+    ?.map(({ image }) => (typeof image === "string" ? image : image?.url))
     .filter(Boolean) as string[];
+
+  // Store cart item count in a variable to avoid multiple calls to getItemCount
+  const cartItemCount = getItemCount(product.id);
 
   const handleQuantityChange = (action: "increment" | "decrement") => {
     setQuantity((prev) => {
@@ -242,13 +246,13 @@ const Page = ({ params }: PageProps) => {
           <TooltipTrigger asChild>
             <Button
               onClick={handleAddToCart}
-              disabled={product.inventory === 0 || quantity > product.inventory}
+              disabled={product.inventory === 0 || cartItemCount >= (product.inventory as number)}
               className="fixed bottom-4 right-4 z-50 bg-black text-white rounded-full p-4 shadow-lg hover:bg-gray-800 focus:outline-none sm:hidden transition-transform hover:scale-105"
             >
               <ShoppingBag className="w-6 h-6" />
-              {quantity > 0 && (
+              {cartItemCount > 0 && (
                 <span className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full px-2 text-xs">
-                  {quantity}
+                  {cartItemCount}
                 </span>
               )}
             </Button>
