@@ -1,7 +1,6 @@
 import Image from "next/image";
 import { cookies } from "next/headers";
 import { getServerSideUser } from "@/lib/payload-utils";
-import { getPayloadClient } from "@/get-payload";
 import { notFound, redirect } from "next/navigation";
 import { Product, ProductFile, User } from "@/payload-types";
 import { PRODUCT_CATEGORIES } from "@/config";
@@ -9,6 +8,7 @@ import { formatPrice } from "@/lib/utils";
 import Link from "next/link";
 import PaymentStatus from "@/components/PaymentStatus";
 import { Order } from "@/lib/types";
+import { getPayloadClient } from "@/get-payload";
 
 interface PageProps {
   searchParams: { [key: string]: string | string[] | undefined };

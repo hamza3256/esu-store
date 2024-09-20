@@ -6,6 +6,7 @@ import { PRODUCT_CATEGORIES } from "../../config";
 import { Access, CollectionConfig } from "payload/types";
 import { Product, User } from "../../payload-types";
 import { stripe } from "../../lib/stripe";
+import type Stripe from "stripe";
 
 // Add User Hook: Allow for guest checkouts by handling cases where there's no logged-in user
 const addUser: BeforeChangeHook<Product> = async ({ req, data }) => {
@@ -53,6 +54,104 @@ const syncUser: AfterChangeHook<Product> = async ({ req, doc }) => {
   }
 };
 
+// Helper function to handle image uploads
+const uploadImageToStripe = async (imageUrl: string): Promise<string> => {
+  const response = await fetch(imageUrl); // Assuming imageUrl is publicly accessible
+  const buffer = await response.arrayBuffer(); // Convert image to buffer
+  const uploadedImage = await stripe.files.create({
+    purpose: 'product_image' as Stripe.FileCreateParams.Purpose,
+    file: {
+      data: Buffer.from(buffer), // Ensure the buffer is converted correctly
+      name: 'product_image.jpg',
+      type: 'application/octet-stream',
+    },
+  });
+  return uploadedImage.id;
+};
+
+// Before Change Hook for creating/updating product
+const handleProductChange: BeforeChangeHook<Product> = async ({ operation, data, req }) => {
+  const productData = data as Product;
+
+  // Ensure price is passed and a valid Stripe product exists
+  if (!productData.price || (operation === 'update' && !productData.stripeId)) return data;
+
+  let stripeProduct;
+  let stripePrice;
+
+  // Get the first image URL from the media collection (ensure you resolve it properly)
+  const validUrls = await Promise.all(
+    productData.images.map(async ({ image }) => {
+      if (typeof image === "string") {
+        // Resolve the image URL from the Payload media collection
+        const mediaDoc = await req.payload.findByID({ collection: "media", id: image });
+        return mediaDoc?.url;
+      } else {
+        return image.url; // If image is already an object with a URL
+      }
+    })
+  );
+
+  const imageUrl = validUrls.filter(Boolean)[0];
+
+  let imageId: string | undefined;
+
+  // Upload the first image to Stripe if available
+  if (imageUrl) {
+    imageId = await uploadImageToStripe(imageUrl).catch((error) => {
+      console.error("Error uploading image to Stripe:", error);
+      return undefined;
+    });
+  }
+
+  if (operation === 'create') {
+    // Create the Stripe product and associate the uploaded image
+    stripeProduct = await stripe.products.create({
+      name: productData.name,
+      images: imageId ? [imageId] : undefined,
+    });
+
+    // Create a price for the product
+    stripePrice = await stripe.prices.create({
+      product: stripeProduct.id,
+      currency: 'USD',
+      unit_amount: Math.round(productData.price * 100),
+    });
+
+    // Set the created price as the default price for the product
+    await stripe.products.update(stripeProduct.id, {
+      default_price: stripePrice.id,
+    });
+
+  } else if (operation === 'update') {
+    // Update the Stripe product and associate the new image, if applicable
+    await stripe.products.update(productData.stripeId!, {
+      name: productData.name,
+      images: imageId ? [imageId] : undefined,
+    });
+
+    // Create new price for the updated product price
+    stripePrice = await stripe.prices.create({
+      product: productData.stripeId!,
+      currency: 'USD',
+      unit_amount: Math.round(productData.price * 100),
+    });
+
+    // Set the newly created price as the default price for the product
+    await stripe.products.update(productData.stripeId!, {
+      default_price: stripePrice.id,
+    });
+  }
+
+  // Return updated product data including Stripe price and product IDs
+  return {
+    ...data,
+    stripeId: stripeProduct?.id || productData.stripeId,
+    priceId: stripePrice?.id || productData.priceId,
+  };
+};
+
+
 // Access control modification to accommodate guest operations
 const isAdminOrHasAccess =
   (): Access =>
@@ -89,7 +188,7 @@ export const Products: CollectionConfig = {
     delete: isAdminOrHasAccess(),
   },
   hooks: {
-    beforeChange: [addUser],
+    beforeChange: [addUser, handleProductChange], // Use updated hook to handle Stripe
     afterChange: [syncUser],
   },
   fields: [

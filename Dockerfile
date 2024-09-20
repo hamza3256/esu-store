@@ -49,6 +49,10 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist/ ./dist
 COPY --from=builder /app/next.config.mjs ./
 
+RUN mkdir -p /app/dist/product_files
+RUN chown -R nextjs:nodejs /app/dist/product_files
+RUN chmod -R 755 /app/dist/product_files
+
 # Set ownership for caching directories
 RUN chown -R nextjs:nodejs /app/.next/cache
 RUN chown -R nextjs:nodejs /app/.next/static

@@ -104,7 +104,7 @@ const CartPageClient = ({ user }: CartPageProps) => {
   };
 
   const handleLogin = () => {
-    router.push(`/sign-in?redirect=cart`);
+    router.push(`/sign-in?origin=cart`);
   };
 
   const fee = 5;

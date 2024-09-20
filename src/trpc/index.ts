@@ -6,7 +6,7 @@ import { getPayloadClient } from "../get-payload";
 import { paymentRouter } from "./payment-router";
 import { ordersRouter } from "./order-router";
 import { TRPCError } from "@trpc/server";
-import { Product, User } from "@/payload-types";
+import { User } from "@/payload-types";
 import { PayloadRequest } from "payload/types";
 
 export const appRouter = router({
