@@ -9,14 +9,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowRight, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
-import {
-  AuthCredentialsValidator,
-  TAuthCredentialsValidator,
-} from "@/lib/validators/account-credentials-validator";
 import { trpc } from "@/trpc/client";
 import { toast } from "sonner";
 import { ZodError } from "zod";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { AuthCredentialsValidator, TAuthCredentialsValidator } from "@/lib/validators/auth-credentials-validator";
 
 const Page = () => {
   const searchParams = useSearchParams();
@@ -125,9 +122,9 @@ const Page = () => {
                   )}
                 </div>
                 
-                  <Button>Sign In {isLoading ? (
-                    <Loader2 className="w-4 h-4 animate-spin ml-1.5" />
-                  ) : null}</Button>
+                  <Button>{isLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin mr-1.5" />
+                  ) : null} Sign In</Button>
                 
               </div>
             </form>

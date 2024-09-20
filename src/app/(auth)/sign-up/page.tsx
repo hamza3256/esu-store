@@ -10,8 +10,8 @@ import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import {
-  AuthCredentialsValidator,
-  TAuthCredentialsValidator,
+  AccountCredentialsValidator,
+  TAccountCredentialsValidator,
 } from "@/lib/validators/account-credentials-validator";
 import { trpc } from "@/trpc/client";
 import { toast } from "sonner";
@@ -23,8 +23,8 @@ const Page = () => {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<TAuthCredentialsValidator>({
-    resolver: zodResolver(AuthCredentialsValidator),
+  } = useForm<TAccountCredentialsValidator>({
+    resolver: zodResolver(AccountCredentialsValidator),
   });
 
   const router = useRouter();
@@ -49,8 +49,8 @@ const Page = () => {
     },
   });
 
-  const onSubmit = ({ email, password }: TAuthCredentialsValidator) => {
-    mutate({ email, password });
+  const onSubmit = ({ email, password, name }: TAccountCredentialsValidator) => {
+    mutate({ email, password, name });
   };
 
   return (
@@ -67,14 +67,26 @@ const Page = () => {
               })}
               href="/sign-in"
             >
-              Already have an account? Sign In{" "}
-              <ArrowRight className="h-4 w-4" />
+              Already have an account? Sign In <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
 
           <div className="grd gap-6">
             <form onSubmit={handleSubmit(onSubmit)}>
               <div className="grid gap-2">
+                <div className="grid gap-1 py-2">
+                  <Label htmlFor="name">Full Name</Label>
+                  <Input
+                    {...register("name")}
+                    className={cn({
+                      "focus-visible:ring-red-500": errors.name,
+                    })}
+                    placeholder="Your Full Name"
+                  />
+                  {errors?.name && (
+                    <p className="text-sm text-red-500 ">{errors.name.message}</p>
+                  )}
+                </div>
                 <div className="grid gap-1 py-2">
                   <Label htmlFor="email">Email</Label>
                   <Input
@@ -85,9 +97,7 @@ const Page = () => {
                     placeholder="you@example.com"
                   />
                   {errors?.email && (
-                    <p className="text-sm text-red-500 ">
-                      {errors.email.message}
-                    </p>
+                    <p className="text-sm text-red-500 ">{errors.email.message}</p>
                   )}
                 </div>
                 <div className="grid gap-1 py-2">
@@ -101,9 +111,7 @@ const Page = () => {
                     placeholder="Password"
                   />
                   {errors?.password && (
-                    <p className="text-sm text-red-500 ">
-                      {errors.password.message}
-                    </p>
+                    <p className="text-sm text-red-500 ">{errors.password.message}</p>
                   )}
                 </div>
 
@@ -118,3 +126,4 @@ const Page = () => {
 };
 
 export default Page;
+

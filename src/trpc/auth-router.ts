@@ -1,41 +1,44 @@
-import { AuthCredentialsValidator } from "../lib/validators/account-credentials-validator"; // TODO: fix using @ instead of ..
+import { AccountCredentialsValidator } from "../lib/validators/account-credentials-validator"; // TODO: fix using @ instead of ..
 import { publicProcedure, router } from "./trpc";
 import { getPayloadClient } from "../get-payload"; // TODO: fix using @ instead of ..
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
+import { AuthCredentialsValidator } from "../lib/validators/auth-credentials-validator";
 
 export const authRouter = router({
   createPayloadUser: publicProcedure
-    .input(AuthCredentialsValidator)
-    .mutation(async ({ input }) => {
-      const { email, password } = input;
-      const payload = await getPayloadClient();
+  .input(AccountCredentialsValidator)
+  .mutation(async ({ input }) => {
+    const { email, password, name } = input;
+    const payload = await getPayloadClient();
 
-      // check if user already exists
-      const { docs: users } = await payload.find({
-        collection: "users",
-        where: {
-          email: {
-            equals: email,
-          },
+    // Check if the user already exists
+    const { docs: users } = await payload.find({
+      collection: "users",
+      where: {
+        email: {
+          equals: email,
         },
-      });
+      },
+    });
 
-      if (users.length !== 0) throw new TRPCError({ code: "CONFLICT" });
+    if (users.length !== 0) throw new TRPCError({ code: "CONFLICT" });
 
-      const user = await payload.create({
-        collection: "users",
-        data: { email, password, role: "user" },
-      });
+    // Create user with name
+    const user = await payload.create({
+      collection: "users",
+      data: { email, password, name, role: "user" },
+    });
 
-      await payload.update({
-        collection: "orders",
-        where: { email: { equals: email}},
-        data: { user: user.id.toString()},
-      })
+    // Update any orders associated with this email
+    await payload.update({
+      collection: "orders",
+      where: { email: { equals: email } },
+      data: { user: user.id.toString() },
+    });
 
-      return { success: true, sentToEmail: email };
-    }),
+    return { success: true, sentToEmail: email };
+  }),
 
   verifyEmail: publicProcedure
     .input(z.object({ token: z.string() }))

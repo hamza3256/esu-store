@@ -32,6 +32,11 @@ export const Users: CollectionConfig = {
   },
   fields: [
     {
+      name: "name",
+      label: "Full Name",
+      type: "text",
+    },
+    {
       name: "products",
       label: "Products",
       admin: {
