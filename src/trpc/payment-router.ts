@@ -14,152 +14,199 @@ const generateOrderNumber = () => {
 
 export const paymentRouter = router({
   createSession: privateProcedure
-    .input(
-      z.object({
-        productItems: z.array(
-          z.object({
-            productId: z.string(),
-            quantity: z.number(),
-          })
-        ),
-        shippingAddress: z.object({
-          line1: z.string(),
-          line2: z.string().optional(),
-          city: z.string(),
-          state: z.string(),
-          postalCode: z.string(),
-          country: z.string(),
-        }),
-      })
-    )
-    .mutation(async ({ ctx, input }) => {
-      const { user } = ctx;
-      const { productItems, shippingAddress } = input;
+  .input(
+    z.object({
+      productItems: z.array(
+        z.object({
+          productId: z.string(),
+          quantity: z.number(),
+        })
+      ),
+      shippingAddress: z.object({
+        line1: z.string(),
+        line2: z.string().optional(),
+        city: z.string(),
+        state: z.string(),
+        postalCode: z.string(),
+        country: z.string(),
+      }),
+    })
+  )
+  .mutation(async ({ ctx, input }) => {
+    const { user } = ctx;
+    const { productItems, shippingAddress } = input;
 
-      if (!user || !user.id) {
-        throw new TRPCError({
-          code: "UNAUTHORIZED",
-          message: "User not authenticated",
-        });
-      }
-
-      if (productItems.length === 0) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "No products in the order" });
-      }
-
-      const payload = await getPayloadClient();
-
-      // Fetch the products to ensure they exist and have enough inventory
-      const { docs: products } = await payload.find({
-        collection: "products",
-        where: {
-          id: {
-            in: productItems.map((item) => item.productId),
-          },
-        },
+    if (!user || !user.id) {
+      throw new TRPCError({
+        code: "UNAUTHORIZED",
+        message: "User not authenticated",
       });
+    }
 
-      // Ensure all products exist and have prices
-      const filteredProductsHavePrice = products.filter((product) => Boolean(product.priceId));
+    if (productItems.length === 0) {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: "No products in the order",
+      });
+    }
 
-      if (filteredProductsHavePrice.length !== productItems.length) {
+    const payload = await getPayloadClient();
+
+    // Fetch products to ensure they exist and have enough inventory
+    const { docs: products } = await payload.find({
+      collection: "products",
+      where: {
+        id: {
+          in: productItems.map((item) => item.productId),
+        },
+      },
+    });
+
+    // Ensure products exist and have prices
+    const filteredProductsHavePrice = products.filter((product) =>
+      Boolean(product.priceId)
+    );
+
+    if (filteredProductsHavePrice.length !== productItems.length) {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: "Some products do not have prices or were not found",
+      });
+    }
+
+    // Calculate the total
+    const total = productItems.reduce((acc, item) => {
+      const product = filteredProductsHavePrice.find(
+        (p) => p.id === item.productId
+      );
+      if (!product) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Some products do not have prices or were not found",
+          message: `Product with ID ${item.productId} not found`,
         });
       }
+      return acc + (product.price as number) * item.quantity;
+    }, 0);
 
-      // Calculate the total
-      const total = productItems.reduce((acc, item) => {
-        const product = filteredProductsHavePrice.find((p) => p.id === item.productId);
-        if (!product) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: `Product with ID ${item.productId} not found`,
-          });
-        }
-        return acc + (product.price as number) * item.quantity;
-      }, 0);
+    // Generate unique order number
+    const orderNumber = generateOrderNumber();
 
-      // Generate unique order number
-      const orderNumber = generateOrderNumber();
+    // Step 1: Create the order but don't deduct inventory yet
+    const order = await payload.create({
+      collection: "orders",
+      data: {
+        _isPaid: false,
+        productItems: productItems.map((item) => ({
+          product: item.productId,
+          quantity: item.quantity,
+        })),
+        email: user.email,
+        user: user.id,
+        shippingAddress,
+        orderNumber,
+        total,
+      },
+    });
 
-      // Create the order with productItems, shipping address, and orderNumber
-      const order = await payload.create({
-        collection: "orders",
-        data: {
-          _isPaid: false,
-          productItems: productItems.map((item) => ({
-            product: item.productId,
-            quantity: item.quantity,
-          })),
-          email: user.email,
-          user: user.id,
-          shippingAddress,
-          orderNumber,
-          total,
-        },
-      });
+    const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
 
-      const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
-
-      // Deduct product inventory and create line items for Stripe session
-      for (const item of productItems) {
-        const product = filteredProductsHavePrice.find((p) => p.id === item.productId);
-
-        if (!product || !product.id) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: `Product ID is missing for product: ${product?.name}`,
-          });
-        }
-
-        // Check if product has enough inventory
-        if (product.inventory as number < item.quantity) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: `Insufficient inventory for product: ${product.name}`,
-          });
-        }
-
-        const updatedInventory = Math.max((product.inventory as number) - item.quantity, 0);
-
-        // Deduct the quantity from the product's inventory
-        await payload.update({
-          collection: "products",
-          id: product.id,
-          data: {
-            inventory: updatedInventory,
-          },
-        });
-
+    // Prepare line items for Stripe session
+    for (const item of productItems) {
+      const product = filteredProductsHavePrice.find(
+        (p) => p.id === item.productId
+      );
+      if (product) {
         // Prepare line item for Stripe
         line_items.push({
           price: product.priceId!.toString(),
           quantity: item.quantity,
         });
       }
+    }
 
-      try {
-        const stripeSession = await stripe.checkout.sessions.create({
-          success_url: `${process.env.NEXT_PUBLIC_SERVER_URL}/order-confirmation?orderId=${order.id}`,
-          cancel_url: `${process.env.NEXT_PUBLIC_SERVER_URL}/cart`,
-          payment_method_types: ["card", "paypal"],
-          mode: "payment",
-          metadata: {
-            userId: user.id,
-            orderId: order.id,
-            orderNumber,
-          },
-          line_items,
+    if (line_items.length === 0) {
+      // Rollback the order if no valid products are found
+      await payload.delete({
+        collection: "orders",
+        id: order.id,
+      });
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: "No valid products in the order.",
+      });
+    }
+
+    // Step 2: Create Stripe session
+    let stripeSession;
+    try {
+      stripeSession = await stripe.checkout.sessions.create({
+        success_url: `${process.env.NEXT_PUBLIC_SERVER_URL}/order-confirmation?orderId=${order.id}`,
+        cancel_url: `${process.env.NEXT_PUBLIC_SERVER_URL}/cart`,
+        payment_method_types: ["card"],
+        mode: "payment",
+        metadata: {
+          userId: user.id,
+          orderId: order.id,
+          orderNumber,
+        },
+        line_items,
+      });
+    } catch (error) {
+      // Enhanced error logging for debugging
+      console.error("Error creating Stripe session:", error);
+
+      // Rollback the order if Stripe session creation fails
+      await payload.delete({
+        collection: "orders",
+        id: order.id,
+      });
+
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to create Stripe session.",
+      });
+    }
+
+    // Step 3: Deduct product inventory after Stripe session creation succeeds
+    for (const item of productItems) {
+      const product = filteredProductsHavePrice.find(
+        (p) => p.id === item.productId
+      );
+
+      if (!product || !product.id) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Product ID is missing for product: ${product?.name}`,
         });
-
-        return { url: stripeSession.url };
-      } catch (error) {
-        return { url: null };
       }
-    }),
-  
+
+      // Check if product has enough inventory
+      if ((product.inventory as number) < item.quantity) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Insufficient inventory for product: ${product.name}`,
+        });
+      }
+
+      const updatedInventory = Math.max(
+        (product.inventory as number) - item.quantity,
+        0
+      );
+
+      // Deduct the quantity from the product's inventory
+      await payload.update({
+        collection: "products",
+        id: product.id,
+        data: {
+          inventory: updatedInventory,
+        },
+      });
+    }
+
+    // Step 4: Return the Stripe session URL for the client to redirect
+    return { url: stripeSession.url };
+  }),
+
 
   pollOrderStatus: privateProcedure
     .input(z.object({ orderId: z.string() }))

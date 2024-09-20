@@ -156,7 +156,7 @@ export const ordersRouter = router({
       return updatedOrder;
     }),
 
-    createPublicSession: publicProcedure
+    createPublicSession : publicProcedure
       .input(z.object({
         productItems: z.array(z.object({ productId: z.string(), quantity: z.number() })),
         shippingAddress: z.object({
@@ -167,7 +167,7 @@ export const ordersRouter = router({
           postalCode: z.string(),
           country: z.string(),
         }),
-        email: z.string().email()
+        email: z.string().email(),
       }))
       .mutation(async ({ input }) => {
         const { productItems, shippingAddress, email } = input;
@@ -201,7 +201,7 @@ export const ordersRouter = router({
         // Generate unique order number
         const orderNumber = generateOrderNumber();
 
-        // Create the order with productItems, shipping address, and orderNumber
+        // Step 1: Create the order but don't deduct inventory yet
         const order = await payload.create({
           collection: "orders",
           data: {
@@ -219,21 +219,10 @@ export const ordersRouter = router({
 
         const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
 
-        // Use for...of to handle async operations
+        // Prepare line items for Stripe session
         for (const item of productItems) {
           const product = filteredProductsHavePrice.find((p) => p.id === item.productId);
           if (product) {
-            const updatedInventory = Math.max((product.inventory as number) - item.quantity, 0);
-
-            // Deduct the quantity from the product's inventory
-            await payload.update({
-              collection: "products",
-              id: product.id,
-              data: {
-                inventory: updatedInventory,
-              },
-            });
-
             // Prepare line item for Stripe
             line_items.push({
               price: product.priceId!.toString(),
@@ -243,11 +232,18 @@ export const ordersRouter = router({
         }
 
         if (line_items.length === 0) {
+          // Rollback the order if no valid products are found
+          await payload.delete({
+            collection: "orders",
+            id: order.id,
+          });
           throw new TRPCError({ code: "BAD_REQUEST", message: "No valid products in the order." });
         }
 
+        // Step 2: Create Stripe session
+        let stripeSession;
         try {
-          const stripeSession = await stripe.checkout.sessions.create({
+          stripeSession = await stripe.checkout.sessions.create({
             success_url: `${process.env.NEXT_PUBLIC_SERVER_URL}/order-confirmation?orderId=${order.id}&guestEmail=${email}`,
             cancel_url: `${process.env.NEXT_PUBLIC_SERVER_URL}/cart`,
             payment_method_types: ["card"],
@@ -259,12 +255,49 @@ export const ordersRouter = router({
             },
             line_items,
           });
-
-          return { url: stripeSession.url };
         } catch (error) {
-          console.log("Error creating stripe payment session:", error);
+          // If Stripe session creation fails, rollback the order and return error
+          await payload.delete({
+            collection: "orders",
+            id: order.id,
+          });
+          console.log("Error creating Stripe session:", error);
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to create Stripe payment session." });
         }
+
+        // Step 3: Deduct product inventory after Stripe session creation succeeds
+        for (const item of productItems) {
+          const product = filteredProductsHavePrice.find((p) => p.id === item.productId);
+
+          if (!product || !product.id) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: `Product ID is missing for product: ${product?.name}`,
+            });
+          }
+
+          // Check if product has enough inventory
+          if (product.inventory as number < item.quantity) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: `Insufficient inventory for product: ${product.name}`,
+            });
+          }
+
+          const updatedInventory = Math.max((product.inventory as number) - item.quantity, 0);
+
+          // Deduct the quantity from the product's inventory
+          await payload.update({
+            collection: "products",
+            id: product.id,
+            data: {
+              inventory: updatedInventory,
+            },
+          });
+        }
+
+        // Step 4: Return the Stripe session URL for the client to redirect
+        return { url: stripeSession.url };
       }),
 
 
