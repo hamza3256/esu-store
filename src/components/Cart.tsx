@@ -1,6 +1,6 @@
 "use client";
 
-import { ShoppingCartIcon } from "lucide-react";
+import { ShoppingCartIcon, Loader2 } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -18,6 +18,7 @@ import { useCart } from "@/hooks/use-cart";
 import { ScrollArea } from "./ui/scroll-area";
 import CartItem from "./CartItem";
 import { useEffect, useState } from "react";
+import { useRouter, usePathname } from "next/navigation";
 
 const Cart = ({
   isTransparent,
@@ -26,38 +27,59 @@ const Cart = ({
   isTransparent: boolean;
   isHovered: boolean;
 }) => {
-  const { items, cartTotal, updateQuantity, removeItem } = useCart();
-  const itemCount = items.length
-
+  const { items, cartTotal } = useCart();
+  const itemCount = items.length;
   const shippingFee = 1;
-
   const [isMounted, setIsMounted] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isOpen, setIsOpen] = useState<boolean>(false);
+
+  const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
+  // Reset the loading state after navigation and close the cart
+  useEffect(() => {
+    if (isLoading && pathname === "/cart") {
+      setIsLoading(false);
+      setIsOpen(false); // Close the cart after navigation
+    }
+  }, [pathname, isLoading]);
+
+  const handleCheckoutClick = () => {
+    setIsLoading(true);
+    router.push("/cart"); // Manually navigate to cart
+    setIsOpen(false); // Close the cart sheet only after navigating
+  };
+
   return (
-    <Sheet>
-      <SheetTrigger className="group relative -m-2 flex items-center p-2">
+    <Sheet open={isOpen} onOpenChange={setIsOpen}>
+      <SheetTrigger
+        onClick={() => setIsOpen(true)} // Open the cart when clicked
+        className="group relative -m-2 flex items-center p-2"
+      >
         <ShoppingCartIcon
           aria-hidden="true"
           className={cn(
-            "h-6 w-6 flex-shrink-0 text-gray-400 group-hover:text-gray-400",
+            "h-6 w-6 flex-shrink-0 group-hover:text-gray-400",
             `${isTransparent && !isHovered ? "text-gray-400" : "text-gray-600"}`
           )}
         />
-        {/* Badge for item count */}
         {isMounted && itemCount > 0 && (
           <span className="absolute -bottom-1 -right-1 inline-flex items-center justify-center rounded-full bg-gray-700 px-1.5 py-0.8 text-xs font-medium text-white">
             {itemCount}
           </span>
         )}
       </SheetTrigger>
+
       <SheetContent className="flex w-full flex-col pr-0 sm:max-w-lg">
         <SheetHeader className="space-y-2.5 pr-6">
           <SheetTitle>Cart ({itemCount})</SheetTitle>
         </SheetHeader>
+
         {itemCount > 0 ? (
           <>
             <div className="flex w-full flex-col pr-6">
@@ -71,6 +93,7 @@ const Cart = ({
                 ))}
               </ScrollArea>
             </div>
+
             <div className="space-y-4 pr-6">
               <Separator />
               <div className="space-t-1.5 pr-6">
@@ -87,16 +110,20 @@ const Cart = ({
                   <span>{formatPrice(cartTotal() + shippingFee)}</span>
                 </div>
               </div>
+
               <div>
                 <SheetFooter>
-                  <SheetTrigger asChild>
-                    <Link
-                      href="/cart"
-                      className={buttonVariants({ className: "w-full" })}
-                    >
-                      Continue to checkout
-                    </Link>
-                  </SheetTrigger>
+                  <button
+                    className={buttonVariants({ className: "w-full" })}
+                    onClick={handleCheckoutClick}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-muted-foreground mr-1.5" />
+                    ) : (
+                      "Continue to checkout"
+                    )}
+                  </button>
                 </SheetFooter>
               </div>
             </div>

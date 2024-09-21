@@ -264,15 +264,23 @@ const CartPageClient = ({ user }: CartPageProps) => {
                 <ShippingAddressForm shippingAddress={shippingAddress} handleInputChange={handleInputChange} />
 
                 <div className="mt-6">
-                  <Button
-                    disabled={items.length === 0 || isCheckoutLoading || isGuestCheckoutLoading || items.some((i) => i.product.inventory === 0 || !isFormComplete())}
-                    onClick={handleCheckout}
-                    className="w-full"
-                    size="lg"
-                  >
-                    {(isCheckoutLoading || isGuestCheckoutLoading) ? <Loader2 className="w-4 h-4 animate-spin text-muted-foreground mr-1.5" /> : null}
-                    Checkout
-                  </Button>
+                <Button
+                  disabled={
+                    items.length === 0 ||
+                    isCheckoutLoading ||
+                    isGuestCheckoutLoading ||
+                    items.some((i) => i.product.inventory === 0 || !isFormComplete())
+                  }
+                  onClick={handleCheckout}
+                  className="w-full"
+                  size="lg"
+                >
+                  {isCheckoutLoading || isGuestCheckoutLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-muted-foreground mr-1.5" />
+                  ) : null}
+                  Checkout
+                </Button>
+
                 </div>
               </>
             )}
