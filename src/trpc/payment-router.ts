@@ -150,6 +150,9 @@ export const paymentRouter = router({
           orderNumber,
         },
         line_items,
+        shipping_address_collection: {
+          allowed_countries: ['US', 'CA', 'GB','PK'], // specify the allowed countries for shipping
+        }, 
         shipping_options: [
           {
             shipping_rate_data: {
