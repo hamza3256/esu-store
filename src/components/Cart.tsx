@@ -43,7 +43,7 @@ const Cart = ({
 
   // Reset the loading state after navigation and close the cart
   useEffect(() => {
-    if (isLoading && pathname === "/cart") {
+    if (pathname === "/cart") {
       setIsLoading(false);
       setIsOpen(false); // Close the cart after navigation
     }

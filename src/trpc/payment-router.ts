@@ -150,18 +150,22 @@ export const paymentRouter = router({
           orderNumber,
         },
         line_items,
+        customer_email: user.email,
+        // This will collect the shipping address from the user during checkout
         shipping_address_collection: {
-          allowed_countries: ['US', 'CA', 'GB','PK'], // specify the allowed countries for shipping
-        }, 
+          allowed_countries: ['US', 'CA', 'PK', 'GB'], // Specify countries that you will ship to
+        },
+        // If you want to define specific shipping options (such as free shipping or flat rate), you can do so here:
         shipping_options: [
           {
             shipping_rate_data: {
               type: 'fixed_amount',
               fixed_amount: {
-                amount: 500, // Example shipping cost in cents
+                amount: 500, // Amount in the smallest currency unit (e.g., cents for USD)
                 currency: 'usd',
               },
-              display_name: 'Standard shipping',
+              display_name: 'Standard Shipping',
+              // Optionally, specify delivery estimate information
               delivery_estimate: {
                 minimum: {
                   unit: 'business_day',
@@ -175,22 +179,8 @@ export const paymentRouter = router({
             },
           },
         ],
-        customer_email: user.email,
-        billing_address_collection: 'auto', // Optional, collect the billing address
-        payment_intent_data: {
-          shipping: {
-            name: user.name ? user.name : user.email,
-            address: {
-              line1: shippingAddress.line1,
-              line2: shippingAddress.line2 || '',
-              city: shippingAddress.city,
-              state: shippingAddress.state,
-              postal_code: shippingAddress.postalCode,
-              country: shippingAddress.country,
-            },
-          },
-        },
       });
+       
     } catch (error) {
       // Enhanced error logging for debugging
       console.error("Error creating Stripe session:", error);
