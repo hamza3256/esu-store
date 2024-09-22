@@ -9,6 +9,11 @@ import { ReceiptEmailHtml } from "./components/emails/ReceiptEmail";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+interface ProductItem {
+  product: string | Product;
+  quantity: number;
+  id?: string | null;
+};
 export const stripeWebhookHandler = async (
   req: express.Request,
   res: express.Response
@@ -42,6 +47,8 @@ export const stripeWebhookHandler = async (
   }
 
   const orderId = session.metadata.orderId;
+  const orderNumber = session.metadata.orderNumber;
+  const userEmail = session.metadata.email
 
   // 3. Handle `checkout.session.completed` event
   if (event.type === "checkout.session.completed") {
@@ -83,37 +90,56 @@ export const stripeWebhookHandler = async (
         return res.status(404).json({ error: "Order not found." });
       }
 
+      if (order._emailSent) {
+        console.log("Email has already been sent for this order.");
+        return res.status(200).json({ message: "Email already sent." });
+      }
+
       console.log("Order found, updating payment status...");
 
       // 4. Extract the shipping address from the session object
       const shippingAddress = session.shipping_details?.address;
+
+      console.log("Session: " + JSON.stringify(session))
 
       if (!shippingAddress) {
         console.error("No shipping address available in session");
         return res.status(400).send({ error: "No shipping address found in session" });
       }
 
-      // 5. Update the order with the shipping address
+       // 5. Update the order with the shipping address
       const updatedOrder = await payload.update({
         collection: "orders",
         id: orderId,
         data: {
           _isPaid: true,
-          shippingAddress: {
-            line1: shippingAddress.line1 || '',
-            line2: shippingAddress.line2 || '',
-            city: shippingAddress.city || '',
-            state: shippingAddress.state || '',
-            postalCode: shippingAddress.postal_code || '',
-            country: shippingAddress.country || '',
-          },
         },
       });
 
-      console.log("Order payment status updated and shipping address saved:", updatedOrder);
+      console.log("Updated order: " + updatedOrder)
 
+      // // 5. Update the order with the shipping address
+      // const updatedOrder = await payload.update({
+      //   collection: "orders",
+      //   id: orderId,
+      //   data: {
+      //     _isPaid: true,
+      //     shippingAddress: {
+      //       line1: shippingAddress.line1 || '',
+      //       line2: shippingAddress.line2 || '',
+      //       city: shippingAddress.city || '',
+      //       state: shippingAddress.state || '',
+      //       postalCode: shippingAddress.postal_code || '',
+      //       country: shippingAddress.country || '',
+      //     },
+      //   },
+      // });
+
+      // console.log("Order payment status updated and shipping address saved:", updatedOrder);
+
+      const orderProductItems = order.productItems as ProductItem[]
       // 6. Send a receipt email
-      const productItems = order.productItems.map((item: any) => {
+      const productItems = orderProductItems.map((item: any) => {
         if (typeof item.product === 'string') {
           return {
             product: { id: item.product },
@@ -130,13 +156,14 @@ export const stripeWebhookHandler = async (
       try {
         await resend.emails.send({
           from: "ESÜ TEAM <info@esustore.com>",
-          to: [user.email],
+          to: [userEmail],
           subject: "Thanks for your order! Here’s your receipt.",
           html: ReceiptEmailHtml({
             date: new Date(),
-            email: user.email,
+            email: userEmail,
             orderId: orderId,
             products: productItems,
+            orderNumber: orderNumber
           }),
         });
 

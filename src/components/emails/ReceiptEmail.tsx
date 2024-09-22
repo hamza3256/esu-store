@@ -23,6 +23,7 @@ interface ReceiptEmailProps {
   date: Date;
   orderId: string;
   products: Array<{ product: Product; quantity: number }>;
+  orderNumber: string;
   transactionFee?: number; // Optional transaction fee passed in as a prop
 }
 
@@ -31,6 +32,7 @@ export const ReceiptEmail = ({
   date,
   orderId,
   products,
+  orderNumber,
   transactionFee = 2.5, // Default to 2.5 if not provided
 }: ReceiptEmailProps) => {
   const total = products.reduce(
@@ -48,7 +50,7 @@ export const ReceiptEmail = ({
           <Section>
             <Column>
               <Img
-                src={`${process.env.NEXT_PUBLIC_SERVER_URL}/bear_email_sent.png`}
+                src={`https://esustore.com/bear_email_sent.png`}
                 width="100"
                 height="100"
                 alt="ESU BEAR"
@@ -80,13 +82,13 @@ export const ReceiptEmail = ({
               </Column>
 
               <Column style={informationTableColumn}>
-                <Text style={informationTableLabel}>ORDER ID</Text>
+                <Text style={informationTableLabel}>ORDER NUMBER</Text>
                 <Link
                   style={{
                     ...informationTableValue,
                   }}
                 >
-                  {orderId}
+                  {orderNumber}
                 </Link>
               </Column>
             </Row>
@@ -128,7 +130,7 @@ export const ReceiptEmail = ({
                     </Text>
                   ) : null}
                   <Link
-                    href={`${process.env.NEXT_PUBLIC_SERVER_URL}/thank-you?orderId=${orderId}`}
+                    href={`${process.env.NEXT_PUBLIC_SERVER_URL}/order-confirmation?orderId=${orderId}`}
                     style={productLink}
                   >
                     Download Invoice
@@ -168,12 +170,12 @@ export const ReceiptEmail = ({
           <Hr style={productPriceLineBottom} />
 
           <Text style={footerLinksWrapper}>
-            <Link href="#">Account Settings</Link> •{" "}
-            <Link href="#">Terms of Sale</Link> •{" "}
-            <Link href="#">Privacy Policy </Link>
+            <Link href={`${process.env.NEXT_PUBLIC_SERVER_URL}/company`}>Company</Link> •{" "}
+            <Link href={`${process.env.NEXT_PUBLIC_SERVER_URL}/help-center`}>Help Center</Link> •{" "}
+            <Link href={`${process.env.NEXT_PUBLIC_SERVER_URL}/privacy-policy`}>Privacy Policy </Link>
           </Text>
           <Text style={footerCopyright}>
-            Copyright © 2024 ESÜ STORE Ltd. <br />{" "}
+            Copyright © 2024 ESÜ STORE LLC <br />{" "}
             <Link href="#">All rights reserved</Link>
           </Text>
         </Container>

@@ -104,5 +104,10 @@ export const Orders: CollectionConfig = {
       unique: true, // Ensures the order number is unique
       required: true,
     },
+    {
+      name: "_emailSent",
+      type: "checkbox",
+      defaultValue: false
+    }
   ],
 };

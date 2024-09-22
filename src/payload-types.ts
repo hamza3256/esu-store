@@ -25,6 +25,7 @@ export interface Config {
 export interface User {
   id: string;
   name?: string | null;
+  stripeCustomerId?: string | null;
   products?: (string | Product)[] | null;
   product_files?: (string | ProductFile)[] | null;
   role?: ('admin' | 'user') | null;
@@ -149,6 +150,7 @@ export interface Order {
   status?: ('pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled') | null;
   total: number;
   orderNumber: string;
+  _emailSent?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }

@@ -12,6 +12,47 @@ const generateOrderNumber = () => {
   return `ESU-2410${timestamp.slice(-3)}-${randomPart}`; // Use last 6 digits of timestamp + random number
 };
 
+const createCustomer = async (
+  email: string | null | undefined,
+  shippingAddress?: {
+    line1: string;
+    line2?: string;
+    city: string;
+    state?: string;
+    postalCode: string;
+    country: string;
+    name: string;
+  }
+) => {
+  const customerParams: Stripe.CustomerCreateParams = {
+    // Only add email if it's not null or undefined
+    ...(email ? { email } : {}),
+    ...(shippingAddress
+      ? {
+          shipping: {
+            name: shippingAddress.name,
+            address: {
+              line1: shippingAddress.line1,
+              line2: shippingAddress.line2 || "",
+              city: shippingAddress.city,
+              state: shippingAddress.state,
+              postal_code: shippingAddress.postalCode,
+              country: shippingAddress.country,
+            },
+          },
+        }
+      : {}),
+  };
+
+  try {
+    const customer = await stripe.customers.create(customerParams);
+    return customer;
+  } catch (error) {
+    console.error("Error creating Stripe customer:", error);
+    throw new Error("Failed to create customer in Stripe.");
+  }
+};
+
 export const paymentRouter = router({
   createSession: privateProcedure
   .input(
@@ -135,11 +176,48 @@ export const paymentRouter = router({
         message: "No valid products in the order.",
       });
     }
+    
+    let customerId = user.stripeCustomerId;
+
+    if (!customerId) {
+      // Create a new Stripe customer if one doesn't exist
+      const customer = await createCustomer(user.email, {
+        ...shippingAddress,
+        name: user.name || user.email,
+      });
+
+      customerId = customer.id;
+
+      // Save the customer ID to the user's profile in Payload
+      await payload.update({
+        collection: "users",
+        id: user.id,
+        data: {
+          stripeCustomerId: customerId,
+        },
+      });
+    } else {
+      await stripe.customers.update(customerId, {
+        shipping: {
+          name: user.name || user.email,
+          address: {
+            line1: shippingAddress.line1,
+            line2: shippingAddress.line2 || '',  // Optional field
+            city: shippingAddress.city,
+            state: shippingAddress.state,
+            postal_code: shippingAddress.postalCode,
+            country: shippingAddress.country,
+          },
+        },
+      });
+    }
+
 
     // Step 2: Create Stripe session
     let stripeSession;
     try {
       stripeSession = await stripe.checkout.sessions.create({
+        customer: customerId,
         success_url: `${process.env.NEXT_PUBLIC_SERVER_URL}/order-confirmation?orderId=${order.id}`,
         cancel_url: `${process.env.NEXT_PUBLIC_SERVER_URL}/cart`,
         payment_method_types: ["card"],
@@ -148,9 +226,9 @@ export const paymentRouter = router({
           userId: user.id,
           orderId: order.id,
           orderNumber,
+          email: user.email,
         },
         line_items,
-        customer_email: user.email,
         // This will collect the shipping address from the user during checkout
         shipping_address_collection: {
           allowed_countries: ['US', 'CA', 'PK', 'GB'], // Specify countries that you will ship to

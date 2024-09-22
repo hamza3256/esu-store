@@ -37,6 +37,13 @@ export const Users: CollectionConfig = {
       type: "text",
     },
     {
+      name: "stripeCustomerId",
+      type: "text",
+      admin: {
+        hidden: true,
+      },
+    },
+    {
       name: "products",
       label: "Products",
       admin: {
