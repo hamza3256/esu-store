@@ -334,6 +334,15 @@ export const paymentRouter = router({
       }
 
       const [order] = orders;
+
+      await payload.update({
+        collection: "orders",
+        id: orderId,
+        data: {
+          status: "processing"
+        },
+      });
+
       return { isPaid: order._isPaid };
     }),
 });

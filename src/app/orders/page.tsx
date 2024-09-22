@@ -113,8 +113,8 @@ const Page = () => {
                     Total: {formatPrice(order.total)}
                   </p>
                   <Link
-                    href={`/orders/${order.id}`}
-                    className="text-blue-500 hover:text-blue-700"
+                    href={`/order-confirmation?orderId=${order.id}`}
+                    className="text-gray-500 hover:text-gray-800"
                   >
                     View Details
                   </Link>
