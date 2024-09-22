@@ -69,12 +69,6 @@ const Footer = () => {
               Track Order
             </Link>
             <Link
-              href="/terms"
-              className="text-sm text-gray-400 hover:text-white transition-colors duration-200"
-            >
-              Terms
-            </Link>
-            <Link
               href="/privacy-policy"
               className="text-sm text-gray-400 hover:text-white transition-colors duration-200"
             >
