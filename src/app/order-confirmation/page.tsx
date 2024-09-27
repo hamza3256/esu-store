@@ -98,9 +98,11 @@ const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
       <div className="hidden lg:block h-80 overflow-hidden lg:absolute lg:h-full lg:w-1/2 lg:pr-4 xl:pr-12">
         <Image
           fill
-          src="/checkout-order-confirmation.jpg"
-          className="h-full w-full object-cover object-center"
+          src="/order-confirmation.jpg"
           alt="Thank you for your order"
+          priority
+          sizes="(max-width: 1024px) 100vw, 50vw"
+          className="h-full w-full object-cover object-center"
         />
       </div>
 
