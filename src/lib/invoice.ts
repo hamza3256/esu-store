@@ -1,6 +1,7 @@
 import { PDFDocument, rgb, StandardFonts, PDFFont, PDFPage } from "pdf-lib";
 import { getPayloadClient } from "@/get-payload";
 import { Order } from "@/lib/types";
+import { User } from "@/payload-types";
 
 interface ShippingAddressType {
   line1: string;
@@ -117,13 +118,18 @@ export const generateInvoice = async (orderId: string, logoUrl?: string): Promis
 
   // Customer Info
   const shippingAddress = order.shippingAddress as ShippingAddressType;
+  const orderUser = order.user as User
+  const userDetail = orderUser.name ? orderUser.name : order.email;
+  let line2 = 0;
   drawText(page, "Bill To:", 50, height - 250, helveticaBold, 12, primaryColor);
-  drawText(page, shippingAddress.line1, 50, height - 270, helvetica, 10, secondaryColor);
+  drawText(page, userDetail, 50, height - 270, helvetica, 10, secondaryColor);
+  drawText(page, shippingAddress.line1, 50, height - 285, helvetica, 10, secondaryColor);
   if (shippingAddress.line2) {
-    drawText(page, shippingAddress.line2, 50, height - 285, helvetica, 10, secondaryColor);
+    line2 = 15;
+    drawText(page, shippingAddress.line2, 50, height - 300 - line2, helvetica, 10, secondaryColor);
   }
-  drawText(page, `${shippingAddress.city}, ${shippingAddress.state} ${shippingAddress.postalCode}`, 50, height - 300, helvetica, 10, secondaryColor);
-  drawText(page, shippingAddress.country, 50, height - 315, helvetica, 10, secondaryColor);
+  drawText(page, `${shippingAddress.city}, ${shippingAddress.state} ${shippingAddress.postalCode}`, 50, height - 300 - line2, helvetica, 10, secondaryColor);
+  drawText(page, shippingAddress.country, 50, height - 315 - line2, helvetica, 10, secondaryColor);
 
   // Order Details
   drawText(page, "Order Date:", width - 210, height - 250, helveticaBold, 10, primaryColor);
