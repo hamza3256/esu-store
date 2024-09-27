@@ -79,11 +79,12 @@ export default function ProductListing({ product, index }: ProductListingProps) 
         exit={{ opacity: 0, y: 20 }}
         transition={{ duration: 0.3 }}
         className={cn(
-          "group w-full cursor-pointer rounded-xl overflow-hidden shadow-lg transition-all duration-300 hover:shadow-xl relative bg-white"
+          "group w-full cursor-pointer overflow-hidden shadow-lg transition-all duration-300 hover:shadow-xl relative bg-white", 
+          "sm:rounded-xl" // Rounded corners on larger screens
         )}
       >
         {/* Image Section */}
-        <div className="relative overflow-hidden">
+        <div className="relative overflow-hidden w-full">
           <ImageSlider urls={validUrls} productId={product.id} />
           <Badge className="absolute top-2 left-2 z-10 text-xs bg-black text-white px-2 py-1 rounded-full">
             {label}
@@ -113,7 +114,7 @@ export default function ProductListing({ product, index }: ProductListingProps) 
         </div>
 
         {/* Product Info */}
-        <div className="p-4 space-y-2">
+        <div className="p-2 sm:p-4 space-y-2"> {/* Reduced padding for mobile */}
           <Link href={`/product/${product.id}`} className="block">
             <h3 className="font-semibold text-sm sm:text-base text-gray-900 line-clamp-1 hover:underline transition-colors duration-200">
               {product.name}    
@@ -121,12 +122,12 @@ export default function ProductListing({ product, index }: ProductListingProps) 
                 <Badge className="absolute right-2 z-10 text-xs bg-red-500 text-white px-2 py-1 rounded-full">
                   Sale
                 </Badge>
-          )}
+              )}
             </h3>
           </Link>
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full">
+            <div className="flex items-center mb-2 sm:mb-0">
               {[1, 2, 3, 4, 5].map((star) => (
                 <Star
                   key={star}
@@ -141,7 +142,7 @@ export default function ProductListing({ product, index }: ProductListingProps) 
                 ({product.numReviews || 0})
               </span>
             </div>
-            <p className="text-sm sm:text-base font-bold text-gray-900">
+            <p className="text-sm sm:text-base font-bold text-gray-900 text-right">
               {product.discountedPrice ? (
                 <>
                   <span className="line-through text-gray-500 mr-2">
@@ -154,6 +155,7 @@ export default function ProductListing({ product, index }: ProductListingProps) 
               )}
             </p>
           </div>
+
           {/* Quantity and Add to Cart */}
           <AnimatePresence>
             <motion.div
