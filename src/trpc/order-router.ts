@@ -4,6 +4,7 @@ import { getPayloadClient } from "../get-payload";
 import { TRPCError } from "@trpc/server";
 import Stripe from "stripe";
 import { stripe } from "../lib/stripe";
+import { PDFDocument, rgb } from "pdf-lib";
 
 const shippingAddressSchema = z.object({
   line1: z.string(),
@@ -14,13 +15,45 @@ const shippingAddressSchema = z.object({
   country: z.string(),
 });
 
+interface ShippingAddressType {
+  line1: string;
+  line2?: string | null;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+}
+
+interface Order {
+  id: string;
+  orderNumber: string;
+  createdAt: string;
+  status: string;
+  shippingAddress: {
+    line1: string;
+    line2?: string;
+    city: string;
+    state: string;
+    postalCode: string;
+  };
+  productItems: ProductItem[];
+}
+
+interface ProductItem {
+  quantity: number;
+  product: {
+    name: string;
+    price: number;
+  };
+}
+
 const generateOrderNumber = () => {
   const timestamp = Date.now().toString(); 
   const randomPart = Math.floor(1000 + Math.random() * 9000).toString(); 
   return `ESU-2410${timestamp.slice(-3)}-${randomPart}`; 
 };
 
-export const ordersRouter = router({
+export const orderRouter = router({
   getOrders: privateProcedure
     .input(z.object({ range: z.string().optional() })) 
     .query(async ({ input, ctx }) => {
@@ -156,29 +189,39 @@ export const ordersRouter = router({
       return updatedOrder;
     }),
 
-    createPublicSession : publicProcedure
-      .input(z.object({
-        productItems: z.array(z.object({ productId: z.string(), quantity: z.number() })),
-        shippingAddress: z.object({
-          line1: z.string(),
-          line2: z.string().optional(),
-          city: z.string(),
-          state: z.string(),
-          postalCode: z.string(),
-          country: z.string(),
-        }),
-        email: z.string().email(),
-      }))
+    createPublicSession: publicProcedure
+      .input(
+        z.object({
+          productItems: z.array(
+            z.object({
+              productId: z.string(),
+              quantity: z.number(),
+            })
+          ),
+          shippingAddress: z.object({
+            line1: z.string(),
+            line2: z.string().optional(),
+            city: z.string(),
+            state: z.string(),
+            postalCode: z.string(),
+            country: z.string(),
+          }),
+          email: z.string().email(), // Collect email for guest checkout
+        })
+      )
       .mutation(async ({ input }) => {
         const { productItems, shippingAddress, email } = input;
 
         if (productItems.length === 0) {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "No products in the order." });
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "No products in the order",
+          });
         }
 
         const payload = await getPayloadClient();
 
-        // Fetch the products
+        // Fetch products to ensure they exist and have enough inventory
         const { docs: products } = await payload.find({
           collection: "products",
           where: {
@@ -188,20 +231,37 @@ export const ordersRouter = router({
           },
         });
 
-        const filteredProductsHavePrice = products.filter((product) => Boolean(product.priceId));
+        // Ensure products exist and have prices
+        const filteredProductsHavePrice = products.filter((product) =>
+          Boolean(product.priceId)
+        );
 
+        if (filteredProductsHavePrice.length !== productItems.length) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Some products do not have prices or were not found",
+          });
+        }
+
+        // Calculate the total
         const total = productItems.reduce((acc, item) => {
-          const product = filteredProductsHavePrice.find((p) => p.id === item.productId);
-          if (product) {
-            return acc + (product.price as number) * item.quantity;
+          const product = filteredProductsHavePrice.find(
+            (p) => p.id === item.productId
+          );
+          if (!product) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: `Product with ID ${item.productId} not found`,
+            });
           }
-          return acc;
+          const productPrice = product.discountedPrice ?? product.price;
+          return acc + (productPrice as number) * item.quantity;
         }, 0);
 
         // Generate unique order number
         const orderNumber = generateOrderNumber();
 
-        // Step 1: Create the order but don't deduct inventory yet
+        // Step 1: Create the order without associating with a user (guest checkout)
         const order = await payload.create({
           collection: "orders",
           data: {
@@ -210,9 +270,9 @@ export const ordersRouter = router({
               product: item.productId,
               quantity: item.quantity,
             })),
-            email,
-            shippingAddress, // Save shipping address from the cart page
-            orderNumber, // Save the generated order number
+            email, // Store guest email
+            shippingAddress,
+            orderNumber,
             total,
           },
         });
@@ -221,7 +281,9 @@ export const ordersRouter = router({
 
         // Prepare line items for Stripe session
         for (const item of productItems) {
-          const product = filteredProductsHavePrice.find((p) => p.id === item.productId);
+          const product = filteredProductsHavePrice.find(
+            (p) => p.id === item.productId
+          );
           if (product) {
             // Prepare line item for Stripe
             line_items.push({
@@ -237,73 +299,90 @@ export const ordersRouter = router({
             collection: "orders",
             id: order.id,
           });
-          throw new TRPCError({ code: "BAD_REQUEST", message: "No valid products in the order." });
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "No valid products in the order.",
+          });
         }
 
+        // Create a guest customer in Stripe
+        const customer = await stripe.customers.create({
+          email,
+          shipping: {
+            name: email, // Use email as name for guests
+            address: {
+              line1: shippingAddress.line1,
+              line2: shippingAddress.line2 || '',
+              city: shippingAddress.city,
+              state: shippingAddress.state,
+              postal_code: shippingAddress.postalCode,
+              country: shippingAddress.country,
+            },
+          },
+        });
+
+        // Step 2: Create Stripe session
         let stripeSession;
         try {
           stripeSession = await stripe.checkout.sessions.create({
-            success_url: `${process.env.NEXT_PUBLIC_SERVER_URL}/order-confirmation?orderId=${order.id}`,
+            customer: customer.id,
+            success_url: `${process.env.NEXT_PUBLIC_SERVER_URL}/order-confirmation?orderId=${order.id}&guestEmail=${email}`,
             cancel_url: `${process.env.NEXT_PUBLIC_SERVER_URL}/cart`,
             payment_method_types: ["card"],
             mode: "payment",
             metadata: {
-              email,
               orderId: order.id,
               orderNumber,
+              email, // Store guest email in metadata
             },
             line_items,
+            shipping_address_collection: {
+              allowed_countries: ["US", "CA", "PK", "GB"], // Specify allowed shipping countries
+            },
             shipping_options: [
               {
                 shipping_rate_data: {
-                  type: 'fixed_amount',
+                  type: "fixed_amount",
                   fixed_amount: {
-                    amount: 500, // Example shipping cost in cents
-                    currency: 'usd',
+                    amount: 500, // Flat shipping cost in cents
+                    currency: "usd",
                   },
-                  display_name: 'Standard shipping',
+                  display_name: "Standard Shipping",
                   delivery_estimate: {
                     minimum: {
-                      unit: 'business_day',
+                      unit: "business_day",
                       value: 5,
                     },
                     maximum: {
-                      unit: 'business_day',
+                      unit: "business_day",
                       value: 7,
                     },
                   },
                 },
               },
             ],
-            customer_email: email,
-            billing_address_collection: 'auto', // Optional, collect the billing address
-            payment_intent_data: {
-              shipping: {
-                name: email,
-                address: {
-                  line1: shippingAddress.line1,
-                  line2: shippingAddress.line2 || '',
-                  city: shippingAddress.city,
-                  state: shippingAddress.state,
-                  postal_code: shippingAddress.postalCode,
-                  country: shippingAddress.country,
-                },
-              },
-            },
           });
         } catch (error) {
-          // If Stripe session creation fails, rollback the order and return error
+          // Enhanced error logging for debugging
+          console.error("Error creating Stripe session:", error);
+
+          // Rollback the order if Stripe session creation fails
           await payload.delete({
             collection: "orders",
             id: order.id,
           });
-          console.log("Error creating Stripe session:", error);
-          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to create Stripe payment session." });
+
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to create Stripe session.",
+          });
         }
 
         // Step 3: Deduct product inventory after Stripe session creation succeeds
         for (const item of productItems) {
-          const product = filteredProductsHavePrice.find((p) => p.id === item.productId);
+          const product = filteredProductsHavePrice.find(
+            (p) => p.id === item.productId
+          );
 
           if (!product || !product.id) {
             throw new TRPCError({
@@ -313,14 +392,17 @@ export const ordersRouter = router({
           }
 
           // Check if product has enough inventory
-          if (product.inventory as number < item.quantity) {
+          if ((product.inventory as number) < item.quantity) {
             throw new TRPCError({
               code: "BAD_REQUEST",
               message: `Insufficient inventory for product: ${product.name}`,
             });
           }
 
-          const updatedInventory = Math.max((product.inventory as number) - item.quantity, 0);
+          const updatedInventory = Math.max(
+            (product.inventory as number) - item.quantity,
+            0
+          );
 
           // Deduct the quantity from the product's inventory
           await payload.update({
@@ -365,7 +447,97 @@ export const ordersRouter = router({
         const [order] = orders;
         return order;
       }),
-    
+
+      generateInvoice: publicProcedure
+        .input(
+          z.object({
+            orderId: z.string(),
+            logoUrl: z.string().optional(), // Logo URL for the invoice, optional
+          })
+        )
+        .mutation(async ({ input }) => {
+          const { orderId, logoUrl } = input;
+
+          // Fetch order details using Payload CMS
+          const payload = await getPayloadClient();
+          const { docs: orders } = await payload.find({
+            collection: "orders",
+            depth: 2,
+            where: { id: { equals: orderId } },
+          });
+
+          const order = orders[0];
+          if (!order) throw new Error("Order not found");
+
+          // Create a new PDF document
+          const pdfDoc = await PDFDocument.create();
+          const page = pdfDoc.addPage([600, 800]);
+          const { width, height } = page.getSize();
+          const fontSize = 12;
+
+          // Fetch and embed the logo (default to esu.png if not provided)
+          const logoBytes = await fetch(
+            logoUrl || `${process.env.NEXT_PUBLIC_SERVER_URL}/esu.png`
+          ).then((res) => res.arrayBuffer());
+          
+          const logoImage = await pdfDoc.embedPng(logoBytes);
+          page.drawImage(logoImage, {
+            x: 50,
+            y: height - 150,
+            width: 100,
+            height: 100,
+          });
+
+          // Company Address (hardcoded or configurable)
+          const companyAddress = `
+            ESU STORE LLC
+            7901 4TH ST N # 16774
+            ST PETERSBURG FL 33702-4305
+          `;
+
+          const shippingAddress = order.shippingAddress as ShippingAddressType;
+          const orderSummary = `
+            Order Number: ${order.orderNumber}
+            Date: ${new Date(order.createdAt as string).toLocaleDateString()}
+            Status: ${order.status ?? "N/A"}
+            Shipping Address: ${shippingAddress.line1}, 
+            ${shippingAddress.line2 ? `${shippingAddress.line2}, ` : ""} 
+            ${shippingAddress.city}, ${shippingAddress.state}, ${shippingAddress.postalCode}
+          `;
+
+          // Draw the invoice title and company address
+          page.drawText("Invoice", { x: 50, y: height - 50, size: 20 });
+          page.drawText(companyAddress, { x: 50, y: height - 200, size: fontSize });
+          page.drawText(orderSummary, { x: 50, y: height - 300, size: fontSize });
+
+          // Display the list of items
+          page.drawText("Items:", { x: 50, y: height - 350, size: fontSize });
+          let currentY = height - 380;
+
+          // Loop through the product items
+          const orderProductItems = order.productItems as ProductItem[];
+          for (const item of orderProductItems) {
+            page.drawText(
+              `${item.quantity}x ${item.product.name} - $${item.product.price}`,
+              { x: 50, y: currentY, size: fontSize }
+            );
+            currentY -= 20;
+          }
+
+          // Calculate and display the total amount
+          const total = orderProductItems.reduce(
+            (acc, item) => acc + item.quantity * item.product.price,
+            0
+          );
+          page.drawText(`Total: $${total}`, { x: 50, y: currentY - 30, size: fontSize });
+
+          // Finalize and save the PDF
+          const pdfBytes = await pdfDoc.save();
+
+          // Return the binary data of the PDF for download
+          return pdfBytes;
+        }),
+
 
   // Admin: Create an order (for testing purposes)
 //   createOrder: privateProcedure
@@ -419,10 +591,3 @@ export const ordersRouter = router({
 //       return createdOrder;
 //     }),
 });
-
-// Export the combined TRPC router
-export const appRouter = router({
-  orders: ordersRouter,
-});
-
-export type AppRouter = typeof appRouter;

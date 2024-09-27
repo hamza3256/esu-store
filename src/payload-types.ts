@@ -52,6 +52,7 @@ export interface Product {
   name: string;
   description?: string | null;
   price: number;
+  discountedPrice?: number | null;
   category: 'clothing' | 'jewellery' | 'accessories';
   inventory: number;
   numReviews: number;

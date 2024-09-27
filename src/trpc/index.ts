@@ -4,7 +4,7 @@ import { privateProcedure, publicProcedure, router } from "./trpc";
 import { QueryValidator } from "../lib/validators/query-validator";
 import { getPayloadClient } from "../get-payload";
 import { paymentRouter } from "./payment-router";
-import { ordersRouter } from "./order-router";
+import { orderRouter } from "./order-router";
 import { TRPCError } from "@trpc/server";
 import { User } from "@/payload-types";
 import { PayloadRequest } from "payload/types";
@@ -12,7 +12,7 @@ import { PayloadRequest } from "payload/types";
 export const appRouter = router({
   auth: authRouter,
   payment: paymentRouter,
-  order: ordersRouter,
+  order: orderRouter,
 
   getInfiniteProducts: publicProcedure
     .input(

@@ -2,13 +2,14 @@ import Image from "next/image";
 import { cookies } from "next/headers";
 import { getServerSideUser } from "@/lib/payload-utils";
 import { notFound, redirect } from "next/navigation";
-import { Product, ProductFile, User } from "@/payload-types";
+import { Product, User } from "@/payload-types";
 import { PRODUCT_CATEGORIES } from "@/config";
 import { formatPrice } from "@/lib/utils";
 import Link from "next/link";
 import PaymentStatus from "@/components/PaymentStatus";
 import { Order } from "@/lib/types";
 import { getPayloadClient } from "@/get-payload";
+import { generateInvoice } from "@/lib/invoice";
 
 interface PageProps {
   searchParams: { [key: string]: string | string[] | undefined };
@@ -20,12 +21,11 @@ interface OrderProduct {
 }
 
 const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
-  const orderId = searchParams.orderId;
-  const guestEmail = searchParams.guestEmail; // New param for guest email
+  const orderId = searchParams.orderId as string;
+  const guestEmail = searchParams.guestEmail as string;
   const nextCookies = cookies();
 
   const { user } = await getServerSideUser(nextCookies);
-  
   const payload = await getPayloadClient();
 
   // Fetch order details by order ID
@@ -42,7 +42,6 @@ const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
   const [order] = orders as Order[];
   if (!order) return notFound();
 
-  // Determine if the user is the order owner (guest or logged-in user)
   const orderUserId = typeof order.user === "string" ? order.user : (order.user as User)?.id;
   
   // If no logged-in user, validate the guest email
@@ -54,7 +53,7 @@ const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
   const products = order.productItems as OrderProduct[];
 
   const orderTotal = products.reduce(
-    (total, { product, quantity }) => total + product.price * quantity,
+    (total, { product, quantity }) => total + (product.discountedPrice ?? product.price) * quantity,
     0
   );
 
@@ -72,23 +71,38 @@ const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
 
   const formattedAddress = [
     shippingAddress.line1,
-    shippingAddress.line2, // Only include line2 if it exists
+    shippingAddress.line2,
     `${shippingAddress.city}, ${shippingAddress.state} ${shippingAddress.postalCode}`,
     shippingAddress.country,
   ]
-    .filter(Boolean) // Remove empty values (like line2 if it's missing)
+    .filter(Boolean)
     .join(", ");
 
   const orderStatus = order.status || "Processing";
+
+  let invoiceDownloadLink: string | null = null;
+  if (isPaid) {
+    try {
+      // Call the generateInvoice utility function
+      const pdfBytes = await generateInvoice(order.id, `${process.env.NEXT_PUBLIC_SERVER_URL}/esu-transparent.png`); // Adjust the logo path accordingly
+
+      // Convert the PDF to a base64 data URL for download
+      invoiceDownloadLink = `data:application/pdf;base64,${Buffer.from(pdfBytes).toString("base64")}`;
+    } catch (error) {
+      console.error("Error generating invoice:", error);
+    }
+  }
 
   return (
     <main className="relative lg:min-h-full bg-gray-50">
       <div className="hidden lg:block h-80 overflow-hidden lg:absolute lg:h-full lg:w-1/2 lg:pr-4 xl:pr-12">
         <Image
           fill
-          src="/checkout-order-confirmation.jpg"
-          className="h-full w-full object-cover object-center"
+          src="/order-confirmation.jpg"
           alt="Thank you for your order"
+          priority
+          sizes="(max-width: 1024px) 100vw, 50vw"
+          className="h-full w-full object-cover object-center"
         />
       </div>
 
@@ -118,22 +132,22 @@ const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
             <div className="mt-8">
               <div className="mb-6">
                 <h3 className="text-lg font-medium text-gray-900">Order Status</h3>
-                <span className={`px-3 py-1 inline-block text-sm font-medium rounded-lg ${
-                  orderStatus === "delivered"
-                    ? "bg-green-100 text-green-800"
-                    : orderStatus === "shipped"
-                    ? "bg-yellow-100 text-yellow-800"
-                    : "bg-blue-100 text-blue-800"
-                }`}>
+                <span
+                  className={`px-3 py-1 inline-block text-sm font-medium rounded-lg ${
+                    orderStatus === "delivered"
+                      ? "bg-green-100 text-green-800"
+                      : orderStatus === "shipped"
+                      ? "bg-yellow-100 text-yellow-800"
+                      : "bg-blue-100 text-blue-800"
+                  }`}
+                >
                   {orderStatus}
                 </span>
               </div>
 
               <div className="mb-6">
                 <h3 className="text-lg font-medium text-gray-900">Shipping Address</h3>
-                <p className="text-sm text-gray-600">
-                  {formattedAddress}
-                </p>
+                <p className="text-sm text-gray-600">{formattedAddress}</p>
               </div>
             </div>
 
@@ -144,19 +158,7 @@ const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
               {/* Product List */}
               <ul className="mt-6 divide-y divide-gray-200 border-t text-sm font-medium text-gray-600">
                 {products.map(({ product, quantity }) => {
-                  const label = PRODUCT_CATEGORIES.find(
-                    (c) => c.value === product.category
-                  )?.label;
-
-                  let downloadUrl: string | undefined;
-
-                  if (typeof product.product_files === 'object' && 'url' in product.product_files) {
-                    downloadUrl = product.product_files.url!;
-                  } else if (typeof product.product_files === 'string') {
-                    downloadUrl = product.product_files;
-                  } else {
-                    downloadUrl = undefined; // Fallback case
-                  }
+                  const label = PRODUCT_CATEGORIES.find((c) => c.value === product.category)?.label;
 
                   return (
                     <li key={product.id} className="flex space-x-6 py-6">
@@ -178,24 +180,22 @@ const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
                         <div className="space-y-1">
                           <h3 className="text-gray-900">{product.name || "Unknown Product"}</h3>
                           <p className="my-1">Category: {label || "Unknown"}</p>
-                          <p className="text-sm text-gray-500">
-                            Quantity: {quantity || 1}
-                          </p>
+                          <p className="text-sm text-gray-500">Quantity: {quantity || 1}</p>
                         </div>
 
-                        {isPaid && downloadUrl ? (
+                        {isPaid && invoiceDownloadLink ? (
                           <a
-                            href={downloadUrl}
-                            download={product.name}
-                            className="text-blue-800 hover:underline underline-offset-2"
+                            href={invoiceDownloadLink}
+                            download={`invoice_${order.orderNumber}.pdf`}
+                            className="text-blue-600 hover:underline"
                           >
-                            Download invoice
+                            Download Invoice
                           </a>
                         ) : null}
                       </div>
 
                       <p className="flex-none font-medium text-gray-900">
-                        {formatPrice(product.price * quantity)}
+                        {formatPrice((product.discountedPrice ?? product.price) * quantity)}
                       </p>
                     </li>
                   );
@@ -225,10 +225,7 @@ const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
               />
 
               <div className="mt-16 border-t border-gray-200 text-right py-6">
-                <Link
-                  href="/products"
-                  className="text-sm font-medium text-blue-600 hover:text-blue-500"
-                >
+                <Link href="/products" className="text-sm font-medium text-blue-600 hover:text-blue-500">
                   Continue shopping &rarr;
                 </Link>
               </div>

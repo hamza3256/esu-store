@@ -57,7 +57,7 @@ const ImageSlider = ({ urls, productId }: ImageSliderProps) => {
           <ChevronRight
             className="h-4 w-4 text-zinc-700"
             aria-label="next image"
-          />{" "}
+          />
         </button>
         <button
           onClick={(e) => {
@@ -73,7 +73,7 @@ const ImageSlider = ({ urls, productId }: ImageSliderProps) => {
           <ChevronLeft
             className="h-4 w-4 text-zinc-700"
             aria-label="previous image"
-          />{" "}
+          />
         </button>
       </div>
       <Swiper
@@ -89,7 +89,7 @@ const ImageSlider = ({ urls, productId }: ImageSliderProps) => {
         spaceBetween={50}
         slidesPerView={1}
         modules={[Pagination, Navigation]} // Added Navigation for desktop controls
-        className="h-full w-full"
+        className="h-full w-full" // Added relative here
         touchEventsTarget="container" // Ensure touch events are enabled for mobile
       >
         {urls.map((url, i) => (
