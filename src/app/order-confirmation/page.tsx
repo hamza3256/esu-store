@@ -53,7 +53,7 @@ const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
   const products = order.productItems as OrderProduct[];
 
   const orderTotal = products.reduce(
-    (total, { product, quantity }) => total + product.price * quantity,
+    (total, { product, quantity }) => total + (product.discountedPrice ?? product.price) * quantity,
     0
   );
 
@@ -193,7 +193,7 @@ const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
                       </div>
 
                       <p className="flex-none font-medium text-gray-900">
-                        {formatPrice(product.price * quantity)}
+                        {formatPrice((product.discountedPrice ?? product.price) * quantity)}
                       </p>
                     </li>
                   );

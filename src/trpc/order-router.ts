@@ -189,29 +189,39 @@ export const orderRouter = router({
       return updatedOrder;
     }),
 
-    createPublicSession : publicProcedure
-      .input(z.object({
-        productItems: z.array(z.object({ productId: z.string(), quantity: z.number() })),
-        shippingAddress: z.object({
-          line1: z.string(),
-          line2: z.string().optional(),
-          city: z.string(),
-          state: z.string(),
-          postalCode: z.string(),
-          country: z.string(),
-        }),
-        email: z.string().email(),
-      }))
+    createPublicSession: publicProcedure
+      .input(
+        z.object({
+          productItems: z.array(
+            z.object({
+              productId: z.string(),
+              quantity: z.number(),
+            })
+          ),
+          shippingAddress: z.object({
+            line1: z.string(),
+            line2: z.string().optional(),
+            city: z.string(),
+            state: z.string(),
+            postalCode: z.string(),
+            country: z.string(),
+          }),
+          email: z.string().email(), // Collect email for guest checkout
+        })
+      )
       .mutation(async ({ input }) => {
         const { productItems, shippingAddress, email } = input;
 
         if (productItems.length === 0) {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "No products in the order." });
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "No products in the order",
+          });
         }
 
         const payload = await getPayloadClient();
 
-        // Fetch the products
+        // Fetch products to ensure they exist and have enough inventory
         const { docs: products } = await payload.find({
           collection: "products",
           where: {
@@ -221,20 +231,37 @@ export const orderRouter = router({
           },
         });
 
-        const filteredProductsHavePrice = products.filter((product) => Boolean(product.priceId));
+        // Ensure products exist and have prices
+        const filteredProductsHavePrice = products.filter((product) =>
+          Boolean(product.priceId)
+        );
 
+        if (filteredProductsHavePrice.length !== productItems.length) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Some products do not have prices or were not found",
+          });
+        }
+
+        // Calculate the total
         const total = productItems.reduce((acc, item) => {
-          const product = filteredProductsHavePrice.find((p) => p.id === item.productId);
-          if (product) {
-            return acc + (product.price as number) * item.quantity;
+          const product = filteredProductsHavePrice.find(
+            (p) => p.id === item.productId
+          );
+          if (!product) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: `Product with ID ${item.productId} not found`,
+            });
           }
-          return acc;
+          const productPrice = product.discountedPrice ?? product.price;
+          return acc + (productPrice as number) * item.quantity;
         }, 0);
 
         // Generate unique order number
         const orderNumber = generateOrderNumber();
 
-        // Step 1: Create the order but don't deduct inventory yet
+        // Step 1: Create the order without associating with a user (guest checkout)
         const order = await payload.create({
           collection: "orders",
           data: {
@@ -243,9 +270,9 @@ export const orderRouter = router({
               product: item.productId,
               quantity: item.quantity,
             })),
-            email,
-            shippingAddress, // Save shipping address from the cart page
-            orderNumber, // Save the generated order number
+            email, // Store guest email
+            shippingAddress,
+            orderNumber,
             total,
           },
         });
@@ -254,7 +281,9 @@ export const orderRouter = router({
 
         // Prepare line items for Stripe session
         for (const item of productItems) {
-          const product = filteredProductsHavePrice.find((p) => p.id === item.productId);
+          const product = filteredProductsHavePrice.find(
+            (p) => p.id === item.productId
+          );
           if (product) {
             // Prepare line item for Stripe
             line_items.push({
@@ -270,73 +299,90 @@ export const orderRouter = router({
             collection: "orders",
             id: order.id,
           });
-          throw new TRPCError({ code: "BAD_REQUEST", message: "No valid products in the order." });
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "No valid products in the order.",
+          });
         }
 
+        // Create a guest customer in Stripe
+        const customer = await stripe.customers.create({
+          email,
+          shipping: {
+            name: email, // Use email as name for guests
+            address: {
+              line1: shippingAddress.line1,
+              line2: shippingAddress.line2 || '',
+              city: shippingAddress.city,
+              state: shippingAddress.state,
+              postal_code: shippingAddress.postalCode,
+              country: shippingAddress.country,
+            },
+          },
+        });
+
+        // Step 2: Create Stripe session
         let stripeSession;
         try {
           stripeSession = await stripe.checkout.sessions.create({
-            success_url: `${process.env.NEXT_PUBLIC_SERVER_URL}/order-confirmation?orderId=${order.id}`,
+            customer: customer.id,
+            success_url: `${process.env.NEXT_PUBLIC_SERVER_URL}/order-confirmation?orderId=${order.id}&guestEmail=${email}`,
             cancel_url: `${process.env.NEXT_PUBLIC_SERVER_URL}/cart`,
             payment_method_types: ["card"],
             mode: "payment",
             metadata: {
-              email,
               orderId: order.id,
               orderNumber,
+              email, // Store guest email in metadata
             },
             line_items,
+            shipping_address_collection: {
+              allowed_countries: ["US", "CA", "PK", "GB"], // Specify allowed shipping countries
+            },
             shipping_options: [
               {
                 shipping_rate_data: {
-                  type: 'fixed_amount',
+                  type: "fixed_amount",
                   fixed_amount: {
-                    amount: 500, // Example shipping cost in cents
-                    currency: 'usd',
+                    amount: 500, // Flat shipping cost in cents
+                    currency: "usd",
                   },
-                  display_name: 'Standard shipping',
+                  display_name: "Standard Shipping",
                   delivery_estimate: {
                     minimum: {
-                      unit: 'business_day',
+                      unit: "business_day",
                       value: 5,
                     },
                     maximum: {
-                      unit: 'business_day',
+                      unit: "business_day",
                       value: 7,
                     },
                   },
                 },
               },
             ],
-            customer_email: email,
-            billing_address_collection: 'auto', // Optional, collect the billing address
-            payment_intent_data: {
-              shipping: {
-                name: email,
-                address: {
-                  line1: shippingAddress.line1,
-                  line2: shippingAddress.line2 || '',
-                  city: shippingAddress.city,
-                  state: shippingAddress.state,
-                  postal_code: shippingAddress.postalCode,
-                  country: shippingAddress.country,
-                },
-              },
-            },
           });
         } catch (error) {
-          // If Stripe session creation fails, rollback the order and return error
+          // Enhanced error logging for debugging
+          console.error("Error creating Stripe session:", error);
+
+          // Rollback the order if Stripe session creation fails
           await payload.delete({
             collection: "orders",
             id: order.id,
           });
-          console.log("Error creating Stripe session:", error);
-          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to create Stripe payment session." });
+
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to create Stripe session.",
+          });
         }
 
         // Step 3: Deduct product inventory after Stripe session creation succeeds
         for (const item of productItems) {
-          const product = filteredProductsHavePrice.find((p) => p.id === item.productId);
+          const product = filteredProductsHavePrice.find(
+            (p) => p.id === item.productId
+          );
 
           if (!product || !product.id) {
             throw new TRPCError({
@@ -346,14 +392,17 @@ export const orderRouter = router({
           }
 
           // Check if product has enough inventory
-          if (product.inventory as number < item.quantity) {
+          if ((product.inventory as number) < item.quantity) {
             throw new TRPCError({
               code: "BAD_REQUEST",
               message: `Insufficient inventory for product: ${product.name}`,
             });
           }
 
-          const updatedInventory = Math.max((product.inventory as number) - item.quantity, 0);
+          const updatedInventory = Math.max(
+            (product.inventory as number) - item.quantity,
+            0
+          );
 
           // Deduct the quantity from the product's inventory
           await payload.update({

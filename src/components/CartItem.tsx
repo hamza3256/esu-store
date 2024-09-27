@@ -11,6 +11,8 @@ const CartItem = ({ product, quantity }: { product: Product; quantity: number })
     ({ value }) => value === product.category
   )?.label;
 
+  console.log(product)
+
   const { removeItem, updateQuantity } = useCart();
 
   const handleDecrement = () => {
@@ -96,7 +98,7 @@ const CartItem = ({ product, quantity }: { product: Product; quantity: number })
             {/* Display original price if there's a discount */}
             {product.discountedPrice && (
               <span className="line-through text-gray-500 mr-2">
-                {formatPrice(product.price)}
+                {formatPrice(product.price * quantity)}
               </span>
             )}
             {formatPrice(price * quantity)} {/* Total for the item */}

@@ -88,11 +88,6 @@ export default function ProductListing({ product, index }: ProductListingProps) 
           <Badge className="absolute top-2 left-2 z-10 text-xs bg-black text-white px-2 py-1 rounded-full">
             {label}
           </Badge>
-          {product.discountedPrice && (
-            <Badge className="absolute top-2 right-2 z-10 text-xs bg-red-500 text-white px-2 py-1 rounded-full">
-              Sale
-            </Badge>
-          )}
           <Tooltip>
             <TooltipTrigger asChild>
               <button
@@ -121,7 +116,12 @@ export default function ProductListing({ product, index }: ProductListingProps) 
         <div className="p-4 space-y-2">
           <Link href={`/product/${product.id}`} className="block">
             <h3 className="font-semibold text-sm sm:text-base text-gray-900 line-clamp-1 hover:underline transition-colors duration-200">
-              {product.name}
+              {product.name}    
+              {product.discountedPrice && (
+                <Badge className="absolute right-2 z-10 text-xs bg-red-500 text-white px-2 py-1 rounded-full">
+                  Sale
+                </Badge>
+          )}
             </h3>
           </Link>
 

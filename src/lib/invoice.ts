@@ -16,6 +16,7 @@ interface ProductItem {
   product: {
     name: string;
     price: number;
+    discountedPrice?: number
   };
 }
 
@@ -170,17 +171,19 @@ export const generateInvoice = async (orderId: string, logoUrl?: string): Promis
         color: rgb(0.95, 0.95, 0.95),
       });
     }
+    const productPrice = item.product.discountedPrice ?? item.product.price
 
     drawText(page, item.product.name, 50, yPos, helvetica, 10, secondaryColor);
     drawText(page, generateSKU(), 250, yPos, helvetica, 10, secondaryColor);
     drawText(page, item.quantity.toString(), 350, yPos, helvetica, 10, secondaryColor);
-    drawText(page, `$${item.product.price.toFixed(2)}`, 430, yPos, helvetica, 10, secondaryColor);
-    drawText(page, `$${(item.product.price * item.quantity).toFixed(2)}`, 510, yPos, helvetica, 10, secondaryColor);
+    drawText(page, `$${productPrice.toFixed(2)}`, 430, yPos, helvetica, 10, secondaryColor);
+    drawText(page, `$${(productPrice * item.quantity).toFixed(2)}`, 510, yPos, helvetica, 10, secondaryColor);
     yPos -= 20;
   });
 
   // Total
-  const subtotal = orderProductItems.reduce((acc, item) => acc + item.quantity * item.product.price, 0);
+  const subtotal = orderProductItems.reduce((acc, item) => acc + item.quantity * (item.product.discountedPrice 
+    ?? item.product.price), 0);
   const taxRate = 0.08; // 8% tax rate
   const tax = subtotal * taxRate;
   const shipping = 10; // Flat rate shipping

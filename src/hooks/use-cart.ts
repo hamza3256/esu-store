@@ -14,8 +14,8 @@ type CartState = {
   removeItem: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
-  cartTotal: () => number; // Change cartTotal to a function
-  getItemCount: (productId: string) => number; 
+  cartTotal: () => number;
+  getItemCount: (productId: string) => number;
 };
 
 export const useCart = create<CartState>()(
@@ -30,18 +30,27 @@ export const useCart = create<CartState>()(
           );
 
           if (existingItem) {
-            // If item already exists, update its quantity
+            // Ensure we don't add more than available inventory
+            const newQuantity = Math.min(
+              existingItem.quantity + quantity,
+              product.inventory
+            );
             return {
               items: state.items.map((item) =>
                 item.product.id === product.id
-                  ? { ...item, quantity: item.quantity + quantity }
+                  ? { ...item, quantity: newQuantity }
                   : item
               ),
             };
           }
 
-          // Otherwise, add a new item to the cart
-          return { items: [...state.items, { product, quantity }] };
+          // Otherwise, add the new item (but not exceeding inventory)
+          return {
+            items: [
+              ...state.items,
+              { product, quantity: Math.min(quantity, product.inventory) },
+            ],
+          };
         }),
 
       removeItem: (id) =>
@@ -50,26 +59,34 @@ export const useCart = create<CartState>()(
         })),
 
       updateQuantity: (id, quantity) =>
-        set((state) => ({
-          items: state.items.map((item) =>
-            item.product.id === id ? { ...item, quantity } : item
-          ),
-        })),
+        set((state) => {
+          if (quantity <= 0) {
+            // Remove item if quantity is 0 or less
+            return {
+              items: state.items.filter((item) => item.product.id !== id),
+            };
+          }
+          return {
+            items: state.items.map((item) =>
+              item.product.id === id ? { ...item, quantity } : item
+            ),
+          };
+        }),
 
       clearCart: () => set({ items: [] }),
 
-      // Compute the total dynamically
+      // Calculate the total based on product price or discountedPrice
       cartTotal: () =>
-        get().items.reduce(
-          (total, item) => total + item.product.price * item.quantity,
-          0
-        ),
+        get().items.reduce((total, item) => {
+          const price = item.product.discountedPrice ?? item.product.price;
+          return total + price * item.quantity;
+        }, 0),
 
-         // Get the quantity of a specific item by its productId
-        getItemCount: (id) => {
-          const item = get().items.find((item) => item.product.id === id);
-          return item ? item.quantity : 0; // Return 0 if item is not found
-        },
+      // Get the quantity of a specific item by its productId
+      getItemCount: (id) => {
+        const item = get().items.find((item) => item.product.id === id);
+        return item ? item.quantity : 0;
+      },
     }),
     {
       name: "cart-storage",
