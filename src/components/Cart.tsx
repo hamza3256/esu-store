@@ -124,7 +124,7 @@ const Cart = ({
                   className="flex items-center justify-center space-x-2 text-sm text-green-600"
                 >
                   <TruckIcon className="h-5 w-5" />
-                  <span>You've qualified for free shipping!</span>
+                  <span>You&apos;ve qualified for free shipping!</span>
                 </motion.div>
               )}
               <div className="space-y-1.5">
