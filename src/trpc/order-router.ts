@@ -4,6 +4,7 @@ import { getPayloadClient } from "../get-payload";
 import { TRPCError } from "@trpc/server";
 import Stripe from "stripe";
 import { stripe } from "../lib/stripe";
+import { PDFDocument, rgb } from "pdf-lib";
 
 const shippingAddressSchema = z.object({
   line1: z.string(),
@@ -14,13 +15,45 @@ const shippingAddressSchema = z.object({
   country: z.string(),
 });
 
+interface ShippingAddressType {
+  line1: string;
+  line2?: string | null;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+}
+
+interface Order {
+  id: string;
+  orderNumber: string;
+  createdAt: string;
+  status: string;
+  shippingAddress: {
+    line1: string;
+    line2?: string;
+    city: string;
+    state: string;
+    postalCode: string;
+  };
+  productItems: ProductItem[];
+}
+
+interface ProductItem {
+  quantity: number;
+  product: {
+    name: string;
+    price: number;
+  };
+}
+
 const generateOrderNumber = () => {
   const timestamp = Date.now().toString(); 
   const randomPart = Math.floor(1000 + Math.random() * 9000).toString(); 
   return `ESU-2410${timestamp.slice(-3)}-${randomPart}`; 
 };
 
-export const ordersRouter = router({
+export const orderRouter = router({
   getOrders: privateProcedure
     .input(z.object({ range: z.string().optional() })) 
     .query(async ({ input, ctx }) => {
@@ -365,7 +398,97 @@ export const ordersRouter = router({
         const [order] = orders;
         return order;
       }),
-    
+
+      generateInvoice: publicProcedure
+        .input(
+          z.object({
+            orderId: z.string(),
+            logoUrl: z.string().optional(), // Logo URL for the invoice, optional
+          })
+        )
+        .mutation(async ({ input }) => {
+          const { orderId, logoUrl } = input;
+
+          // Fetch order details using Payload CMS
+          const payload = await getPayloadClient();
+          const { docs: orders } = await payload.find({
+            collection: "orders",
+            depth: 2,
+            where: { id: { equals: orderId } },
+          });
+
+          const order = orders[0];
+          if (!order) throw new Error("Order not found");
+
+          // Create a new PDF document
+          const pdfDoc = await PDFDocument.create();
+          const page = pdfDoc.addPage([600, 800]);
+          const { width, height } = page.getSize();
+          const fontSize = 12;
+
+          // Fetch and embed the logo (default to esu.png if not provided)
+          const logoBytes = await fetch(
+            logoUrl || `${process.env.NEXT_PUBLIC_SERVER_URL}/esu.png`
+          ).then((res) => res.arrayBuffer());
+          
+          const logoImage = await pdfDoc.embedPng(logoBytes);
+          page.drawImage(logoImage, {
+            x: 50,
+            y: height - 150,
+            width: 100,
+            height: 100,
+          });
+
+          // Company Address (hardcoded or configurable)
+          const companyAddress = `
+            ESU STORE LLC
+            7901 4TH ST N # 16774
+            ST PETERSBURG FL 33702-4305
+          `;
+
+          const shippingAddress = order.shippingAddress as ShippingAddressType;
+          const orderSummary = `
+            Order Number: ${order.orderNumber}
+            Date: ${new Date(order.createdAt as string).toLocaleDateString()}
+            Status: ${order.status ?? "N/A"}
+            Shipping Address: ${shippingAddress.line1}, 
+            ${shippingAddress.line2 ? `${shippingAddress.line2}, ` : ""} 
+            ${shippingAddress.city}, ${shippingAddress.state}, ${shippingAddress.postalCode}
+          `;
+
+          // Draw the invoice title and company address
+          page.drawText("Invoice", { x: 50, y: height - 50, size: 20 });
+          page.drawText(companyAddress, { x: 50, y: height - 200, size: fontSize });
+          page.drawText(orderSummary, { x: 50, y: height - 300, size: fontSize });
+
+          // Display the list of items
+          page.drawText("Items:", { x: 50, y: height - 350, size: fontSize });
+          let currentY = height - 380;
+
+          // Loop through the product items
+          const orderProductItems = order.productItems as ProductItem[];
+          for (const item of orderProductItems) {
+            page.drawText(
+              `${item.quantity}x ${item.product.name} - $${item.product.price}`,
+              { x: 50, y: currentY, size: fontSize }
+            );
+            currentY -= 20;
+          }
+
+          // Calculate and display the total amount
+          const total = orderProductItems.reduce(
+            (acc, item) => acc + item.quantity * item.product.price,
+            0
+          );
+          page.drawText(`Total: $${total}`, { x: 50, y: currentY - 30, size: fontSize });
+
+          // Finalize and save the PDF
+          const pdfBytes = await pdfDoc.save();
+
+          // Return the binary data of the PDF for download
+          return pdfBytes;
+        }),
+
 
   // Admin: Create an order (for testing purposes)
 //   createOrder: privateProcedure
@@ -419,10 +542,3 @@ export const ordersRouter = router({
 //       return createdOrder;
 //     }),
 });
-
-// Export the combined TRPC router
-export const appRouter = router({
-  orders: ordersRouter,
-});
-
-export type AppRouter = typeof appRouter;
