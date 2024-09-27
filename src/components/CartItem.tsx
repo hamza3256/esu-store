@@ -25,6 +25,9 @@ const CartItem = ({ product, quantity }: { product: Product; quantity: number })
     }
   };
 
+  // Use discounted price if available, otherwise use the original price
+  const price = product.discountedPrice ?? product.price;
+
   return (
     <div className="space-y-3 py-2">
       <div className="flex items-start justify-between gap-4">
@@ -90,7 +93,13 @@ const CartItem = ({ product, quantity }: { product: Product; quantity: number })
 
         <div className="flex flex-col space-y-1 font-medium">
           <div className="ml-auto line-clamp-1 text-sm">
-            {formatPrice(product.price * quantity)} {/* Total for the item */}
+            {/* Display original price if there's a discount */}
+            {product.discountedPrice && (
+              <span className="line-through text-gray-500 mr-2">
+                {formatPrice(product.price)}
+              </span>
+            )}
+            {formatPrice(price * quantity)} {/* Total for the item */}
           </div>
           <span className="text-xs text-gray-500">
             {product.inventory > 0

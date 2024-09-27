@@ -120,6 +120,14 @@ const CartPageClient = ({ user }: CartPageProps) => {
     return requiredFields.every((field) => !!shippingAddress[field as keyof typeof shippingAddress]) && (!isGuest || !!guestEmail);
   };
 
+  // Updated cartTotal function to use discounted prices
+  const calculateCartTotal = () => {
+    return items.reduce((total, { product, quantity }) => {
+      const price = product.discountedPrice ?? product.price;
+      return total + price * quantity;
+    }, 0);
+  };
+
   return (
     <div className="bg-white">
       <div className="mx-auto max-w-2xl px-4 pb-24 pt-16 sm:px-6 lg:max-w-7xl lg:px-8">
@@ -146,6 +154,9 @@ const CartPageClient = ({ user }: CartPageProps) => {
                   const label = PRODUCT_CATEGORIES.find((c) => c.value === product.category)?.label;
                   const { image } = product.images[0];
 
+                  // Use discountedPrice if available
+                  const price = product.discountedPrice ?? product.price;
+
                   return (
                     <li key={product.id} className="flex py-6 sm:py-10">
                       <div className="flex-shrink-0">
@@ -169,7 +180,19 @@ const CartPageClient = ({ user }: CartPageProps) => {
                             <div className="mt-1 flex text-sm">
                               <p className="text-muted-foreground">Category: {label}</p>
                             </div>
-                            <p className="mt-1 text-sm font-medium text-gray-900">{formatPrice(product.price)}</p>
+                            {/* Display original and discounted prices */}
+                            <p className="mt-1 text-sm font-medium text-gray-900">
+                              {product.discountedPrice ? (
+                                <>
+                                  <span className="line-through text-gray-500 mr-2">
+                                    {formatPrice(product.price)}
+                                  </span>
+                                  <span>{formatPrice(product.discountedPrice)}</span>
+                                </>
+                              ) : (
+                                <span>{formatPrice(product.price)}</span>
+                              )}
+                            </p>
                           </div>
 
                           <div className="mt-4 sm:mt-0 sm:pr-9 w-20">
@@ -221,12 +244,16 @@ const CartPageClient = ({ user }: CartPageProps) => {
             <div className="mt-6 space-y-4">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-gray-600">Subtotal</p>
-                <p className="text-sm font-medium text-gray-900">{isMounted ? formatPrice(cartTotal()) : <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}</p>
+                <p className="text-sm font-medium text-gray-900">
+                  {isMounted ? formatPrice(calculateCartTotal()) : <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                </p>
               </div>
 
               <div className="flex items-center justify-between border-t border-gray-200 pt-4 py-6">
                 <div className="text-base font-medium text-gray-900">Order Total</div>
-                <div className="text-base font-medium text-gray-900">{isMounted ? formatPrice(cartTotal() + fee) : <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}</div>
+                <div className="text-base font-medium text-gray-900">
+                  {isMounted ? formatPrice(calculateCartTotal() + fee) : <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                </div>
               </div>
             </div>
             {!userTypeSelected ? (
@@ -264,23 +291,22 @@ const CartPageClient = ({ user }: CartPageProps) => {
                 <ShippingAddressForm shippingAddress={shippingAddress} handleInputChange={handleInputChange} />
 
                 <div className="mt-6">
-                <Button
-                  disabled={
-                    items.length === 0 ||
-                    isCheckoutLoading ||
-                    isGuestCheckoutLoading ||
-                    items.some((i) => i.product.inventory === 0 || !isFormComplete())
-                  }
-                  onClick={handleCheckout}
-                  className="w-full"
-                  size="lg"
-                >
-                  {isCheckoutLoading || isGuestCheckoutLoading ? (
-                    <Loader2 className="w-4 h-4 animate-spin text-muted-foreground mr-1.5" />
-                  ) : null}
-                  Checkout
-                </Button>
-
+                  <Button
+                    disabled={
+                      items.length === 0 ||
+                      isCheckoutLoading ||
+                      isGuestCheckoutLoading ||
+                      items.some((i) => i.product.inventory === 0 || !isFormComplete())
+                    }
+                    onClick={handleCheckout}
+                    className="w-full"
+                    size="lg"
+                  >
+                    {isCheckoutLoading || isGuestCheckoutLoading ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-muted-foreground mr-1.5" />
+                    ) : null}
+                    Checkout
+                  </Button>
                 </div>
               </>
             )}

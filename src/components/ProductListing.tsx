@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, Minus, Plus, Star, ShoppingCart } from "lucide-react";
+import { Heart, Minus, Plus, ShoppingCart, Star } from "lucide-react";
 import { toast } from "sonner";
 
 import { Product } from "@/payload-types";
@@ -50,8 +50,10 @@ export default function ProductListing({ product, index }: ProductListingProps) 
     .map(({ image }) => (typeof image === "string" ? image : image.url))
     .filter(Boolean) as string[];
 
+  const displayPrice = product.discountedPrice ?? product.price;
+
   const handleAddToCart = () => {
-    addItem(product, quantity);
+    addItem({ ...product, price: displayPrice }, quantity);
     toast.success(`Added ${quantity} ${quantity > 1 ? "items" : "item"} to cart`);
   };
 
@@ -86,6 +88,11 @@ export default function ProductListing({ product, index }: ProductListingProps) 
           <Badge className="absolute top-2 left-2 z-10 text-xs bg-black text-white px-2 py-1 rounded-full">
             {label}
           </Badge>
+          {product.discountedPrice && (
+            <Badge className="absolute top-2 right-2 z-10 text-xs bg-red-500 text-white px-2 py-1 rounded-full">
+              Sale
+            </Badge>
+          )}
           <Tooltip>
             <TooltipTrigger asChild>
               <button
@@ -135,10 +142,18 @@ export default function ProductListing({ product, index }: ProductListingProps) 
               </span>
             </div>
             <p className="text-sm sm:text-base font-bold text-gray-900">
-              {formatPrice(product.price)}
+              {product.discountedPrice ? (
+                <>
+                  <span className="line-through text-gray-500 mr-2">
+                    {formatPrice(product.price)}
+                  </span>
+                  <span>{formatPrice(product.discountedPrice)}</span>
+                </>
+              ) : (
+                <span>{formatPrice(product.price)}</span>
+              )}
             </p>
           </div>
-
           {/* Quantity and Add to Cart */}
           <AnimatePresence>
             <motion.div

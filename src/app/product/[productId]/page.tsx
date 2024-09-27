@@ -60,7 +60,6 @@ const Page = ({ params }: PageProps) => {
     ?.map(({ image }) => (typeof image === "string" ? image : image?.url))
     .filter(Boolean) as string[];
 
-  // Store cart item count in a variable to avoid multiple calls to getItemCount
   const cartItemCount = getItemCount(product.id);
 
   const handleQuantityChange = (action: "increment" | "decrement") => {
@@ -121,9 +120,20 @@ const Page = ({ params }: PageProps) => {
 
               <section className="mt-4">
                 <div className="flex items-center justify-between">
-                  <p className="text-lg sm:text-xl font-medium text-gray-900">
-                    {formatPrice(product.price)}
-                  </p>
+                  <div className="text-lg sm:text-xl font-medium text-gray-900 flex space-x-2 items-center">
+                    {product.discountedPrice ? (
+                      <>
+                        <span className="line-through text-gray-500">
+                          {formatPrice(product.price)}
+                        </span>
+                        <span className="text-red-600">
+                          {formatPrice(product.discountedPrice)}
+                        </span>
+                      </>
+                    ) : (
+                      <span>{formatPrice(product.price)}</span>
+                    )}
+                  </div>
                   <div className="ml-4 border-l text-gray-500 pl-4 text-sm sm:text-base">
                     {label}
                   </div>
@@ -165,7 +175,7 @@ const Page = ({ params }: PageProps) => {
             {/* Product images */}
             <div className="mt-8 lg:col-start-2 lg:row-span-2 lg:mt-0 lg:self-center">
               <div className="aspect-square rounded-lg overflow-hidden shadow-md">
-                <ImageSlider urls={validUrls} productId={productId}/>
+                <ImageSlider urls={validUrls} productId={productId} />
               </div>
             </div>
 

@@ -105,6 +105,7 @@ const handleProductChange: BeforeChangeHook<Product> = async ({ operation, data,
   }
 
   if (operation === 'create') {
+    const productPrice = productData.discountedPrice ?? productData.price 
     // Create the Stripe product and associate the uploaded image
     stripeProduct = await stripe.products.create({
       name: productData.name,
@@ -115,7 +116,7 @@ const handleProductChange: BeforeChangeHook<Product> = async ({ operation, data,
     stripePrice = await stripe.prices.create({
       product: stripeProduct.id,
       currency: 'USD',
-      unit_amount: Math.round(productData.price * 100),
+      unit_amount: Math.round(productPrice * 100),
     });
 
     // Set the created price as the default price for the product
@@ -124,6 +125,7 @@ const handleProductChange: BeforeChangeHook<Product> = async ({ operation, data,
     });
 
   } else if (operation === 'update') {
+    const productPrice = productData.discountedPrice ?? productData.price 
     // Update the Stripe product and associate the new image, if applicable
     await stripe.products.update(productData.stripeId!, {
       name: productData.name,
@@ -134,7 +136,7 @@ const handleProductChange: BeforeChangeHook<Product> = async ({ operation, data,
     stripePrice = await stripe.prices.create({
       product: productData.stripeId!,
       currency: 'USD',
-      unit_amount: Math.round(productData.price * 100),
+      unit_amount: Math.round(productPrice * 100),
     });
 
     // Set the newly created price as the default price for the product
@@ -220,6 +222,17 @@ export const Products: CollectionConfig = {
       max: 5000,
       type: "number",
       required: true,
+    },
+    {
+      name: "discountedPrice",
+      label: "Discounted Price",
+      type: "number",
+      min: 0,
+      max: 5000,
+      required: false,
+      admin: {
+        description: "Enter the discounted price if applicable. Leave empty if no discount.",
+      },
     },
     {
       name: "category",

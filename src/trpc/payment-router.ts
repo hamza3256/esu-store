@@ -126,7 +126,8 @@ export const paymentRouter = router({
           message: `Product with ID ${item.productId} not found`,
         });
       }
-      return acc + (product.price as number) * item.quantity;
+    const productPrice = product.discountedPrice ?? product.price
+      return acc + (productPrice as number) * item.quantity;
     }, 0);
 
     // Generate unique order number
