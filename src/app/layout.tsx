@@ -7,6 +7,7 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { getServerSideUser } from "@/lib/payload-utils";
 import { Toaster } from "@/components/ui/sonner"
+import FreeShippingPopup from "@/components/FreeShippingPopup";
 
 export const metadata = constructMetadata();
 
@@ -27,7 +28,10 @@ export default async function RootLayout({
         <main className="relative flex flex-col min-h-screen">
           <Providers>
             <Navbar user={user} />
-            <div className="flex-grow flex-1">{children}</div>
+            <div className="flex-grow flex-1">
+              {children}
+              <FreeShippingPopup />
+            </div>
             <Footer />
           </Providers>
         </main>

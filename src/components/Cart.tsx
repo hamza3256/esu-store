@@ -1,6 +1,6 @@
 "use client";
 
-import { ShoppingCartIcon, Loader2 } from "lucide-react";
+import { ShoppingCartIcon, Loader2, TruckIcon } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -8,17 +8,19 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from "./ui/sheet";
-import { Separator } from "./ui/separator";
+} from "@/components/ui/sheet";
+import { Separator } from "@/components/ui/separator";
 import { cn, formatPrice } from "@/lib/utils";
-import { buttonVariants } from "./ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import Link from "next/link";
 import Image from "next/image";
 import { useCart } from "@/hooks/use-cart";
-import { ScrollArea } from "./ui/scroll-area";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import CartItem from "./CartItem";
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import { Progress } from "@/components/ui/progress";
+import { motion, AnimatePresence } from "framer-motion";
 
 const Cart = ({
   isTransparent,
@@ -37,28 +39,30 @@ const Cart = ({
   const router = useRouter();
   const pathname = usePathname();
 
+  const FREE_SHIPPING_THRESHOLD = 1500; // Set your free shipping threshold here
+  const progress = Math.min((cartTotal() / FREE_SHIPPING_THRESHOLD) * 100, 100);
+
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
-  // Reset the loading state after navigation and close the cart
   useEffect(() => {
     if (pathname === "/cart") {
       setIsLoading(false);
-      setIsOpen(false); // Close the cart after navigation
+      setIsOpen(false);
     }
   }, [pathname, isLoading]);
 
   const handleCheckoutClick = () => {
     setIsLoading(true);
-    router.push("/cart"); // Manually navigate to cart
-    setIsOpen(false); // Close the cart sheet only after navigating
+    router.push("/cart");
+    setIsOpen(false);
   };
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger
-        onClick={() => setIsOpen(true)} // Open the cart when clicked
+        onClick={() => setIsOpen(true)}
         className="group relative -m-2 flex items-center p-2"
       >
         <ShoppingCartIcon
@@ -96,36 +100,61 @@ const Cart = ({
 
             <div className="space-y-4 pr-6">
               <Separator />
-              <div className="space-t-1.5 pr-6">
+              <AnimatePresence>
+                {progress < 100 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.3 }}
+                    className="space-y-2"
+                  >
+                    <div className="flex items-center justify-between text-sm">
+                      <span>Progress to Free Shipping</span>
+                      <span>{formatPrice(FREE_SHIPPING_THRESHOLD - cartTotal())} away</span>
+                    </div>
+                    <Progress value={progress} className="h-2" />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              {progress >= 100 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex items-center justify-center space-x-2 text-sm text-green-600"
+                >
+                  <TruckIcon className="h-5 w-5" />
+                  <span>You've qualified for free shipping!</span>
+                </motion.div>
+              )}
+              <div className="space-y-1.5">
                 <div className="flex">
                   <span className="flex-1">Shipping</span>
-                  <span>Free</span>
+                  <span>{progress >= 100 ? 'Free' : formatPrice(shippingFee)}</span>
                 </div>
                 <div className="flex">
                   <span className="flex-1">Transaction Fee</span>
                   <span>{formatPrice(shippingFee)}</span>
                 </div>
-                <div className="flex">
+                <div className="flex font-semibold">
                   <span className="flex-1">Total</span>
-                  <span>{formatPrice(cartTotal() + shippingFee)}</span>
+                  <span>{formatPrice(cartTotal() + (progress >= 100 ? 0 : shippingFee))}</span>
                 </div>
               </div>
 
-              <div>
-                <SheetFooter>
-                  <button
-                    className={buttonVariants({ className: "w-full" })}
-                    onClick={handleCheckoutClick}
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <Loader2 className="w-4 h-4 animate-spin text-muted-foreground mr-1.5" />
-                    ) : (
-                      "Continue to checkout"
-                    )}
-                  </button>
-                </SheetFooter>
-              </div>
+              <SheetFooter>
+                <button
+                  className={buttonVariants({ className: "w-full" })}
+                  onClick={handleCheckoutClick}
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-muted-foreground mr-1.5" />
+                  ) : (
+                    "Continue to checkout"
+                  )}
+                </button>
+              </SheetFooter>
             </div>
           </>
         ) : (
