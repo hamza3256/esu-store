@@ -29,6 +29,10 @@ const nextConfig = withPayload(
           // port: process.env.PORT?.toString() || "8080",
           pathname: "/media/**",
         },
+        {
+          protocol: "https",
+          hostname: "res.cloudinary.com"
+        }
       ],
     },
     reactStrictMode: true,

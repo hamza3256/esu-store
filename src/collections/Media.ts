@@ -2,7 +2,7 @@ import { User } from "@/payload-types";
 import { Access, CollectionConfig } from "payload/types";
 import cloudinary from "../lib/cloudinary";
 
-// Access function for checking if the user has admin access or access to images
+// Access function to check if the user is an admin or has access to images
 const isAdminOrHasAccessToImages =
   (): Access =>
   async ({ req }) => {
@@ -30,13 +30,11 @@ const generateCloudinaryUrl = (publicId: string, size: { width: number; height?:
   });
 };
 
-// Helper function to promisify the upload_stream method
+// Helper function to upload files to Cloudinary and return the result
 const uploadToCloudinary = (file: any): Promise<any> => {
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
-      {
-        folder: 'media', // Folder to store files in Cloudinary
-      },
+      { folder: 'media' }, // Specify the folder in Cloudinary
       (error, result) => {
         if (error) {
           reject(error); // Reject the promise if there's an error
@@ -48,8 +46,8 @@ const uploadToCloudinary = (file: any): Promise<any> => {
 
     // Create a buffer stream to pipe the file's data to Cloudinary
     const bufferStream = new (require('stream')).PassThrough();
-    bufferStream.end(file.data);  // Stream the file buffer
-    bufferStream.pipe(stream);    // Pipe the stream to Cloudinary's uploader
+    bufferStream.end(file.data); // Stream the file buffer
+    bufferStream.pipe(stream); // Pipe the stream to Cloudinary's uploader
   });
 };
 
@@ -61,29 +59,48 @@ export const Media: CollectionConfig = {
       async ({ req, data, operation }) => {
         try {
           const file = req.files?.file; // Get the file from the request
-          
+
           if (file && (operation === 'create' || operation === 'update')) {
             console.log('Uploading file:', file.name, 'Size:', file.size || file.data?.length);
 
-            // Use the promisified upload function to upload the file to Cloudinary
+            // Upload the file to Cloudinary
             const result = await uploadToCloudinary(file);
 
             // Check if the result from Cloudinary is valid
-            if (result) {
-              console.log("secure url: " + result.secure_url);
-              console.log("url: " + result.url);
-              console.log("public id: " + result.public_id);
+            if (result && result.secure_url && result.public_id) {
+              console.log("Cloudinary secure URL:", result.secure_url);
+              console.log("Cloudinary public ID:", result.public_id);
 
               // Attach the Cloudinary URL and public ID to the data
               data.url = result.secure_url;
               data.cloudinaryId = result.public_id;
 
-              // Generate Cloudinary URLs for different sizes
+              // Generate Cloudinary URLs for different sizes (thumbnail, card, tablet)
               data.sizes = {
-                thumbnail: generateCloudinaryUrl(result.public_id, { width: 400, height: 300 }),
-                card: generateCloudinaryUrl(result.public_id, { width: 768, height: 1024 }),
-                tablet: generateCloudinaryUrl(result.public_id, { width: 1024 }),
+                thumbnail: {
+                  width: 400,
+                  height: 300,
+                  mimeType: result.mime_type, // Fixed from 'mimeTypes' to 'mime_type'
+                  filesize: result.bytes, // Use the size returned by Cloudinary
+                  url: generateCloudinaryUrl(result.public_id, { width: 400, height: 300 }),
+                },
+                card: {
+                  width: 768,
+                  height: 1024,
+                  mimeType: result.mime_type, // Fixed from 'mimeTypes' to 'mime_type'
+                  filesize: result.bytes,
+                  url: generateCloudinaryUrl(result.public_id, { width: 768, height: 1024 }),
+                },
+                tablet: {
+                  width: 1024,
+                  height: undefined, // Height will be automatically adjusted
+                  mimeType: result.mime_type, // Fixed from 'mimeTypes' to 'mime_type'
+                  filesize: result.bytes,
+                  url: generateCloudinaryUrl(result.public_id, { width: 1024 }),
+                },
               };
+            } else {
+              throw new Error("Cloudinary upload failed: missing required result fields.");
             }
           }
         } catch (error) {
@@ -91,14 +108,14 @@ export const Media: CollectionConfig = {
           throw new Error('Failed to upload media to Cloudinary');
         }
 
-        return data; // Return the modified data to save it in the database
+        return { ...data, user: req.user.id };
       },
     ],
     // Hook to handle deleting a file from Cloudinary after it is deleted in PayloadCMS
     afterDelete: [
       async ({ doc }) => {
         try {
-          // Remove file from Cloudinary based on public_id
+          // Remove the file from Cloudinary based on the public_id
           if (doc.cloudinaryId) {
             await cloudinary.uploader.destroy(doc.cloudinaryId);
           }
@@ -121,40 +138,21 @@ export const Media: CollectionConfig = {
     update: isAdminOrHasAccessToImages(),
   },
   admin: {
-    hidden: ({ user }) => user.role !== "admin",
+    hidden: ({ user }) => user.role !== "admin", // Only admins can see this collection in the admin panel
   },
   upload: {
-    staticURL: undefined, // Not required for cloud storage
-    staticDir: undefined, // Not required for cloud storage
-    imageSizes: [
-      {
-        name: "thumbnail",
-        width: 400,
-        height: 300,
-        position: "centre", // different spelling in CMS docs
-      },
-      {
-        name: "card",
-        width: 768,
-        height: 1024,
-        position: "centre",
-      },
-      {
-        name: "tablet",
-        width: 1024,
-        height: undefined,
-        position: "centre",
-      },
-    ],
-    mimeTypes: ["image/*", "video/*"],
+    // These fields are no longer needed since we're using Cloudinary
+    staticURL: undefined,
+    staticDir: undefined,
+    mimeTypes: ["image/*", "video/*"], // Allowed file types
   },
   fields: [
     {
       name: "cloudinaryId", // Store Cloudinary's public ID for future reference
       type: "text",
-      required: false,  // Not required as it will be automatically populated after upload
+      required: false, // Will be populated automatically after upload
       admin: {
-        readOnly: true,  // Make this field read-only in the admin panel
+        readOnly: true, // Make this field read-only in the admin panel
       },
     },
     {
