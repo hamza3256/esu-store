@@ -80,7 +80,7 @@ export default function ProductListing({ product, index }: ProductListingProps) 
         transition={{ duration: 0.3 }}
         className={cn(
           "group w-full cursor-pointer overflow-hidden shadow-lg transition-all duration-300 hover:shadow-xl relative bg-white", 
-          "sm:rounded-xl" // Rounded corners on larger screens
+          "sm:rounded-xl"
         )}
       >
         {/* Image Section */}
@@ -114,10 +114,10 @@ export default function ProductListing({ product, index }: ProductListingProps) 
         </div>
 
         {/* Product Info */}
-        <div className="p-2 sm:p-4 space-y-2"> {/* Reduced padding for mobile */}
+        <div className="p-2 sm:p-4 space-y-2">
           <Link href={`/product/${product.id}`} className="block">
             <h3 className="font-semibold text-sm sm:text-base text-gray-900 line-clamp-1 hover:underline transition-colors duration-200">
-              {product.name}    
+              {product.name}
               {product.discountedPrice && (
                 <Badge className="absolute right-2 z-10 text-xs bg-red-500 text-white px-2 py-1 rounded-full">
                   Sale

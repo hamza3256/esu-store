@@ -69,7 +69,6 @@ const uploadImageToStripe = async (imageUrl: string): Promise<string> => {
   return uploadedImage.id;
 };
 
-// Before Change Hook for creating/updating product
 const handleProductChange: BeforeChangeHook<Product> = async ({ operation, data, req }) => {
   const productData = data as Product;
 
@@ -85,14 +84,14 @@ const handleProductChange: BeforeChangeHook<Product> = async ({ operation, data,
       if (typeof image === "string") {
         // Resolve the image URL from the Payload media collection
         const mediaDoc = await req.payload.findByID({ collection: "media", id: image });
-        return mediaDoc?.url;
+        return mediaDoc?.url;  // Use the URL field from the Cloudinary document
       } else {
         return image.url; // If image is already an object with a URL
       }
     })
   );
 
-  const imageUrl = validUrls.filter(Boolean)[0];
+  const imageUrl = validUrls.filter(Boolean)[0]; // Get the first valid image URL
 
   let imageId: string | undefined;
 
@@ -105,7 +104,8 @@ const handleProductChange: BeforeChangeHook<Product> = async ({ operation, data,
   }
 
   if (operation === 'create') {
-    const productPrice = productData.discountedPrice ?? productData.price 
+    const productPrice = productData.discountedPrice ?? productData.price;
+    
     // Create the Stripe product and associate the uploaded image
     stripeProduct = await stripe.products.create({
       name: productData.name,
@@ -125,14 +125,15 @@ const handleProductChange: BeforeChangeHook<Product> = async ({ operation, data,
     });
 
   } else if (operation === 'update') {
-    const productPrice = productData.discountedPrice ?? productData.price 
+    const productPrice = productData.discountedPrice ?? productData.price;
+    
     // Update the Stripe product and associate the new image, if applicable
     await stripe.products.update(productData.stripeId!, {
       name: productData.name,
       images: imageId ? [imageId] : undefined,
     });
 
-    // Create new price for the updated product price
+    // Create a new price for the updated product price
     stripePrice = await stripe.prices.create({
       product: productData.stripeId!,
       currency: 'USD',
@@ -152,6 +153,7 @@ const handleProductChange: BeforeChangeHook<Product> = async ({ operation, data,
     priceId: stripePrice?.id || productData.priceId,
   };
 };
+
 
 
 // Access control modification to accommodate guest operations
@@ -271,7 +273,7 @@ export const Products: CollectionConfig = {
       name: "product_files",
       label: "Product file(s)",
       type: "relationship",
-      required: true,
+      required: false,
       relationTo: "product_files",
       hasMany: false,
     },
