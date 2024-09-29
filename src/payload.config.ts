@@ -9,6 +9,7 @@ import { Products } from "./collections/Products/Products";
 import { Media } from "./collections/Media";
 import { ProductFiles } from "./collections/ProductFile";
 import { Orders } from "./collections/Orders";
+import { Configuration as WebpackConfig } from 'webpack';
 
 dotenv.config({
   path: path.resolve(__dirname, "../.env"),
@@ -47,6 +48,21 @@ export default buildConfig({
   admin: {
     user: "users",
     bundler: webpackBundler(),
+    webpack: (config: WebpackConfig): WebpackConfig => {
+      const isServer = config.target === 'node';  // Determine if it's server or client
+
+      if (!isServer) {
+        config.resolve!.fallback = {
+          ...config.resolve?.fallback,
+          fs: false, // Cloudinary's SDK shouldn't need `fs` in client-side
+          stream: require.resolve('stream-browserify'),
+          querystring: require.resolve('querystring-es3'),
+          url: require.resolve('url/'),
+        };
+      }
+
+      return config;
+    },
     meta: {
       titleSuffix: "- esü",
       favicon: "/favicon.ico",
