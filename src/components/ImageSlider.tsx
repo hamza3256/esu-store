@@ -4,10 +4,10 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import Image from "next/image";
 import "swiper/css";
 import "swiper/css/pagination";
-import "swiper/css/navigation"; // Include navigation styles
+import "swiper/css/navigation";
 import type SwiperType from "swiper";
 import { useEffect, useState } from "react";
-import { Pagination, Navigation } from "swiper/modules"; // Import the Navigation module for buttons
+import { Pagination, Navigation } from "swiper/modules";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -26,14 +26,22 @@ const ImageSlider = ({ urls, productId }: ImageSliderProps) => {
   });
 
   useEffect(() => {
-    swiper?.on("slideChange", ({ activeIndex }) => {
+    if (!swiper) return;
+
+    const onSlideChange = ({ activeIndex }: { activeIndex: number }) => {
       setActiveIndex(activeIndex);
       setSlideConfig({
         isBeginning: activeIndex === 0,
         isEnd: activeIndex === (urls.length ?? 0) - 1,
       });
-    });
-  }, [swiper, urls]);
+    };
+
+    swiper.on("slideChange", onSlideChange);
+
+    return () => {
+      swiper.off("slideChange", onSlideChange);
+    };
+  }, [swiper, urls.length]);
 
   const activeStyles =
     "active:scale-[0.97] grid opacity-100 hover:scale-105 absolute top-1/2 -translate-y-1/2 aspect-square h-8 w-8 z-50 place-items-center rounded-full border-2 bg-white border-zinc-300";
@@ -53,6 +61,7 @@ const ImageSlider = ({ urls, productId }: ImageSliderProps) => {
             "hover:bg-primary-300 text-primary-800 opacity-100":
               !sliderConfig.isEnd,
           })}
+          aria-label="Next image"
         >
           <ChevronRight
             className="h-4 w-4 text-zinc-700"
@@ -69,6 +78,7 @@ const ImageSlider = ({ urls, productId }: ImageSliderProps) => {
             "hover:bg-primary-300 text-primary-800 opacity-100":
               !sliderConfig.isBeginning,
           })}
+          aria-label="Previous image"
         >
           <ChevronLeft
             className="h-4 w-4 text-zinc-700"
@@ -88,9 +98,9 @@ const ImageSlider = ({ urls, productId }: ImageSliderProps) => {
         onSwiper={(swiperInstance) => setSwiper(swiperInstance)}
         spaceBetween={50}
         slidesPerView={1}
-        modules={[Pagination, Navigation]} // Added Navigation for desktop controls
-        className="h-full w-full" // Added relative here
-        touchEventsTarget="container" // Ensure touch events are enabled for mobile
+        modules={[Pagination, Navigation]}
+        className="h-full w-full"
+        touchEventsTarget="container"
       >
         {urls.map((url, i) => (
           <SwiperSlide key={i} className="-z-10 relative h-full w-full">
@@ -102,7 +112,7 @@ const ImageSlider = ({ urls, productId }: ImageSliderProps) => {
                 className="-z-10 h-full w-full object-cover object-center"
                 src={url}
                 alt={`Product image ${i + 1}`}
-                priority={i === 0} // Prioritize loading of the first image
+                priority={i === 0}
               />
             </Link>
           </SwiperSlide>
