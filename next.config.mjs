@@ -55,7 +55,7 @@ const nextConfig = withPayload(
         {
           protocol: protocol,
           hostname: productionHostname,
-          pathname: "/media/**",
+          // pathname: "/media/**",
         },
         {
           protocol: "https",
@@ -65,7 +65,7 @@ const nextConfig = withPayload(
     },
     reactStrictMode: true,
     swcMinify: true,
-    async headers() {
+    /*async headers() {
       return [
         {
           // Apply these headers to all routes
@@ -73,7 +73,7 @@ const nextConfig = withPayload(
           headers: securityHeaders,
         },
       ];
-    },
+    },*/
   },
   {
     configPath: path.resolve(
