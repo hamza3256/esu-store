@@ -7,6 +7,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { ArrowDownToLine, CheckCircle, Leaf } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import SocialBanner from "@/components/SocialBanner"; // Import the updated SocialBanner
 
 const perks = [
   {
@@ -119,7 +120,6 @@ export default function Home() {
                 <Link href="/products" className={buttonVariants()}>
                   Browse Trending &rarr;
                 </Link>
-                {/* <Button variant="ghost">Our quality promise &rarr;</Button> */}
               </div>
             </div>
           </MaxWidthWrapper>
@@ -158,6 +158,7 @@ export default function Home() {
           </div>
         </MaxWidthWrapper>
       </section>
+      <SocialBanner />
     </>
   );
 }
