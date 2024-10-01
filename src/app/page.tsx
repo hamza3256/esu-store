@@ -10,11 +10,11 @@ import Image from "next/image";
 import SocialBanner from "@/components/SocialBanner"; // Import the updated SocialBanner
 
 const perks = [
-  {
+  /*{
     name: "Crafted with Precision",
     Icon: Gem,
     description: "Every piece of jewelry is meticulously crafted by skilled artisans.",
-  },
+  },*/
   {
     name: "Nationwide Delivery",
     Icon: Truck,

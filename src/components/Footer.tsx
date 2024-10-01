@@ -38,7 +38,7 @@ const Footer = () => {
 
               {/* Social Icons */}
               <div className="flex space-x-6">
-                <Link href="https://www.instagram.com/esustoreofficial" aria-label="Instagram">
+                <Link href="https://www.instagram.com/esu.gems.gallery" aria-label="Instagram">
                   <Instagram className="h-6 w-6 text-gray-400 hover:text-white transition-colors duration-200" />
                 </Link>
                 <Link href="https://twitter.com" aria-label="Twitter">
@@ -68,25 +68,28 @@ const Footer = () => {
             >
               Track Order
             </Link>
-            <Link
+            <Link 
+              prefetch={false}
               href="/privacy-policy"
               className="text-sm text-gray-400 hover:text-white transition-colors duration-200"
             >
               Privacy Policy
             </Link>
             <Link
-              href="/cookie-policy"
+              href="/"
               className="text-sm text-gray-400 hover:text-white transition-colors duration-200"
             >
               Cookie Policy
             </Link>
             <Link
+              prefetch={false}
               href="/help-center"
               className="text-sm text-gray-400 hover:text-white transition-colors duration-200"
             >
               Help Center
             </Link>
             <Link
+              prefetch={false}
               href="/company"
               className="text-sm text-gray-400 hover:text-white transition-colors duration-200"
             >
