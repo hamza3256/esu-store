@@ -11,10 +11,10 @@ import FreeShippingPopup from "@/components/FreeShippingPopup";
 
 export const metadata: Metadata = {
   title: "ESÜ Store | Jewelry, Clothing & Accessories",
-  description: "Discover premium jewelry, clothing, and accessories at ESÜ Store. Every product is handpicked and verified for quality, ensuring you receive only the finest pieces. Shop our exclusive collection today and elevate your style with high-quality, affordable fashion and accessories.",
+  description: "Discover premium jewelry, clothing, and accessories at ESU Store. Every product is handpicked and verified for quality, ensuring you receive only the finest pieces. Shop our exclusive collection today and elevate your style with high-quality, affordable fashion and accessories.",
   openGraph: {
     title: "ESÜ Store | Jewelry, Clothing & Accessories",
-    description: "Discover premium jewelry, clothing, and accessories at ESÜ Store. Shop our handpicked, high-quality products and elevate your style today.",
+    description: "Discover premium jewelry, clothing, and accessories at ESU Store. Shop our handpicked, high-quality products and elevate your style today.",
     url: "https://esustore.com",
     siteName: "ESÜ Store",
     images: [
@@ -53,6 +53,7 @@ export default async function RootLayout({
   return (
     <html lang="en" className="h-full">
       <head>
+        <link rel="icon" href="https://esustore.com/favicon.ico" type="image/x-icon" />
         {/* Adding meta tags dynamically */}
         <meta name="description" content={metadata.description ?? undefined} />
         <meta property="og:title" content={metadata.openGraph?.title?.toString() ?? undefined} />
@@ -60,14 +61,12 @@ export default async function RootLayout({
         <meta property="og:url" content={metadata.openGraph?.url?.toString() ?? undefined} />
         <meta property="og:site_name" content={metadata.openGraph?.siteName ?? undefined} />
         <meta property="og:type" content={"website" ?? undefined} />
-        <meta key="0" property="og:image" content={"https://esustore.com/esu.png" ?? undefined} />
-        <meta key="1" property="og:image" content={"https://esustore.com/esu-official.jpg" ?? undefined} />
-        <meta key="2" property="og:image" content={"https://esustore.com/background.png" ?? undefined} />
+        <meta property="og:image" content={"https://esustore.com/esu-official.jpg" ?? undefined} />
       
         <meta name="twitter:card" content={metadata.twitter?.creator ?? undefined} />
         <meta name="twitter:title" content={metadata.twitter?.title?.toString() ?? undefined} />
         <meta name="twitter:description" content={metadata.twitter?.description ?? undefined} />
-        <meta name="twitter:image" content={"https://esustore.com/esu-official.jpg" ?? undefined} />
+        <meta name="twitter:image" content={"https://esustore.com/esu.png" ?? undefined} />
       </head>
       <body className={cn("relative h-full font-sans antialiased")}>
         <main className="relative flex flex-col min-h-screen">
