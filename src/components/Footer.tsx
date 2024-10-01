@@ -68,25 +68,28 @@ const Footer = () => {
             >
               Track Order
             </Link>
-            <Link
+            <Link 
+              prefetch={false}
               href="/privacy-policy"
               className="text-sm text-gray-400 hover:text-white transition-colors duration-200"
             >
               Privacy Policy
             </Link>
             <Link
-              href="/cookie-policy"
+              href="/"
               className="text-sm text-gray-400 hover:text-white transition-colors duration-200"
             >
               Cookie Policy
             </Link>
             <Link
+              prefetch={false}
               href="/help-center"
               className="text-sm text-gray-400 hover:text-white transition-colors duration-200"
             >
               Help Center
             </Link>
             <Link
+              prefetch={false}
               href="/company"
               className="text-sm text-gray-400 hover:text-white transition-colors duration-200"
             >
