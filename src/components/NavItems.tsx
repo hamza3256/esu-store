@@ -4,6 +4,7 @@ import { PRODUCT_CATEGORIES } from "@/config";
 import { useEffect, useRef, useState } from "react";
 import NavItem from "./NavItem";
 import { useOnClickOutside } from "@/hooks/use-on-click-outside";
+import { useJewelleryProducts } from "@/hooks/use-category"; // Dynamic jewellery update example
 
 const NavItems = ({
   isTransparent,
@@ -13,11 +14,36 @@ const NavItems = ({
   isHovered: boolean;
 }) => {
   const [activeIndex, setActiveIndex] = useState<null | number>(null);
+  const navRef = useRef<HTMLDivElement | null>(null);
+  
+  // Use for dynamic updates to the jewellery category (e.g., using hooks)
+  const { products, isLoading } = useJewelleryProducts();
+
+  // Updating PRODUCT_CATEGORIES dynamically based on products fetched for jewellery
+  const updatedCategories = PRODUCT_CATEGORIES.map((category) => {
+    if (category.value === "jewellery") {
+      return {
+        ...category,
+        featured: isLoading
+          ? category.featured
+          : products.map((product: any) => ({
+              name: product.name,
+              href: `/product/${product.id}`,
+              imageSrc: product.images[0]?.image.sizes?.card?.url || "/fallback.jpg",
+            })),
+      };
+    }
+    return category;
+  });
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key == "Escape") {
         setActiveIndex(null);
+      } else if (e.key === "ArrowRight" && activeIndex !== null) {
+        setActiveIndex((prevIndex) => (prevIndex === updatedCategories.length - 1 ? 0 : (prevIndex ?? 0) + 1));
+      } else if (e.key === "ArrowLeft" && activeIndex !== null) {
+        setActiveIndex((prevIndex) => (prevIndex === 0 ? updatedCategories.length - 1 : (prevIndex ?? 0) - 1));
       }
     };
 
@@ -26,17 +52,15 @@ const NavItems = ({
     return () => {
       document.removeEventListener("keydown", handler);
     };
-  }, []);
+  }, [activeIndex, updatedCategories.length]);
 
   const isAnyOpen = activeIndex !== null;
-
-  const navRef = useRef<HTMLDivElement | null>(null);
 
   useOnClickOutside(navRef, () => setActiveIndex(null));
 
   return (
     <div className="flex gap-4 h-full" ref={navRef}>
-      {PRODUCT_CATEGORIES.map((category, i) => {
+      {updatedCategories.map((category, i) => {
         const handleOpen = () => {
           if (activeIndex == i) {
             setActiveIndex(null);
