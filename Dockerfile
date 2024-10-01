@@ -30,6 +30,8 @@ ARG MONGODB_PORT
 # Build the Next.js project
 RUN yarn build
 
+RUN yarn postbuild
+
 FROM base AS runner
 WORKDIR /app
 ENV NODE_ENV production
