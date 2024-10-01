@@ -198,7 +198,7 @@ export default function Home() {
             {/* Example testimonials */}
             <div className="bg-white p-6 shadow-md rounded-lg">
               <p className="text-gray-700 italic">
-                "Absolutely stunning! The craftsmanship is incredible. I love how unique my piece is."
+              &quot;Absolutely stunning! The craftsmanship is incredible. I love how unique my piece is.&quot;
               </p>
               <div className="mt-4">
                 <p className="font-bold text-gray-900">- Sarah A.</p>
@@ -207,7 +207,7 @@ export default function Home() {
             </div>
             <div className="bg-white p-6 shadow-md rounded-lg">
               <p className="text-gray-700 italic">
-                "Fast delivery and exceptional quality. Highly recommend!"
+              &quot;Fast delivery and exceptional quality. Highly recommend!&quot;
               </p>
               <div className="mt-4">
                 <p className="font-bold text-gray-900">- Ahmed R.</p>
@@ -216,7 +216,7 @@ export default function Home() {
             </div>
             <div className="bg-white p-6 shadow-md rounded-lg">
               <p className="text-gray-700 italic">
-                "The perfect gift! I can't wait to buy more from this collection."
+              &quot;The perfect gift! I can&apos;t wait to buy more from this collection.&quot;
               </p>
               <div className="mt-4">
                 <p className="font-bold text-gray-900">- Fatima K.</p>
