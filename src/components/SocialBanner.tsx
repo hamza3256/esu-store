@@ -10,15 +10,15 @@ const SocialBanner = () => {
         public_id: "instagram_5",
         media_url:
           "https://res.cloudinary.com/dn20h4mis/image/upload/v1727751194/extra_instagram_post.jpg",
-        permalink: "https://www.instagram.com/p/extra_instagram_post", // Replace with actual Instagram URL
+        permalink: "https://www.instagram.com/p/DAg_8U6tZ4Z/?igsh=MWVyZmZxbzd4ZzN1YQ==", // Replace with actual Instagram URL
         caption: "Turquoise Luxe",
     },
     {
       id: "2",
-      public_id: "instagram_4",
+      public_id: "instagram_6",
       media_url:
         "https://res.cloudinary.com/dn20h4mis/image/upload/v1727751194/97545b9e-6201-4733-95c7-67b120631f08_whlkrx.jpg",
-      permalink: "https://www.instagram.com/p/DAji9V_tibG", // Replace with actual Instagram URL
+      permalink: "https://www.instagram.com/p/DAkl0wFNo_4/?igsh=bmZyMmFhMmZ6Mmhn", // Replace with actual Instagram URL
       caption: "Sunset Wave",
     },
     {
