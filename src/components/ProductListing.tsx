@@ -24,9 +24,29 @@ import {
 interface ProductListingProps {
   product: Product | null;
   index: number;
+  isTablet: boolean;
+  isMobile: boolean;
 }
 
-export default function ProductListing({ product, index }: ProductListingProps) {
+interface ImageSize {
+  width: number;
+  height?: number;
+  mimeType: string;
+  filesize: number;
+  url: string;
+}
+
+// Define the image interface
+interface Image {
+  url: string;
+  sizes?: {
+    thumbnail?: ImageSize;
+    card?: ImageSize;
+    tablet?: ImageSize;
+  };
+}
+
+export default function ProductListing({ product, index, isTablet, isMobile }: ProductListingProps) {
   const [isVisible, setIsVisible] = useState<boolean>(false);
   const [quantity, setQuantity] = useState(1);
   const [isFavorite, setIsFavorite] = useState(false);
@@ -46,9 +66,19 @@ export default function ProductListing({ product, index }: ProductListingProps) 
     ({ value }) => value === product.category
   )?.label;
 
-  const validUrls = product.images
-    .map(({ image }) => (typeof image === "string" ? image : image.url))
-    .filter(Boolean) as string[];
+  const validUrls = product.images.map(({ image } : {image: any}) => {
+    if (isMobile && image?.sizes?.thumbnail?.url) {
+      // Use the thumbnail for mobile devices
+      return image.sizes.thumbnail.url;
+    } else if (isTablet && image?.sizes?.tablet?.url) {
+      // Use the tablet size for tablet devices
+      return image.sizes.tablet.url;
+    } else if (image?.sizes?.card?.url) {
+      // Default to the card size for larger screens or if no specific size is found
+      return image.sizes.card.url;
+    }
+    return image.url; // Fallback to the original image URL
+  }).filter(Boolean);
 
   const displayPrice = product.discountedPrice ?? product.price;
 

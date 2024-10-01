@@ -5,6 +5,8 @@ import { Product } from "@/payload-types";
 import { trpc } from "@/trpc/client";
 import Link from "next/link";
 import ProductListing from "./ProductListing";
+import { useMediaQuery } from "@/hooks/use-media-query";
+import { url } from "inspector";
 
 interface ProductReelProps {
   title: string;
@@ -16,6 +18,9 @@ interface ProductReelProps {
 const FALLBACK_LIMIT = 4;
 
 const ProductReel = (props: ProductReelProps) => {
+  const isTablet = useMediaQuery("(min-width: 768px) and (max-width: 1024px)");
+  const isMobile = useMediaQuery("(max-width: 767px)");
+  
   const { title, subtitle, href, query } = props;
 
   const { data: queryResults, isLoading } =
@@ -71,6 +76,8 @@ const ProductReel = (props: ProductReelProps) => {
                 key={`product-${i}`}
                 product={product}
                 index={i}
+                isMobile={isMobile}
+                isTablet={isTablet}
               />
             ))}
           </div>

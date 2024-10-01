@@ -91,6 +91,29 @@ export interface ProductFile {
 export interface Media {
   id: string;
   cloudinaryId?: string | null;
+  sizes?: {
+    thumbnail?: {
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      url?: string | null;
+    };
+    card?: {
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      url?: string | null;
+    };
+    tablet?: {
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      url?: string | null;
+    };
+  };
   user?: (string | null) | User;
   updatedAt: string;
   createdAt: string;
