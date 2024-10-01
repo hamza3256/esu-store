@@ -38,7 +38,7 @@ const Footer = () => {
 
               {/* Social Icons */}
               <div className="flex space-x-6">
-                <Link href="https://www.instagram.com/esustoreofficial" aria-label="Instagram">
+                <Link href="https://www.instagram.com/esu.gems.gallery" aria-label="Instagram">
                   <Instagram className="h-6 w-6 text-gray-400 hover:text-white transition-colors duration-200" />
                 </Link>
                 <Link href="https://twitter.com" aria-label="Twitter">
