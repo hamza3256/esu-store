@@ -337,7 +337,7 @@ export const orderRouter = router({
             },
             line_items,
             shipping_address_collection: {
-              allowed_countries: ["US", "CA", "PK", "GB"], // Specify allowed shipping countries
+              allowed_countries: ["PK"], // Specify allowed shipping countries
             },
             shipping_options: [
               {
@@ -345,7 +345,7 @@ export const orderRouter = router({
                   type: "fixed_amount",
                   fixed_amount: {
                     amount: 500, // Flat shipping cost in cents
-                    currency: "usd",
+                    currency: "pkr",
                   },
                   display_name: "Standard Shipping",
                   delivery_estimate: {

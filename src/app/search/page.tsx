@@ -8,6 +8,7 @@ import { Loader, ChevronLeft, ChevronRight } from "lucide-react";
 import Image from "next/image";
 import { buttonVariants } from "@/components/ui/button";
 import ProductListing from "@/components/ProductListing";
+import { useMediaQuery } from "@/hooks/use-media-query";
 
 const SearchPage = () => {
   const router = useRouter();
@@ -15,6 +16,9 @@ const SearchPage = () => {
   const query = searchParams.get("q") || "";
   const [page, setPage] = useState(1);
 
+  const isTablet = useMediaQuery("(min-width: 768px) and (max-width: 1024px)");
+  const isMobile = useMediaQuery("(max-width: 767px)");
+  
   const { data, isLoading, error } = trpc.searchProducts.useQuery({
     query,
     limit: 12,
@@ -72,7 +76,7 @@ const SearchPage = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
           {data?.items.map((item: any) => (
             <Link key={item.id} href={`/product/${item.id}`}>
-              <ProductListing index={item.id} product={item}/>
+              <ProductListing isMobile={isMobile} isTablet={isTablet} index={item.id} product={item}/>
             </Link>
           ))}
         </div>

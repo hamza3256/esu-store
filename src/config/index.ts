@@ -1,25 +1,14 @@
+export interface CategoryType {
+  label: string;
+  value: string;
+  featured: {
+    name: string;
+    href: string;
+    imageSrc: string;
+  }[];
+}
+
 export const PRODUCT_CATEGORIES = [
-  {
-    label: "Clothing",
-    value: "clothing" as const,
-    featured: [
-      {
-        name: "Editor picks",
-        href: "#",
-        imageSrc: "/nav/clothings/mixed.jpg",
-      },
-      {
-        name: "New Arrivals",
-        href: "#",
-        imageSrc: "/nav/clothings/blue.jpg",
-      },
-      {
-        name: "Bestsellers",
-        href: "#",
-        imageSrc: "/nav/clothings/purple.jpg",
-      },
-    ],
-  },
   {
     label: "Jewellery",
     value: "jewellery" as const,
@@ -41,6 +30,28 @@ export const PRODUCT_CATEGORIES = [
       },
     ],
   },
+  {
+    label: "Clothing",
+    value: "clothing" as const,
+    featured: [
+      {
+        name: "Editor picks",
+        href: "#",
+        imageSrc: "/nav/clothings/mixed.jpg",
+      },
+      {
+        name: "New Arrivals",
+        href: "#",
+        imageSrc: "/nav/clothings/blue.jpg",
+      },
+      {
+        name: "Bestsellers",
+        href: "#",
+        imageSrc: "/nav/clothings/purple.jpg",
+      },
+    ],
+  },
+  
   {
     label: "Accessories",
     value: "accessories" as const,

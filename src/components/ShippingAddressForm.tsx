@@ -126,9 +126,7 @@ const ShippingAddressForm: React.FC<{
               className="block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
             >
               <option value="">Select a country</option>
-              <option value="US">United States</option>
-              <option value="CA">Canada</option>
-              <option value="GB">United Kingdom</option>
+              <option value="PK">Pakistan</option>
               {/* Add more countries as needed */}
             </select>
           </div>

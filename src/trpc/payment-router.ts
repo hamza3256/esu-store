@@ -232,7 +232,9 @@ export const paymentRouter = router({
         line_items,
         // This will collect the shipping address from the user during checkout
         shipping_address_collection: {
-          allowed_countries: ['US', 'CA', 'PK', 'GB'], // Specify countries that you will ship to
+          // allowed_countries: ['US', 'CA','PK', 'GB'], 
+          allowed_countries: ['PK'],
+
         },
         // If you want to define specific shipping options (such as free shipping or flat rate), you can do so here:
         shipping_options: [
@@ -240,8 +242,8 @@ export const paymentRouter = router({
             shipping_rate_data: {
               type: 'fixed_amount',
               fixed_amount: {
-                amount: 500, // Amount in the smallest currency unit (e.g., cents for USD)
-                currency: 'usd',
+                amount: 500, 
+                currency: 'pkr',
               },
               display_name: 'Standard Shipping',
               // Optionally, specify delivery estimate information

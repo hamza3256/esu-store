@@ -17,7 +17,7 @@ export function formatPrice(
   } = {}
 ) {
   const {
-    currency = "USD", // Default to USD if not specified
+    currency = "PKR", // Default to USD if not specified
     locale = "en-US", // Default to US English formatting
     minimumFractionDigits = 2, // Ensure decimal places for most currencies
     maximumFractionDigits = 2,
@@ -30,14 +30,17 @@ export function formatPrice(
   // If price is not a valid number, fallback to zero
   const safePrice = isNaN(numericPrice) ? 0 : numericPrice;
 
-  // Format the price with internationalization support
-  return new Intl.NumberFormat(locale, {
+  const formattedPrice = new Intl.NumberFormat('en-US', {
     style: "currency",
-    currency,
+    currency: "PKR", // Currency from Zustand store
+    currencyDisplay: "narrowSymbol", // Favor the narrow symbol where available
     minimumFractionDigits,
     maximumFractionDigits,
     notation,
   }).format(safePrice);
+
+  // Replace the currency code with the custom symbol if necessary (for PKR)
+  return formattedPrice.replace("PKR", "Rs");
 }
 
 

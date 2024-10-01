@@ -1,121 +1,167 @@
-"use client";
+'use client';
 
-import { PRODUCT_CATEGORIES } from "@/config";
-import { Menu, X } from "lucide-react";
-import Image from "next/image";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
+import Link from 'next/link';
+import Image from 'next/image';
+import { Menu, ChevronRight, X, Grid } from 'lucide-react';
+import { PRODUCT_CATEGORIES, CategoryType } from '@/config';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+  SheetClose,
+} from '@/components/ui/sheet';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
+import { useJewelleryProducts } from '@/hooks/use-category';
 
-const MobileNav = ({ setIsMenuOpen }: { setIsMenuOpen: (isOpen: boolean) => void }) => {
-  const [isOpen, setIsOpen] = useState<boolean>(false);
+interface MobileNavProps {
+  setIsMenuOpen: (isOpen: boolean) => void;
+}
 
+export default function MobileNav({ setIsMenuOpen }: MobileNavProps) {
+  const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
+  const { products, isLoading } = useJewelleryProducts();
+
+  const updatedCategories: CategoryType[] = PRODUCT_CATEGORIES.map((category) => {
+    if (category.value === 'jewellery') {
+      return {
+        ...category,
+        featured: isLoading
+          ? category.featured
+          : products.map((product: any) => ({
+              name: product.name,
+              href: `/product/${product.id}`,
+              imageSrc: product.images[0]?.image.sizes?.thumbnail?.url || '/fallback.jpg',
+            })),
+      };
+    }
+    return category;
+  });
 
   useEffect(() => {
     setIsOpen(false);
-    setIsMenuOpen(false); // Close the menu when navigating away
+    setIsMenuOpen(false);
   }, [pathname, setIsMenuOpen]);
 
-  const closeOnCurrent = (href: string) => {
-    if (pathname === href) {
-      setIsOpen(false);
-      setIsMenuOpen(false); // Close menu when clicking the current link
-    }
-  };
-
   useEffect(() => {
-    setIsMenuOpen(isOpen); // Sync menu open state with parent component
-    if (isOpen) document.body.classList.add("overflow-hidden");
-    else document.body.classList.remove("overflow-hidden");
-  }, [isOpen]);
-
-  if (!isOpen)
-    return (
-      <div className="lg:hidden flex items-center">
-        <button
-          type="button"
-          onClick={() => setIsOpen(true)}
-          className="lg:hidden relative -m-2 inline-flex items-center justify-center rounded-md p-2 text-gray-800"
-        >
-          <Menu className="h-6 w-6" aria-hidden="true" />
-        </button>
-      </div>
-    );
+    setIsMenuOpen(isOpen);
+    if (isOpen) {
+      document.body.classList.add('overflow-hidden');
+    } else {
+      document.body.classList.remove('overflow-hidden');
+    }
+  }, [isOpen, setIsMenuOpen]);
 
   return (
-    <div>
-      <div className="relative z-40 lg:hidden">
-        <div className="fixed inset-0 bg-black bg-opacity-25" />
-      </div>
-
-      <div className="fixed overflow-y-scroll overscroll-y-none inset-0 z-40 flex">
-        <div className="w-4/5">
-          <div className="relative flex w-full max-w-sm flex-col overflow-y-auto bg-white pb-12 shadow-xl">
-            <div className="flex px-4 pb-2 pt-5">
-              <button
-                type="button"
-                onClick={() => setIsOpen(false)}
-                className="relative -m-2 inline-flex items-center justify-center rounded-md p-2 text-gray-400"
-              >
-                <X className="h-6 w-6" aria-hidden="true" />
-              </button>
+    <Sheet open={isOpen} onOpenChange={setIsOpen}>
+      <SheetTrigger asChild>
+        <Button variant="ghost" size="icon" className="lg:hidden">
+          <Menu className="h-6 w-6" />
+          <span className="sr-only">Open menu</span>
+        </Button>
+      </SheetTrigger>
+      <SheetContent side="left" className="w-full sm:max-w-md p-0">
+        <div className="flex flex-col h-full">
+          <SheetHeader className="p-4 border-b">
+            <div className="flex justify-between items-center">
+              <SheetTitle className="text-lg font-semibold">Menu</SheetTitle>
+              <SheetClose asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <span className="sr-only">Close menu</span>
+                </Button>
+              </SheetClose>
             </div>
-
-            <div className="px-4 mt-2 -space-y-7">
-              <ul>
-                {PRODUCT_CATEGORIES.map((category) => (
-                  <li key={category.label} className="space-y-10 px-4 pb-8 pt-10">
-                    <div className="border-b border-gray-200">
-                      <div className="-mb-px flex">
-                        <p className="border-transparent text-gray-900 flex-1 whitespace-nowrap border-b-2 py-4 text-base font-medium">
-                          {category.label}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-y-10 gap-x-4">
-                      {category.featured.map((item) => (
-                        <div key={item.name} className="group relative text-sm">
-                          <div className="relative aspect-square overflow-hidden rounded-lg bg-gray-100 group-hover:opacity-75">
-                            <Image
-                              fill
-                              src={item.imageSrc}
-                              alt="product category image"
-                              className="object-cover object-center"
-                            />
-                          </div>
-                          <Link href={item.href} className="mt-6 block font-medium text-gray-900">
-                            {item.name}
-                          </Link>
+          </SheetHeader>
+          <div className="flex-grow overflow-y-auto">
+            <Link
+              href="/products"
+              className="flex items-center justify-between px-4 py-3 text-sm font-medium hover:bg-gray-50 border-b"
+              onClick={() => setIsOpen(false)}
+            >
+              <span className="flex items-center">
+                <Grid className="h-5 w-5 mr-2" />
+                All Products
+              </span>
+              <ChevronRight className="h-4 w-4" />
+            </Link>
+            <Accordion type="single" collapsible className="w-full">
+              {updatedCategories.map((category) => (
+                <AccordionItem value={category.label} key={category.label} className="border-b">
+                  <AccordionTrigger className="text-sm font-medium px-4 py-3 hover:bg-gray-50">
+                    {category.label}
+                  </AccordionTrigger>
+                  <AccordionContent className="p-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      {category.value === 'clothing' || category.value === 'accessories' ? (
+                        <div className="flex items-center justify-center col-span-2 text-gray-500 py-8">
+                          Coming Soon
                         </div>
-                      ))}
+                      ) : (
+                        category.featured.map((item, index) => (
+                          <Link
+                            key={item.name}
+                            href={item.href}
+                            className="group flex flex-col items-center text-center"
+                            onClick={() => setIsOpen(false)}
+                          >
+                            <div className="relative h-32 w-full overflow-hidden rounded-lg mb-2">
+                              <Image
+                                src={item.imageSrc}
+                                alt={`Product image of ${item.name}`}
+                                fill
+                                className="object-cover object-center transition-transform duration-300 group-hover:scale-105"
+                              />
+                              <div className="absolute inset-0 bg-black bg-opacity-20 transition-opacity duration-300 group-hover:bg-opacity-30" />
+                            </div>
+                            <span className="mt-1 text-xs font-semibold text-primary">
+                              {index === 0 ? "Best Seller" : index === 1 ? "New Arrival" : "Favourite Pick"}
+                            </span>
+                          </Link>
+                        ))
+                      )}
                     </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="space-y-6 border-t border-gray-200 px-4 py-6">
-              <Link
-                onClick={() => closeOnCurrent("/sign-in")}
-                href="/sign-in"
-                className="-m-2 block p-2 font-medium text-gray-900"
-              >
-                Sign in
-              </Link>
-              <Link
-                onClick={() => closeOnCurrent("/sign-up")}
-                href="/sign-up"
-                className="-m-2 block p-2 font-medium text-gray-900"
-              >
-                Sign up
-              </Link>
-            </div>
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </div>
+          <div className="border-t p-4 space-y-2">
+            <Link
+              href="/sign-in"
+              className={cn(
+                'flex items-center justify-between rounded-lg px-4 py-2 text-sm font-medium transition-colors hover:bg-muted',
+                pathname === '/sign-in' && 'bg-muted'
+              )}
+              onClick={() => setIsOpen(false)}
+            >
+              Sign in
+              <ChevronRight className="h-4 w-4" />
+            </Link>
+            <Link
+              href="/sign-up"
+              className={cn(
+                'flex items-center justify-between rounded-lg px-4 py-2 text-sm font-medium transition-colors hover:bg-muted',
+                pathname === '/sign-up' && 'bg-muted'
+              )}
+              onClick={() => setIsOpen(false)}
+            >
+              Sign up
+              <ChevronRight className="h-4 w-4" />
+            </Link>
           </div>
         </div>
-      </div>
-    </div>
+      </SheetContent>
+    </Sheet>
   );
-};
-
-export default MobileNav;
+}

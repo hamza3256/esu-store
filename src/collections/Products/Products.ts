@@ -8,6 +8,8 @@ import { Product, User } from "../../payload-types";
 import { stripe } from "../../lib/stripe";
 import type Stripe from "stripe";
 
+const defaultCurrency = "PKR"
+
 // Add User Hook: Allow for guest checkouts by handling cases where there's no logged-in user
 const addUser: BeforeChangeHook<Product> = async ({ req, data }) => {
   const user = req.user;
@@ -115,7 +117,7 @@ const handleProductChange: BeforeChangeHook<Product> = async ({ operation, data,
     // Create a price for the product
     stripePrice = await stripe.prices.create({
       product: stripeProduct.id,
-      currency: 'USD',
+      currency: 'PKR',
       unit_amount: Math.round(productPrice * 100),
     });
 
@@ -136,7 +138,7 @@ const handleProductChange: BeforeChangeHook<Product> = async ({ operation, data,
     // Create a new price for the updated product price
     stripePrice = await stripe.prices.create({
       product: productData.stripeId!,
-      currency: 'USD',
+      currency: defaultCurrency,
       unit_amount: Math.round(productPrice * 100),
     });
 
@@ -219,9 +221,9 @@ export const Products: CollectionConfig = {
     },
     {
       name: "price",
-      label: "Price in USD",
+      label: "Price in PKR",
       min: 0,
-      max: 5000,
+      max: 999999,
       type: "number",
       required: true,
     },
@@ -230,7 +232,7 @@ export const Products: CollectionConfig = {
       label: "Discounted Price",
       type: "number",
       min: 0,
-      max: 5000,
+      max: 999999,
       required: false,
       admin: {
         description: "Enter the discounted price if applicable. Leave empty if no discount.",
