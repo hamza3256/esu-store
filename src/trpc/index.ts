@@ -59,6 +59,47 @@ export const appRouter = router({
       return { items, nextPage: hasNextPage ? nextPage : null };
     }),
 
+  getJewelleryBestRated: publicProcedure
+    .input(
+      z.object({
+        limit: z.number().min(1).default(1),
+      })
+    )
+    .query(async ({ input, ctx }) => {
+      const payload = await getPayloadClient();
+      const { docs: bestRatedJewellery } = await payload.find({
+        collection: 'products',
+        where: {
+          category: { equals: 'jewellery' },
+        },
+        sort: '-rating,-numReviews', // Sort by rating and numReviews
+        limit: input.limit,
+        depth: 1,
+      });
+      return bestRatedJewellery;
+    }),
+
+  // Get Latest Jewellery
+  getJewelleryLatest: publicProcedure
+    .input(
+      z.object({
+        limit: z.number().min(1).default(2),
+      })
+    )
+    .query(async ({ input, ctx }) => {
+      const payload = await getPayloadClient();
+      const { docs: latestJewellery } = await payload.find({
+        collection: 'products',
+        where: {
+          category: { equals: 'jewellery' },
+        },
+        sort: '-createdAt', // Sort by creation date
+        limit: input.limit,
+        depth: 1,
+      });
+      return latestJewellery;
+    }),
+
     searchProducts: publicProcedure
     .input(
       z.object({

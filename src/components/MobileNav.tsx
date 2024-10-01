@@ -1,121 +1,145 @@
-"use client";
+'use client';
 
-import { PRODUCT_CATEGORIES } from "@/config";
-import { Menu, X } from "lucide-react";
-import Image from "next/image";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
+import Link from 'next/link';
+import Image from 'next/image';
+import { Menu, ChevronRight } from 'lucide-react';
+import { PRODUCT_CATEGORIES, CategoryType } from '@/config'; // Types from the config
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
+import { useJewelleryProducts } from '@/hooks/use-category'; // Typed useJewelleryProducts hook
 
-const MobileNav = ({ setIsMenuOpen }: { setIsMenuOpen: (isOpen: boolean) => void }) => {
-  const [isOpen, setIsOpen] = useState<boolean>(false);
+interface MobileNavProps {
+  setIsMenuOpen: (isOpen: boolean) => void;
+}
 
+export default function MobileNav({ setIsMenuOpen }: MobileNavProps) {
+  const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
+  const { products, isLoading } = useJewelleryProducts(); // Hook returns typed jewellery products
+
+  // Type for updated categories
+  const updatedCategories: CategoryType[] = PRODUCT_CATEGORIES.map((category) => {
+    if (category.value === 'jewellery') {
+      return {
+        ...category,
+        featured: isLoading
+          ? category.featured
+          : products.map((product: any) => ({
+              name: product.name,
+              href: `/product/${product.id}`,
+              imageSrc: product.images[0]?.image.sizes?.thumbnail?.url || '/fallback.jpg',
+            })),
+      };
+    }
+    return category;
+  });
 
   useEffect(() => {
     setIsOpen(false);
-    setIsMenuOpen(false); // Close the menu when navigating away
+    setIsMenuOpen(false);
   }, [pathname, setIsMenuOpen]);
 
-  const closeOnCurrent = (href: string) => {
-    if (pathname === href) {
-      setIsOpen(false);
-      setIsMenuOpen(false); // Close menu when clicking the current link
-    }
-  };
-
   useEffect(() => {
-    setIsMenuOpen(isOpen); // Sync menu open state with parent component
-    if (isOpen) document.body.classList.add("overflow-hidden");
-    else document.body.classList.remove("overflow-hidden");
-  }, [isOpen]);
-
-  if (!isOpen)
-    return (
-      <div className="lg:hidden flex items-center">
-        <button
-          type="button"
-          onClick={() => setIsOpen(true)}
-          className="lg:hidden relative -m-2 inline-flex items-center justify-center rounded-md p-2 text-gray-800"
-        >
-          <Menu className="h-6 w-6" aria-hidden="true" />
-        </button>
-      </div>
-    );
+    setIsMenuOpen(isOpen);
+    if (isOpen) {
+      document.body.classList.add('overflow-hidden');
+    } else {
+      document.body.classList.remove('overflow-hidden');
+    }
+  }, [isOpen, setIsMenuOpen]);
 
   return (
-    <div>
-      <div className="relative z-40 lg:hidden">
-        <div className="fixed inset-0 bg-black bg-opacity-25" />
-      </div>
-
-      <div className="fixed overflow-y-scroll overscroll-y-none inset-0 z-40 flex">
-        <div className="w-4/5">
-          <div className="relative flex w-full max-w-sm flex-col overflow-y-auto bg-white pb-12 shadow-xl">
-            <div className="flex px-4 pb-2 pt-5">
-              <button
-                type="button"
-                onClick={() => setIsOpen(false)}
-                className="relative -m-2 inline-flex items-center justify-center rounded-md p-2 text-gray-400"
-              >
-                <X className="h-6 w-6" aria-hidden="true" />
-              </button>
-            </div>
-
-            <div className="px-4 mt-2 -space-y-7">
-              <ul>
-                {PRODUCT_CATEGORIES.map((category) => (
-                  <li key={category.label} className="space-y-10 px-4 pb-8 pt-10">
-                    <div className="border-b border-gray-200">
-                      <div className="-mb-px flex">
-                        <p className="border-transparent text-gray-900 flex-1 whitespace-nowrap border-b-2 py-4 text-base font-medium">
-                          {category.label}
-                        </p>
+    <Sheet open={isOpen} onOpenChange={setIsOpen}>
+      <SheetTrigger asChild>
+        <Button variant="ghost" size="icon" className="lg:hidden">
+          <Menu className="h-6 w-6" />
+          <span className="sr-only">Open menu</span>
+        </Button>
+      </SheetTrigger>
+      <SheetContent side="left" className="w-full sm:max-w-md">
+        <SheetHeader>
+          <SheetTitle>Menu</SheetTitle>
+        </SheetHeader>
+        <div className="mt-6 flex flex-col space-y-3">
+          <Accordion type="single" collapsible className="w-full">
+            {updatedCategories.map((category) => (
+              <AccordionItem value={category.label} key={category.label}>
+                <AccordionTrigger className="text-sm font-medium">
+                  {category.label}
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Conditional rendering for "Coming Soon" */}
+                    {category.value === 'clothing' || category.value === 'accessories' ? (
+                      <div className="flex items-center justify-center col-span-2 text-gray-500">
+                        Coming Soon
                       </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-y-10 gap-x-4">
-                      {category.featured.map((item) => (
-                        <div key={item.name} className="group relative text-sm">
-                          <div className="relative aspect-square overflow-hidden rounded-lg bg-gray-100 group-hover:opacity-75">
+                    ) : (
+                      category.featured.map((item) => (
+                        <Link
+                          key={item.name}
+                          href={item.href}
+                          className="group flex flex-col items-center text-center"
+                          onClick={() => setIsOpen(false)}
+                        >
+                          <div className="relative h-24 w-24 overflow-hidden rounded-lg">
                             <Image
-                              fill
                               src={item.imageSrc}
-                              alt="product category image"
-                              className="object-cover object-center"
+                              alt={item.name}
+                              fill
+                              className="object-cover object-center transition-transform duration-300 group-hover:scale-110"
                             />
                           </div>
-                          <Link href={item.href} className="mt-6 block font-medium text-gray-900">
+                          <span className="mt-2 text-sm font-medium text-gray-900">
                             {item.name}
-                          </Link>
-                        </div>
-                      ))}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="space-y-6 border-t border-gray-200 px-4 py-6">
-              <Link
-                onClick={() => closeOnCurrent("/sign-in")}
-                href="/sign-in"
-                className="-m-2 block p-2 font-medium text-gray-900"
-              >
-                Sign in
-              </Link>
-              <Link
-                onClick={() => closeOnCurrent("/sign-up")}
-                href="/sign-up"
-                className="-m-2 block p-2 font-medium text-gray-900"
-              >
-                Sign up
-              </Link>
-            </div>
-          </div>
+                          </span>
+                        </Link>
+                      ))
+                    )}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+          <Link
+            href="/sign-in"
+            className={cn(
+              'flex items-center justify-between rounded-lg px-4 py-2 text-sm font-medium transition-colors hover:bg-muted',
+              pathname === '/sign-in' && 'bg-muted'
+            )}
+            onClick={() => setIsOpen(false)}
+          >
+            Sign in
+            <ChevronRight className="h-4 w-4" />
+          </Link>
+          <Link
+            href="/sign-up"
+            className={cn(
+              'flex items-center justify-between rounded-lg px-4 py-2 text-sm font-medium transition-colors hover:bg-muted',
+              pathname === '/sign-up' && 'bg-muted'
+            )}
+            onClick={() => setIsOpen(false)}
+          >
+            Sign up
+            <ChevronRight className="h-4 w-4" />
+          </Link>
         </div>
-      </div>
-    </div>
+      </SheetContent>
+    </Sheet>
   );
-};
-
-export default MobileNav;
+}
