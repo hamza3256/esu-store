@@ -53,7 +53,7 @@ export interface Product {
   description?: string | null;
   price: number;
   discountedPrice?: number | null;
-  category: 'clothing' | 'jewellery' | 'accessories';
+  category: 'jewellery' | 'clothing' | 'accessories';
   inventory: number;
   numReviews: number;
   rating: number;
@@ -91,6 +91,7 @@ export interface ProductFile {
 export interface Media {
   id: string;
   cloudinaryId?: string | null;
+  resourceType?: string | null;
   sizes?: {
     thumbnail?: {
       width?: number | null;
@@ -107,6 +108,13 @@ export interface Media {
       url?: string | null;
     };
     tablet?: {
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      url?: string | null;
+    };
+    video?: {
       width?: number | null;
       height?: number | null;
       mimeType?: string | null;

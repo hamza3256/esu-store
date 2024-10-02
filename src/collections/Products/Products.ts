@@ -80,19 +80,22 @@ const handleProductChange: BeforeChangeHook<Product> = async ({ operation, data,
   let stripeProduct;
   let stripePrice;
 
-  // Get the first image URL from the media collection (ensure you resolve it properly)
   const validUrls = await Promise.all(
     productData.images.map(async ({ image }) => {
       if (typeof image === "string") {
         // Resolve the image URL from the Payload media collection
         const mediaDoc = await req.payload.findByID({ collection: "media", id: image });
-        return mediaDoc?.url;  // Use the URL field from the Cloudinary document
-      } else {
-        return image.url; // If image is already an object with a URL
+
+        // Ensure only images are considered (filter out videos based on mimeType)
+        if (mediaDoc?.mimeType?.startsWith("image/")) {
+          return mediaDoc.url;  // Use the URL field from the Cloudinary document
+        }
+      } else if (image.mimeType?.startsWith("image/")) {
+        return image.url; // If image is already an object with a valid mimeType
       }
     })
   );
-
+  
   const imageUrl = validUrls.filter(Boolean)[0]; // Get the first valid image URL
 
   let imageId: string | undefined;

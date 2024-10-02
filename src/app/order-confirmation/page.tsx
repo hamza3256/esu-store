@@ -2,7 +2,7 @@ import Image from "next/image";
 import { cookies } from "next/headers";
 import { getServerSideUser } from "@/lib/payload-utils";
 import { notFound, redirect } from "next/navigation";
-import { Product, User } from "@/payload-types";
+import { Media, Product, User } from "@/payload-types";
 import { PRODUCT_CATEGORIES } from "@/config";
 import { formatPrice } from "@/lib/utils";
 import Link from "next/link";
@@ -159,6 +159,10 @@ const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
               <ul className="mt-6 divide-y divide-gray-200 border-t text-sm font-medium text-gray-600">
                 {products.map(({ product, quantity }) => {
                   const label = PRODUCT_CATEGORIES.find((c) => c.value === product.category)?.label;
+                  
+                  const image = product.images.find(({ image }) => {
+                    return typeof image === "object" && image.mimeType?.startsWith("image/");
+                  })?.image as Media;
 
                   return (
                     <li key={product.id} className="flex space-x-6 py-6">
@@ -167,7 +171,7 @@ const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
                         && product.images[0].image.url ? (
                           <Image
                             fill
-                            src={product.images[0].image.url}
+                            src={image!.url as string}
                             alt={`${product.name} image`}
                             className="flex-none rounded-md bg-gray-100 object-cover object-center"
                           />

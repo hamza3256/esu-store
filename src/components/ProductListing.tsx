@@ -37,13 +37,15 @@ interface ImageSize {
 }
 
 // Define the image interface
-interface Image {
+interface Media {
   url: string;
   sizes?: {
     thumbnail?: ImageSize;
     card?: ImageSize;
     tablet?: ImageSize;
+    video?: ImageSize; // Add support for videos
   };
+  resourceType: "image" | "video"; // Indicate the media type
 }
 
 export default function ProductListing({ product, index, isTablet, isMobile }: ProductListingProps) {
@@ -66,19 +68,23 @@ export default function ProductListing({ product, index, isTablet, isMobile }: P
     ({ value }) => value === product.category
   )?.label;
 
-  const validUrls = product.images.map(({ image } : {image: any}) => {
-    if (isMobile && image?.sizes?.thumbnail?.url) {
-      // Use the thumbnail for mobile devices
-      return image.sizes.thumbnail.url;
-    } else if (isTablet && image?.sizes?.tablet?.url) {
-      // Use the tablet size for tablet devices
-      return image.sizes.tablet.url;
-    } else if (image?.sizes?.card?.url) {
-      // Default to the card size for larger screens or if no specific size is found
-      return image.sizes.card.url;
-    }
-    return image.url; // Fallback to the original image URL
-  }).filter(Boolean);
+  const validUrls = product.images
+    .map(({ image }: { image: any }) => {
+      if (image.resourceType === "video" && image.url) {
+        return image.url; // Handle videos
+      } else if (image.resourceType === "image") {
+        if (isMobile && image?.sizes?.thumbnail?.url) {
+          return image.sizes.thumbnail.url;
+        } else if (isTablet && image?.sizes?.tablet?.url) {
+          return image.sizes.tablet.url;
+        } else if (image?.sizes?.card?.url) {
+          return image.sizes.card.url;
+        }
+        return image.url;
+      }
+      return null;
+    })
+    .filter(Boolean); 
 
   const displayPrice = product.discountedPrice ?? product.price;
 

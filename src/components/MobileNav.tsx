@@ -23,6 +23,7 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { useJewelleryProducts } from '@/hooks/use-category';
+import { Media } from '@/payload-types';
 
 interface MobileNavProps {
   setIsMenuOpen: (isOpen: boolean) => void;
@@ -42,7 +43,9 @@ export default function MobileNav({ setIsMenuOpen }: MobileNavProps) {
           : products.map((product: any) => ({
               name: product.name,
               href: `/product/${product.id}`,
-              imageSrc: product.images[0]?.image.sizes?.thumbnail?.url || '/fallback.jpg',
+              imageSrc: product.images.find(({ image }: {image: Media}) => {
+                return typeof image === "object" && image.mimeType?.startsWith("image/");
+              })?.image.sizes?.thumbnail?.url || '/fallback.jpg',
             })),
       };
     }
