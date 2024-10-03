@@ -1,8 +1,11 @@
+"use client"
+
 import { useMediaQuery } from "@/hooks/use-media-query";
 import Image from "next/image";
+import React from "react";
 import { useState, useEffect } from "react";
 
-const SocialBanner = () => {
+const SocialBanner = React.memo(() => {
   const CLOUDINARY_BASE_URL = "https://res.cloudinary.com/dn20h4mis/image/upload/";
   const posts = [
     {
@@ -91,6 +94,6 @@ const SocialBanner = () => {
       </div>
     </section>
   );
-};
+});
 
 export default SocialBanner;
