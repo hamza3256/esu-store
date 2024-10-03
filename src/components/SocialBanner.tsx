@@ -1,44 +1,39 @@
-"use client"
+"use client";
 
 import { useMediaQuery } from "@/hooks/use-media-query";
 import Image from "next/image";
-import React from "react";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 
 const SocialBanner = React.memo(() => {
   const CLOUDINARY_BASE_URL = "https://res.cloudinary.com/dn20h4mis/image/upload/";
   const posts = [
     {
-        id: "1", // This will only be shown on mobile
-        public_id: "instagram_5",
-        media_url:
-          "https://res.cloudinary.com/dn20h4mis/image/upload/v1727751194/extra_instagram_post.jpg",
-        permalink: "https://www.instagram.com/p/DAg_8U6tZ4Z/?igsh=MWVyZmZxbzd4ZzN1YQ==", // Replace with actual Instagram URL
-        caption: "Turquoise Luxe",
+      id: "1", // This will only be shown on mobile
+      public_id: "instagram_5",
+      media_url: "https://res.cloudinary.com/dn20h4mis/image/upload/v1727751194/extra_instagram_post.jpg",
+      permalink: "https://www.instagram.com/p/DAg_8U6tZ4Z/?igsh=MWVyZmZxbzd4ZzN1YQ==",
+      caption: "Turquoise Luxe",
     },
     {
       id: "2",
       public_id: "instagram_6",
-      media_url:
-        "https://res.cloudinary.com/dn20h4mis/image/upload/v1727751194/97545b9e-6201-4733-95c7-67b120631f08_whlkrx.jpg",
-      permalink: "https://www.instagram.com/p/DAkl0wFNo_4/?igsh=bmZyMmFhMmZ6Mmhn", // Replace with actual Instagram URL
+      media_url: "https://res.cloudinary.com/dn20h4mis/image/upload/v1727751194/97545b9e-6201-4733-95c7-67b120631f08_whlkrx.jpg",
+      permalink: "https://www.instagram.com/p/DAkl0wFNo_4/?igsh=bmZyMmFhMmZ6Mmhn",
       caption: "Sunset Wave",
     },
     {
       id: "3",
       public_id: "instagram_3",
-      media_url:
-        "https://res.cloudinary.com/dn20h4mis/image/upload/v1727751467/Screenshot_2024-10-01_035639_zjmgii.png",
-      permalink: "https://www.instagram.com/p/DAXAAriNnMl", // Replace with actual Instagram URL
+      media_url: "https://res.cloudinary.com/dn20h4mis/image/upload/v1727751467/Screenshot_2024-10-01_035639_zjmgii.png",
+      permalink: "https://www.instagram.com/p/DAXAAriNnMl",
       caption: "Crystal Blossom",
     },
     {
-        id: "4",
-        public_id: "instagram_1",
-        media_url:
-          "https://res.cloudinary.com/dn20h4mis/image/upload/v1727751466/Screenshot_2024-10-01_035552_ymhmjq.png",
-        permalink: "https://www.instagram.com/p/DAbsYJktwUV", // Replace with actual Instagram URL
-        caption: "Gold Zircon Ring",
+      id: "4",
+      public_id: "instagram_1",
+      media_url: "https://res.cloudinary.com/dn20h4mis/image/upload/v1727751466/Screenshot_2024-10-01_035552_ymhmjq.png",
+      permalink: "https://www.instagram.com/p/DAbsYJktwUV",
+      caption: "Gold Zircon Ring",
     },
   ];
 
@@ -50,19 +45,14 @@ const SocialBanner = React.memo(() => {
   const checkMobile = useMediaQuery("(max-width: 767px)");
 
   // Check if the device is mobile
-  const [isMobile, setIsMobile] = useState(false);
+  const [isMobile, setIsMobile] = useState(checkMobile);
 
   useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(checkMobile); // Check if the screen is mobile-sized
-    };
-    handleResize(); // Set initial state
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
+    setIsMobile(checkMobile); // Update state based on the result of useMediaQuery
+  }, [checkMobile]); // Add checkMobile to the dependency array
 
   // Render posts, including the 4th one only on mobile
-  const visiblePosts = isMobile ? posts : posts.slice(0, 3); // Show 4 posts on mobile, 3 on larger screens
+  const visiblePosts = isMobile ? posts : posts.slice(0, 3);
 
   return (
     <section className="instagram-feed py-12 bg-gray-100">
@@ -95,5 +85,8 @@ const SocialBanner = React.memo(() => {
     </section>
   );
 });
+
+// Adding display name to resolve the display-name error
+SocialBanner.displayName = "SocialBanner";
 
 export default SocialBanner;
