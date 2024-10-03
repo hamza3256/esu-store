@@ -153,15 +153,7 @@ export default function Home() {
           <MaxWidthWrapper>
             <div className="py-16 mx-auto flex flex-col items-center max-w-3xl">
               <h1 className="text-4xl font-extrabold tracking-tight sm:text-6xl text-white">
-                Luxury <span
-                style={{
-                  background: "linear-gradient(45deg, #4a4a4a, #383838, #4a4a4a)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                }}
-              >
-                Jewellery
-              </span>{" "} for Every Occasion.
+                Luxury <span className="text-zinc-600">Jewellery</span>{" "} for Every Occasion.
               </h1>
               <p className="mt-4 text-lg max-w-prose text-gray-200">
                 Welcome to <span className="font-bold">esü</span>. Discover timeless pieces,
