@@ -62,7 +62,7 @@ const Page = () => {
   }
 
   return (
-    <div className="container relative flex pt-20 flex-col items-center justify-center min-h-screen lg:px-0">
+    <div className="container relative flex flex-col items-center justify-center min-h-screen lg:px-0">
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}

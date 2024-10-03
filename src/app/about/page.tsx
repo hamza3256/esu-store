@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { toast } from "sonner"
 import { trpc } from "@/trpc/client";
+import Link from "next/link"
 
 export default function AboutUs() {
   const [email, setEmail] = useState("")
@@ -116,9 +117,11 @@ export default function AboutUs() {
       <div className="text-center mt-16">
         <h2 className="text-3xl font-bold tracking-tighter mb-4">Join the ESÜ Family</h2>
         <p className="text-lg text-muted-foreground mb-6 max-w-2xl mx-auto">
-          We&apos;re building a team of passionate individuals to bring our vision to life. If you&apos;re a skilled craftsman, designer, or jewellery enthusiast, we&apos;d love to hear from you.
+          We&apos;re building a team of passionate sellers to bring our vision to life. If you&apos;re a skilled craftsman, designer, or jewellery enthusiast, we&apos;d love to hear from you.
         </p>
-        <Button variant="secondary" size="lg">View Career Opportunities</Button>
+        <Link href="/sign-up">
+          <Button variant="secondary" size="lg">Join Us</Button>
+        </Link>
       </div>
     </div>
   )

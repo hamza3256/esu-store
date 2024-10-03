@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowRight, Loader2 } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import {
@@ -17,8 +17,11 @@ import { trpc } from "@/trpc/client";
 import { toast } from "sonner";
 import { ZodError } from "zod";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { useState } from "react";
 
 const Page = () => {
+  const [showPassword, setShowPassword] = useState(false)
   const {
     register,
     handleSubmit,
@@ -55,8 +58,13 @@ const Page = () => {
 
   return (
     <>
-      <div className="container relative flex pt-20 flex-col items-center justify-center lg:px-0">
-        <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
+      <div className="container relative flex flex-col items-center justify-center min-h-screen lg:px-0">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]"
+        >
           <div className="flex flex-col items-center space-y-2 text-center">
             <Icons.logo className="h-20 w-20" />
             <h1 className="text-2xl font-bold">Create an account</h1>
@@ -102,26 +110,39 @@ const Page = () => {
                 </div>
                 <div className="grid gap-1 py-2">
                   <Label htmlFor="password">Password</Label>
-                  <Input
-                    {...register("password")}
-                    type="password"
-                    className={cn({
-                      "focus-visible:ring-red-500": errors.password,
-                    })}
-                    placeholder="Password"
-                  />
+                  <div className="relative">
+                    <Input
+                      {...register("password")}
+                      type={showPassword ? "text" : "password"}
+                      className={cn({
+                        "focus-visible:ring-red-500": errors.password,
+                      })}
+                      placeholder="Password"
+                    />
+                      <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-5 w-5" />
+                      ) : (
+                        <Eye className="h-5 w-5" />
+                      )}
+                    </button>
+                  </div>
                   {errors?.password && (
                     <p className="text-sm text-red-500 ">{errors.password.message}</p>
                   )}
                 </div>
 
                 <Button>{isLoading ? (
-                    <Loader2 className="w-4 h-4 animate-spin text-muted-foreground mr-1.5" />
+                    <Loader2 className="w-4 h-4 animate-spin py-4 text-muted-foreground mr-1.5" />
                   ) : null} Sign Up</Button>
               </div>
             </form>
           </div>
-        </div>
+        </motion.div>
       </div>
     </>
   );
