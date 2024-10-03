@@ -122,7 +122,7 @@ export default function ProductListing({ product, index, isTablet, isMobile }: P
         {/* Image Section */}
         <div className="relative overflow-hidden w-full">
           <ImageSlider urls={validUrls} productId={product.id} />
-          <Badge className="absolute top-2 left-2 z-10 text-xs bg-black text-white px-2 py-1 rounded-full">
+          <Badge className="hidden absolute top-2 left-2 z-10 text-xs bg-black text-white px-2 py-1 rounded-full">
             {label}
           </Badge>
           <Tooltip>
@@ -130,7 +130,7 @@ export default function ProductListing({ product, index, isTablet, isMobile }: P
               <button
                 onClick={toggleFavorite}
                 className={cn(
-                  "absolute top-2 right-2 z-10 p-1.5 rounded-full bg-white/80 backdrop-blur-sm transition-colors duration-300",
+                  "absolute top-2 right-2 z-10 p-1 rounded-full bg-white/80 backdrop-blur-sm transition-colors duration-300",
                   isFavorite
                     ? "text-red-500 hover:text-red-600"
                     : "text-gray-600 hover:text-gray-800"
@@ -155,7 +155,7 @@ export default function ProductListing({ product, index, isTablet, isMobile }: P
             <h3 className="font-semibold text-sm sm:text-base text-gray-900 line-clamp-1 hover:underline transition-colors duration-200">
               {product.name}
               {product.discountedPrice && (
-                <Badge className="absolute right-2 z-10 text-xs bg-red-500 text-white px-2 py-1 rounded-full">
+                <Badge className="absolute right-1 z-10 text-xs bg-red-500 text-white px-1.5 rounded-full">
                   Sale
                 </Badge>
               )}
@@ -178,7 +178,7 @@ export default function ProductListing({ product, index, isTablet, isMobile }: P
                 ({product.numReviews || 0})
               </span>
             </div>
-            <p className="text-sm sm:text-base font-bold text-gray-900 text-right">
+            <p className="text-sm sm:text-base font-semibold text-gray-900 text-right">
               {product.discountedPrice ? (
                 <>
                   <span className="line-through text-gray-500 mr-2">

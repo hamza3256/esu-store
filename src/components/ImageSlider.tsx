@@ -4,10 +4,9 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import Image from "next/image";
 import "swiper/css";
 import "swiper/css/pagination";
-import "swiper/css/navigation";
 import type SwiperType from "swiper";
 import { useEffect, useState } from "react";
-import { Pagination, Navigation } from "swiper/modules";
+import { Pagination } from "swiper/modules";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -44,7 +43,7 @@ const ImageSlider = ({ urls, productId }: ImageSliderProps) => {
   }, [swiper, urls.length]);
 
   const activeStyles =
-    "active:scale-[0.97] grid opacity-100 hover:scale-105 absolute top-1/2 -translate-y-1/2 aspect-square h-8 w-8 z-50 place-items-center rounded-full border-2 bg-white border-zinc-300";
+    "active:scale-[0.97] grid opacity-100 hover:scale-105 absolute top-1/2 -translate-y-1/2 aspect-square h-6 w-6 sm:h-8 sm:w-8 z-50 place-items-center rounded-full border-2 bg-white border-zinc-300";
 
   const inactiveStyles = "hidden text-gray-400";
 
@@ -56,7 +55,7 @@ const ImageSlider = ({ urls, productId }: ImageSliderProps) => {
             e.preventDefault();
             swiper?.slideNext();
           }}
-          className={cn(activeStyles, "right-3 transition", {
+          className={cn(activeStyles, "right-2 sm:right-3 transition", {
             [inactiveStyles]: sliderConfig.isEnd,
             "hover:bg-primary-300 text-primary-800 opacity-100":
               !sliderConfig.isEnd,
@@ -64,8 +63,7 @@ const ImageSlider = ({ urls, productId }: ImageSliderProps) => {
           aria-label="Next image"
         >
           <ChevronRight
-            className="h-4 w-4 text-zinc-700"
-            aria-label="next image"
+            className="h-3 w-3 sm:h-4 sm:w-4 text-zinc-700"
           />
         </button>
         <button
@@ -73,7 +71,7 @@ const ImageSlider = ({ urls, productId }: ImageSliderProps) => {
             e.preventDefault();
             swiper?.slidePrev();
           }}
-          className={cn(activeStyles, "left-3 transition", {
+          className={cn(activeStyles, "left-2 sm:left-3 transition", {
             [inactiveStyles]: sliderConfig.isBeginning,
             "hover:bg-primary-300 text-primary-800 opacity-100":
               !sliderConfig.isBeginning,
@@ -81,8 +79,7 @@ const ImageSlider = ({ urls, productId }: ImageSliderProps) => {
           aria-label="Previous image"
         >
           <ChevronLeft
-            className="h-4 w-4 text-zinc-700"
-            aria-label="previous image"
+            className="h-3 w-3 sm:h-4 sm:w-4 text-zinc-700"
           />
         </button>
       </div>
@@ -92,47 +89,40 @@ const ImageSlider = ({ urls, productId }: ImageSliderProps) => {
           renderBullet: (_, className) => {
             return `<span class="rounded-full transition ${className}"></span>`;
           },
-          bulletClass: "swiper-pagination-bullet",
-          bulletActiveClass: "swiper-pagination-bullet-active",
         }}
         onSwiper={(swiperInstance) => setSwiper(swiperInstance)}
-        spaceBetween={50}
+        spaceBetween={0}
         slidesPerView={1}
-        modules={[Pagination, Navigation]}
+        modules={[Pagination]}
         className="h-full w-full"
-        touchEventsTarget="container"
       >
         {urls.map((url, i) => {
-          const isVideo = url.endsWith(".mp4") || url.endsWith(".webm"); // Check if it's a video
+          const isVideo = url.endsWith(".mp4") || url.endsWith(".webm");
           return (
-            <SwiperSlide key={i} className="-z-10 relative h-full w-full">
-              <Link href={`/product/${productId}`} className="block" passHref>
+            <SwiperSlide key={i} className="h-full w-full">
+              <Link href={`/product/${productId}`} className="block h-full w-full" passHref>
                 {isVideo ? (
                   <video
                     autoPlay
                     muted
                     loop
-                    className="h-full w-full object-cover object-center"
-                    style={{
-                      objectFit: "cover", // Ensures the video fills the container
-                      width: "100%",
-                      height: "100%",
-                      aspectRatio: "1 / 1", // Keeps the aspect ratio consistent
-                    }}
+                    playsInline
+                    className="h-full w-full object-cover"
                   >
                     <source src={url} type="video/mp4" />
                     Your browser does not support the video tag.
                   </video>
                 ) : (
-                  <Image
-                    fill
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    loading="eager"
-                    className="-z-10 h-full w-full object-cover object-center"
-                    src={url}
-                    alt={`Product image ${i + 1}`}
-                    priority={i === 0}
-                  />
+                  <div className="relative h-full w-full">
+                    <Image
+                      fill
+                      sizes="100vw"
+                      className="object-cover"
+                      src={url}
+                      alt={`Product image ${i + 1}`}
+                      priority={i === 0}
+                    />
+                  </div>
                 )}
               </Link>
             </SwiperSlide>

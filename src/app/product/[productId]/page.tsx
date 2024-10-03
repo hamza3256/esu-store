@@ -277,7 +277,7 @@ const Page = ({ params }: PageProps) => {
           <Tabs defaultValue="description" className="w-full">
             <TabsList className="w-full justify-start">
               <TabsTrigger value="description">Description</TabsTrigger>
-              <TabsTrigger value="specifications">Specifications</TabsTrigger>
+              {/* <TabsTrigger value="specifications">Specifications</TabsTrigger> */}
               <TabsTrigger value="reviews">Reviews</TabsTrigger>
             </TabsList>
             <TabsContent value="description" className="mt-4">
@@ -285,7 +285,7 @@ const Page = ({ params }: PageProps) => {
                 {product.description}
               </p>
             </TabsContent>
-            <TabsContent value="specifications" className="mt-4">
+            {/* <TabsContent value="specifications" className="mt-4">
               <ul className="list-disc pl-4 sm:pl-5 text-gray-600 text-sm sm:text-base">
                 <li>High-quality materials</li>
                 <li>Adjustable height and tilt</li>
@@ -293,10 +293,10 @@ const Page = ({ params }: PageProps) => {
                 <li>Padded armrests</li>
                 <li>360-degree swivel</li>
               </ul>
-            </TabsContent>
+            </TabsContent> */}
             <TabsContent value="reviews" className="mt-4">
               <p className="text-gray-600 text-sm sm:text-base">
-                No reviews yet.
+                No reviews.
               </p>
             </TabsContent>
           </Tabs>

@@ -62,7 +62,7 @@ const ProductReel = (props: ProductReelProps) => {
           {href ? (
             <Link
               href={href}
-              className="mt-4 sm:mt-0 text-sm font-medium text-blue-600 hover:text-blue-500 transition-colors duration-200"
+              className="mt-4 sm:mt-0 text-sm font-medium text-gray-700 hover:text-gray-500 transition-colors duration-200"
             >
               Shop the collection <span aria-hidden="true">&rarr;</span>
             </Link>

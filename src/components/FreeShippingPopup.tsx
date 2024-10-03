@@ -45,7 +45,7 @@ export default function FreeShippingPopup() {
         </div>
         <Progress value={progress} className="h-2 mb-2" />
         <p className="text-sm text-gray-600 mb-2">
-          You&apos;re so close! Add just {formatPrice(remainingAmount)} more to your cart for FREE shipping.
+          You&apos;re so close! Add {formatPrice(remainingAmount)} more to your cart for FREE shipping.
         </p>
         <div className="flex items-center text-sm text-primary">
           <Truck size={16} className="mr-1" />
