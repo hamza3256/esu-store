@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/carousel"
 import { Parallax } from "react-parallax"
 import { cn } from "@/lib/utils"
+import cloudinary from "@/lib/cloudinary"
 
 const perks = [
   {
@@ -110,6 +111,53 @@ export default function Home() {
     }
   }
 
+  useEffect(() => {
+    const currentVideoRef = videoRef.current;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && currentVideoRef) {
+            currentVideoRef.play();
+          } else if (currentVideoRef) {
+            currentVideoRef.pause();
+          }
+        });
+      },
+      { threshold: 0.5 }
+    );
+
+    if (currentVideoRef) {
+      observer.observe(currentVideoRef);
+    }
+
+    return () => {
+      if (currentVideoRef) {
+        observer.unobserve(currentVideoRef);
+      }
+    };
+  }, []);
+
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+
+  // Cloudinary-generated video URLs
+  const videoUrlDesktop = cloudinary.url('desktop', {
+    cloud_name: cloudName,
+    resource_type: 'video',
+    quality: 'auto:best', // Highest quality available
+    fetch_format: 'auto',
+    dpr: 'auto',
+    width: 1920, // Example for desktop
+  });
+
+  const videoUrlMobile = cloudinary.url('mobile', {
+    cloud_name: cloudName,
+    resource_type: 'video',
+    quality: 'auto:low', // Lower quality for mobile
+    fetch_format: 'auto',
+    dpr: 'auto',
+    width: 768, // Example for mobile
+  });
+
   return (
     <>
       <div className="relative h-screen overflow-hidden -mt-16">
@@ -123,29 +171,29 @@ export default function Home() {
           />
         )}
 
-        <video
-          ref={videoRef}
-          autoPlay
-          muted
-          loop
-          className="absolute top-0 left-0 w-full h-full object-cover -z-20"
-          preload="auto"
-          onCanPlay={() => setVideoLoaded(true)}
-          playsInline
-          poster="/background.png"
-        >
-          <source
-            src="/desktop.webm"
-            type="video/webm"
-            media="(min-width: 768px)"
-          />
-          <source
-            src="/mobile.webm"
-            type="video/webm"
-            media="(max-width: 767px)"
-          />
-          Your browser does not support the video tag.
-        </video>
+      <video
+        ref={videoRef}
+        autoPlay
+        muted
+        loop
+        className="absolute top-0 left-0 w-full h-full object-cover -z-20"
+        preload="auto"
+        onCanPlay={() => setVideoLoaded(true)}
+        playsInline
+        poster="/background.png"
+      >
+        <source
+          src={videoUrlDesktop}
+          type="video/webm"
+          media="(min-width: 768px)"
+        />
+        <source
+          src={videoUrlMobile}
+          type="video/webm"
+          media="(max-width: 767px)"
+        />
+        Your browser does not support the video tag.
+      </video>
 
         <div className="absolute top-0 left-0 w-full h-full bg-black opacity-40 -z-10"></div>
 
