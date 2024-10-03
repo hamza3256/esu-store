@@ -1,12 +1,40 @@
 "use client"
 
 import Image from "next/image"
+import { useState } from "react"
 import { Clock, Mail } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { toast } from "sonner"
+import { trpc } from "@/trpc/client";
 
 export default function AboutUs() {
+  const [email, setEmail] = useState("")
+  const notifyMutation = trpc.notify.useMutation({
+    onSuccess: () => {
+      toast.success("Notification email sent successfully!")
+      setEmail("")
+    },
+    onError: (error) => {
+      if (error.message.includes("Email already submitted")) {
+        toast.error(error.message)
+      } else {
+        toast.error("Invalid email")
+      }
+    },
+  })
+
+  const handleNotify = () => {
+    if (!email) {
+      toast.warning("Please enter a valid email address")
+      return
+    }
+
+    // Trigger the tRPC mutation to send the email
+    notifyMutation.mutate({ email })
+  }
+
   return (
     <div className="container mx-auto px-4 py-16 max-w-6xl">
       <div className="grid gap-12 md:grid-cols-2 items-center">
@@ -72,8 +100,15 @@ export default function AboutUs() {
             <span>Sign up for updates on our grand opening</span>
           </div>
           <div className="flex gap-2">
-            <Input placeholder="Enter your email" className="max-w-xs" />
-            <Button>Notify Me</Button>
+            <Input
+              placeholder="Enter your email"
+              className="max-w-xs"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+            <Button onClick={handleNotify} disabled={notifyMutation.isLoading}>
+              {notifyMutation.isLoading ? "Sending..." : "Notify Me"}
+            </Button>
           </div>
         </div>
       </div>

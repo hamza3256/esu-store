@@ -8,6 +8,14 @@ import { orderRouter } from "./order-router";
 import { TRPCError } from "@trpc/server";
 import { User } from "@/payload-types";
 import { PayloadRequest } from "payload/types";
+import { Resend } from "resend";
+
+const submittedEmails = new Set<string>(); // Use a real DB in production
+
+const validateEmail = (email: string) => {
+  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return re.test(String(email).toLowerCase());
+};
 
 export const appRouter = router({
   auth: authRouter,
@@ -167,6 +175,40 @@ export const appRouter = router({
   
       return { user };
     }),
+
+    notify: publicProcedure
+      .input(
+        z.object({
+          email: z.string().email(),
+        }),
+      )
+      .mutation(async ({ input }) => {
+        const { email } = input;
+
+        // Check if the email is already submitted
+        if (submittedEmails.has(email)) {
+          throw new Error('Email already submitted');
+        }
+
+        try {
+          // Add email to the set (use DB in production)
+          submittedEmails.add(email);
+
+          // Send email using Resend
+          const resend = new Resend(process.env.RESEND_API_KEY);
+          await resend.emails.send({
+            from: 'info@esustore.com',
+            to: 'info@esustore.com',
+            subject: 'Notify',
+            html: `<p>New Notification Request from: ${email}</p>`,
+          });
+
+          return { success: true };
+        } catch (error) {
+          console.error(error);
+          throw new Error('Failed to send email');
+        }
+      }),
 });
 
 export type AppRouter = typeof appRouter;

@@ -163,9 +163,9 @@ export default function Home() {
                 <Link href="/products" className={buttonVariants({ variant: "default" })}>
                   Shop Now &rarr;
                 </Link>
-                {/* <Link href="/about" className={cn(buttonVariants({ variant: "outline" }), "text-black border-white hover:bg-white hover:text-black transition-colors")}>
+                <Link href="/about" className={cn(buttonVariants({ variant: "outline" }), "text-black border-white hover:bg-white hover:text-black transition-colors")}>
                   Our Story
-                </Link> */}
+                </Link>
               </div>
             </div>
           </MaxWidthWrapper>
