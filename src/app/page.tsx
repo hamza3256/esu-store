@@ -171,11 +171,12 @@ export default function Home() {
           </MaxWidthWrapper>
 
           {showScrollIndicator && (
-            <div className="absolute bottom-12 justify-items-center  animate-bounce cursor-pointer" onClick={scrollToNextSection}>
-              <ChevronDown className="h-8 w-8 ml-12 text-white" />
+            <div className="absolute bottom-14 left-0 right-0 flex flex-col items-center animate-bounce cursor-pointer" onClick={scrollToNextSection}>
+              <ChevronDown className="h-8 w-8 text-white" />
               <p className="text-sm text-white">Discover Our Treasures</p>
             </div>
           )}
+
         </div>
       </div>
 
