@@ -112,7 +112,6 @@ export default function Home() {
 
   return (
     <>
-    <div className="w-full overflow-hidden">
       <div className="relative h-screen overflow-hidden -mt-16">
         {!videoLoaded && (
           <Image
@@ -180,8 +179,8 @@ export default function Home() {
           </MaxWidthWrapper>
 
           {showScrollIndicator && (
-            <div className="absolute bottom-12 left-1/2 transform -translate-x-1/2 animate-bounce cursor-pointer" onClick={scrollToNextSection}>
-              <ChevronDown className="h-8 w-8 text-white" />
+            <div className="absolute bottom-12 justify-items-center  animate-bounce cursor-pointer" onClick={scrollToNextSection}>
+              <ChevronDown className="h-8 w-8 ml-12 text-white" />
               <p className="text-sm text-white">Discover Our Treasures</p>
             </div>
           )}
@@ -192,7 +191,7 @@ export default function Home() {
         <MaxWidthWrapper>
           <ProductReel title="New Arrivals" href="/products" query={{ sort: "desc", limit: 4 }} />
         </MaxWidthWrapper>
-      </section> 
+      </section>
 
       <section className="bg-gray-50 py-24">
         <MaxWidthWrapper>
