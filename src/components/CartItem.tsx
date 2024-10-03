@@ -1,18 +1,11 @@
 import { PRODUCT_CATEGORIES } from "@/config";
 import { useCart } from "@/hooks/use-cart";
 import { formatPrice } from "@/lib/utils";
-import { Product } from "@/payload-types";
+import { Media, Product } from "@/payload-types";
 import { ImageIcon, X, Minus, Plus, Star } from "lucide-react";
 import Image from "next/image";
 
 const CartItem = ({ product, quantity }: { product: Product; quantity: number }) => {
-  const { image } = product.images[0];
-  const label = PRODUCT_CATEGORIES.find(
-    ({ value }) => value === product.category
-  )?.label;
-
-  console.log(product)
-
   const { removeItem, updateQuantity } = useCart();
 
   const handleDecrement = () => {
@@ -30,15 +23,23 @@ const CartItem = ({ product, quantity }: { product: Product; quantity: number })
   // Use discounted price if available, otherwise use the original price
   const price = product.discountedPrice ?? product.price;
 
+  // Find the first image from the product.images that is actually an image (filter out videos)
+  const image = product.images.find(({ image }) => {
+    return typeof image === "object" && image.mimeType?.startsWith("image/");
+  })?.image as Media;
+
+  const label = PRODUCT_CATEGORIES.find(({ value }) => value === product.category)?.label;
+
   return (
     <div className="space-y-3 py-2">
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center space-x-4">
           <div className="relative aspect-square h-16 w-16 min-w-fit overflow-hidden rounded">
-            {typeof image !== "string" && image.url ? (
+            {/* Display the image only if it's valid, otherwise show the fallback */}
+            {image && image.url ? (
               <Image
-                src={image.url}
-                alt={product.name}
+                src={image.url as string}
+                alt={`${product.name} image`}
                 fill
                 className="absolute object-cover"
               />

@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import NavItem from "./NavItem";
 import { useOnClickOutside } from "@/hooks/use-on-click-outside";
 import { useJewelleryProducts } from "@/hooks/use-category"; // Dynamic jewellery update example
+import { Media } from "@/payload-types";
 
 const NavItems = ({
   isTransparent,
@@ -29,7 +30,9 @@ const NavItems = ({
           : products.map((product: any) => ({
               name: product.name,
               href: `/product/${product.id}`,
-              imageSrc: product.images[0]?.image.sizes?.card?.url || "/fallback.jpg",
+              imageSrc: product.images.find(({ image } : {image: Media}) => {
+                return typeof image === "object" && image.mimeType?.startsWith("image/");
+              })?.image.sizes?.card?.url || "/fallback.jpg",
             })),
       };
     }

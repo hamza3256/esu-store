@@ -1,5 +1,5 @@
 import { formatPrice } from "../../lib/utils";
-import { Product } from "../../payload-types";
+import { Media, Product } from "../../payload-types";
 import {
   Body,
   Container,
@@ -97,7 +97,9 @@ export const ReceiptEmail = ({
             <Text style={productsTitle}>Order Summary</Text>
           </Section>
           {products.map(({ product, quantity }) => {
-            const { image } = product.images[0];
+             const image = product.images.find(({ image }) => {
+              return typeof image === "object" && image.mimeType?.startsWith("image/");
+            })?.image as Media;
 
             return (
               <Section key={product.id}>
@@ -170,7 +172,7 @@ export const ReceiptEmail = ({
           <Hr style={productPriceLineBottom} />
 
           <Text style={footerLinksWrapper}>
-            <Link href={`${process.env.NEXT_PUBLIC_SERVER_URL}/company`}>Company</Link> •{" "}
+            <Link href={`${process.env.NEXT_PUBLIC_SERVER_URL}/about`}>Company</Link> •{" "}
             <Link href={`${process.env.NEXT_PUBLIC_SERVER_URL}/help-center`}>Help Center</Link> •{" "}
             <Link href={`${process.env.NEXT_PUBLIC_SERVER_URL}/privacy-policy`}>Privacy Policy </Link>
           </Text>

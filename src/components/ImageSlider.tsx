@@ -14,7 +14,7 @@ import Link from "next/link";
 
 interface ImageSliderProps {
   urls: string[];
-  productId: string; // Add productId as a prop to create the product link
+  productId: string;
 }
 
 const ImageSlider = ({ urls, productId }: ImageSliderProps) => {
@@ -43,7 +43,6 @@ const ImageSlider = ({ urls, productId }: ImageSliderProps) => {
     };
   }, [swiper, urls.length]);
 
-  console.log("urls: " + urls)
   const activeStyles =
     "active:scale-[0.97] grid opacity-100 hover:scale-105 absolute top-1/2 -translate-y-1/2 aspect-square h-8 w-8 z-50 place-items-center rounded-full border-2 bg-white border-zinc-300";
 
@@ -103,21 +102,42 @@ const ImageSlider = ({ urls, productId }: ImageSliderProps) => {
         className="h-full w-full"
         touchEventsTarget="container"
       >
-        {urls.map((url, i) => (
-          <SwiperSlide key={i} className="-z-10 relative h-full w-full">
-            <Link href={`/product/${productId}`} className="block" passHref>
-              <Image
-                fill
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                loading="eager"
-                className="-z-10 h-full w-full object-cover object-center"
-                src={url}
-                alt={`Product image ${i + 1}`}
-                priority={i === 0}
-              />
-            </Link>
-          </SwiperSlide>
-        ))}
+        {urls.map((url, i) => {
+          const isVideo = url.endsWith(".mp4") || url.endsWith(".webm"); // Check if it's a video
+          return (
+            <SwiperSlide key={i} className="-z-10 relative h-full w-full">
+              <Link href={`/product/${productId}`} className="block" passHref>
+                {isVideo ? (
+                  <video
+                    autoPlay
+                    muted
+                    loop
+                    className="h-full w-full object-cover object-center"
+                    style={{
+                      objectFit: "cover", // Ensures the video fills the container
+                      width: "100%",
+                      height: "100%",
+                      aspectRatio: "1 / 1", // Keeps the aspect ratio consistent
+                    }}
+                  >
+                    <source src={url} type="video/mp4" />
+                    Your browser does not support the video tag.
+                  </video>
+                ) : (
+                  <Image
+                    fill
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    loading="eager"
+                    className="-z-10 h-full w-full object-cover object-center"
+                    src={url}
+                    alt={`Product image ${i + 1}`}
+                    priority={i === 0}
+                  />
+                )}
+              </Link>
+            </SwiperSlide>
+          );
+        })}
       </Swiper>
     </div>
   );

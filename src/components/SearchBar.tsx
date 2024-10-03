@@ -5,6 +5,7 @@ import { Search, X } from "lucide-react";
 import Link from "next/link";
 import { trpc } from "@/trpc/client"; // Import tRPC client
 import Image from "next/image";
+import { Media } from "@/payload-types";
 
 const searchSuggestions = [
   "Search for... Shirts",
@@ -119,7 +120,9 @@ export default function SearchBar({
           id: item.id,
           name: item.name || "Unnamed Product", // Fallback in case name is missing
           category: item.category || "Uncategorized", // Adjust as necessary
-          imageUrl: item.images[0]?.image?.url || item.image?.url || "", // Fallback to a generic image URL if none exist
+          imageUrl: item.images.find(({ image } : {image: Media}) => {
+            return typeof image === "object" && image.mimeType?.startsWith("image/");
+          })?.image || item.image?.url || "", // Fallback to a generic image URL if none exist
         }));
 
         setSearchResults(mappedResults);

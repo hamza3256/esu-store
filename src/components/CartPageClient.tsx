@@ -12,7 +12,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import ShippingAddressForm from "@/components/ShippingAddressForm";
-import { User } from "@/payload-types";
+import { Media, User } from "@/payload-types";
 
 interface CartPageProps {
   user: User | null; // User is passed from server-side as a prop
@@ -152,7 +152,10 @@ const CartPageClient = ({ user }: CartPageProps) => {
               {isMounted &&
                 items.map(({ product, quantity }) => {
                   const label = PRODUCT_CATEGORIES.find((c) => c.value === product.category)?.label;
-                  const { image } = product.images[0];
+                  
+                  const image = product.images.find(({ image }) => {
+                    return typeof image === "object" && image.mimeType?.startsWith("image/");
+                  })?.image as Media;
 
                   // Use discountedPrice if available
                   const price = product.discountedPrice ?? product.price;
