@@ -265,7 +265,7 @@ export default function Home() {
             <h2 className="text-4xl font-extrabold mb-6">Adorn Your Story</h2>
             <p className="text-xl mb-10">
               Every piece in our collection is a chapter waiting to be part of your journey.
-              Find the perfect jewelry that resonates with your unique style and spirit.
+              Find the perfect jewellery that resonates with your unique style and spirit.
             </p>
           </div>
           <div className="text-center mt-12">

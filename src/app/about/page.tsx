@@ -41,7 +41,7 @@ export default function AboutUs() {
         <div>
           <h1 className="text-4xl font-bold tracking-tighter mb-4">Crafting Timeless Elegance</h1>
           <p className="text-lg text-muted-foreground mb-6">
-            At <span className="font-semibold">ESÜ Store</span>, we believe that every piece of jewelry tells a story. Our passion lies in creating exquisite pieces that capture the essence of beauty and become cherished heirlooms.
+            At <span className="font-semibold">ESÜ Store</span>, we believe that every piece of jewellery tells a story. Our passion lies in creating exquisite pieces that capture the essence of beauty and become cherished heirlooms.
           </p>
           <Button size="lg">Explore Our Collection</Button>
         </div>
@@ -82,14 +82,14 @@ export default function AboutUs() {
             <div className="text-white text-center">
               <Clock className="w-16 h-16 mx-auto mb-4" />
               <h3 className="text-2xl font-bold mb-2">Coming Soon</h3>
-              <p className="text-lg">We're putting the finishing touches on our store</p>
+              <p className="text-lg">We&apos;re putting the finishing touches on our store</p>
             </div>
           </div>
         </div>
         <div className="order-1 md:order-2">
           <h2 className="text-3xl font-bold tracking-tighter mb-4">Opening Soon Near You</h2>
           <p className="text-lg text-muted-foreground mb-6">
-            We're excited to announce that ESÜ Gems Gallery will be opening its doors in your area soon. Our new boutique will offer a serene environment where you can explore our collections and receive personalized consultations.
+            We&apos;re excited to announce that ESÜ Gems Gallery will be opening its doors in your area soon. Our new boutique will offer a serene environment where you can explore our collections and receive personalised consultations.
           </p>
           <div className="flex items-center text-muted-foreground mb-4">
             <Clock className="mr-2" />
@@ -116,7 +116,7 @@ export default function AboutUs() {
       <div className="text-center mt-16">
         <h2 className="text-3xl font-bold tracking-tighter mb-4">Join the ESÜ Family</h2>
         <p className="text-lg text-muted-foreground mb-6 max-w-2xl mx-auto">
-          We're building a team of passionate individuals to bring our vision to life. If you're a skilled craftsman, designer, or jewelry enthusiast, we'd love to hear from you.
+          We&apos;re building a team of passionate individuals to bring our vision to life. If you&apos;re a skilled craftsman, designer, or jewellery enthusiast, we&apos;d love to hear from you.
         </p>
         <Button variant="secondary" size="lg">View Career Opportunities</Button>
       </div>
