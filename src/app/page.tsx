@@ -1,103 +1,128 @@
-"use client";
+"use client"
 
-import { useState, useEffect, useRef } from "react";
-import MaxWidthWrapper from "@/components/MaxWidthWrapper";
-import ProductReel from "@/components/ProductReel";
-import { buttonVariants } from "@/components/ui/button";
-import { ArrowDownToLine, CheckCircle, Leaf, ShieldCheck, Gem, Truck, ChevronDown } from "lucide-react";
-import Link from "next/link";
-import Image from "next/image";
-import SocialBanner from "@/components/SocialBanner"; // Import the updated SocialBanner
+import { useState, useEffect, useRef } from "react"
+import Link from "next/link"
+import Image from "next/image"
+import { Truck, ShieldCheck, Leaf, ChevronDown, Star, Instagram } from "lucide-react"
+import MaxWidthWrapper from "@/components/MaxWidthWrapper"
+import ProductReel from "@/components/ProductReel"
+import SocialBanner from "@/components/SocialBanner"
+import { Button, buttonVariants } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel"
+import { Parallax } from "react-parallax"
+import { cn } from "@/lib/utils"
 
 const perks = [
-  /*{
-    name: "Crafted with Precision",
-    Icon: Gem,
-    description: "Every piece of jewelry is meticulously crafted by skilled artisans.",
-  },*/
   {
     name: "Nationwide Delivery",
     Icon: Truck,
-    description: "We deliver anywhere in Pakistan, ensuring fast and secure delivery.",
+    description: "Delivering swiftly and securely across Pakistan, ensuring your purchase arrives safely.",
   },
   {
     name: "Certified Quality",
     Icon: ShieldCheck,
-    description: "All our jewelry is certified for authenticity and quality.",
+    description: "Every piece authenticated for genuine quality.",
   },
   {
     name: "Sustainable Luxury",
     Icon: Leaf,
-    description: "Our jewelry is made with eco-friendly materials and processes.",
+    description: "Eco-friendly materials and ethical practices.",
   },
-];
+]
+
+const testimonials = [
+  {
+    quote: "ESU's pieces are breathtaking. The attention to detail is unmatched!",
+    author: "Amira S.",
+    location: "Lahore",
+    rating: 5,
+  },
+  {
+    quote: "Fast delivery and exceptional quality. Highly recommend!",
+    author: "Ahmed R.",
+    location: "Karachi",
+    rating: 5,
+  },
+  {
+    quote: "Found the perfect engagement ring. Couldn't be happier!",
+    author: "Zara T.",
+    location: "Islamabad",
+    rating: 5,
+  },
+]
 
 export default function Home() {
-  const [videoLoaded, setVideoLoaded] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [showScrollIndicator, setShowScrollIndicator] = useState(false);
-  
-  // Ref for the featured products section
-  const featuredProductsRef = useRef<HTMLDivElement>(null);
+  const [videoLoaded, setVideoLoaded] = useState(false)
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const [showScrollIndicator, setShowScrollIndicator] = useState(false)
+  const featuredProductsRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const currentVideoRef = videoRef.current;
-
+    const currentVideoRef = videoRef.current
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting && currentVideoRef) {
-            currentVideoRef.play();
+            currentVideoRef.play()
           } else if (currentVideoRef) {
-            currentVideoRef.pause();
+            currentVideoRef.pause()
           }
-        });
+        })
       },
       { threshold: 0.5 }
-    );
+    )
 
     if (currentVideoRef) {
-      observer.observe(currentVideoRef);
+      observer.observe(currentVideoRef)
     }
 
     return () => {
       if (currentVideoRef) {
-        observer.unobserve(currentVideoRef);
+        observer.unobserve(currentVideoRef)
       }
-    };
-  }, []);
+    }
+  }, [])
 
-  // Show the scroll indicator after 3 seconds
   useEffect(() => {
     const timer = setTimeout(() => {
-      setShowScrollIndicator(true);
-    }, 3000);
+      setShowScrollIndicator(true)
+    }, 3000)
 
-    return () => clearTimeout(timer);
-  }, []);
+    return () => clearTimeout(timer)
+  }, [])
 
-  // Function to scroll to the next section
   const scrollToNextSection = () => {
     if (featuredProductsRef.current) {
-      featuredProductsRef.current.scrollIntoView({ behavior: "smooth" });
+      featuredProductsRef.current.scrollIntoView({ behavior: "smooth" })
     }
-  };
+  }
 
   return (
     <>
       <div className="relative h-screen overflow-hidden -mt-16">
-        {/* Fallback image until video is loaded */}
         {!videoLoaded && (
           <Image
             src="/background.png"
-            alt="Loading video background"
+            alt="Elegant jewelry background"
             fill
             className="absolute top-0 left-0 w-full h-full object-cover -z-20"
-            loading="lazy"
+            priority
           />
         )}
 
-        {/* Lazy load the video */}
         <video
           ref={videoRef}
           autoPlay
@@ -110,27 +135,33 @@ export default function Home() {
           poster="/background.png"
         >
           <source
-            src="/desktop-morocco.mp4"
-            type="video/mp4"
+            src="/desktop.webm"
+            type="video/webm"
             media="(min-width: 768px)"
           />
           <source
-            src="/mobile-morocco.webm"
+            src="/mobile.webm"
             type="video/webm"
             media="(max-width: 767px)"
           />
-          <p>Your browser does not support the video tag.</p>
+          Your browser does not support the video tag.
         </video>
 
-        {/* Overlay */}
-        <div className="absolute top-0 left-0 w-full h-full bg-black opacity-30 -z-10"></div>
+        <div className="absolute top-0 left-0 w-full h-full bg-black opacity-40 -z-10"></div>
 
-        {/* Content Section */}
         <div className="relative z-20 flex flex-col items-center justify-center h-full text-center text-white">
           <MaxWidthWrapper>
             <div className="py-16 mx-auto flex flex-col items-center max-w-3xl">
               <h1 className="text-4xl font-extrabold tracking-tight sm:text-6xl text-white">
-                Luxury <span className="text-gray-300">Jewelry</span> for Every Occasion.
+                Luxury <span
+                style={{
+                  background: "linear-gradient(45deg, #4a4a4a, #383838, #4a4a4a)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                }}
+              >
+                Jewellery
+              </span>{" "} for Every Occasion.
               </h1>
               <p className="mt-4 text-lg max-w-prose text-gray-200">
                 Welcome to <span className="font-bold">esü</span>. Discover timeless pieces,
@@ -140,92 +171,143 @@ export default function Home() {
                 <Link href="/products" className={buttonVariants({ variant: "default" })}>
                   Shop Now &rarr;
                 </Link>
+                <Link href="/about" className={cn(buttonVariants({ variant: "outline" }), "text-black border-white hover:bg-white hover:text-black transition-colors")}>
+                  Our Story
+                </Link>
               </div>
             </div>
           </MaxWidthWrapper>
 
-          {/* Scroll Down Indicator */}
           {showScrollIndicator && (
-            <div className="absolute bottom-8 animate-bounce cursor-pointer" onClick={scrollToNextSection}>
-              <ChevronDown className="h-6 w-6 ml-6 text-white" />
-              <p className="text-sm text-white">Scroll Down</p>
+            <div className="absolute bottom-12 justify-items-center  animate-bounce cursor-pointer" onClick={scrollToNextSection}>
+              <ChevronDown className="h-8 w-8 ml-12 text-white" />
+              <p className="text-sm text-white">Discover Our Treasures</p>
             </div>
           )}
         </div>
       </div>
 
-      {/* Featured Products Section */}
-      <section className="bg-white py-10" ref={featuredProductsRef}>
+      <section className="bg-white" ref={featuredProductsRef}>
         <MaxWidthWrapper>
-          <h2 className="text-3xl font-extrabold text-center mb-6 text-gray-900">Featured Products</h2>
-          <ProductReel title="Just Arrived" href="/products" query={{ sort: "desc", limit: 4 }} />
+          <ProductReel title="New Arrivals" href="/products" query={{ sort: "desc", limit: 4 }} />
         </MaxWidthWrapper>
       </section>
 
-      {/* Perks Section */}
-      <section className="border border-gray-200 bg-gray-50 py-8">
+      <section className="bg-gray-50 py-24">
         <MaxWidthWrapper>
-          <h2 className="text-3xl font-extrabold text-center mb-6 text-gray-900">Why Choose Us?</h2>
-          <div className="grid grid-cols-1 gap-y-8 sm:grid-cols-2 sm:gap-x-6 lg:grid-cols-4 lg:gap-x-8 lg:gap-y-0">
+          <h2 className="text-4xl font-extrabold text-center mb-16 text-gray-900">The ESÜ Experience</h2>
+          <div className="grid grid-cols-1 gap-12 sm:grid-cols-2 lg:grid-cols-3">
             {perks.map((perk) => (
-              <div
-                key={perk.name}
-                className="text-center md:flex md:items-start md:text-left lg:block lg:text-center"
-              >
-                <div className="md:flex-shrink-0 flex justify-center">
-                  <div className="h-16 w-16 flex items-center justify-center rounded-full bg-gold-100 text-gold-900">
-                    <perk.Icon className="w-1/3 h-1/3 text-yellow-600" />
+              <Card key={perk.name} className="bg-white border-none shadow-lg hover:shadow-xl transition-shadow duration-300">
+                <CardHeader>
+                  <div className="flex items-center justify-center w-16 h-16 rounded-full bg-gold-100 mb-6">
+                    <perk.Icon className="w-8 h-8 text-gold-600" />
                   </div>
-                </div>
-                <div className="mt-4 md:ml-4 md:mt-0 lg:ml-0 lg:mt-4">
-                  <h3 className="text-lg font-semibold text-gray-900">{perk.name}</h3>
-                  <p className="mt-2 text-sm text-gray-600">{perk.description}</p>
-                </div>
-              </div>
+                  <CardTitle className="text-2xl font-semibold text-gray-900">{perk.name}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription className="text-lg text-gray-600">{perk.description}</CardDescription>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </MaxWidthWrapper>
       </section>
 
-      {/* Social Media Banner */}
+      <Parallax bgImage="/order-confirmation.jpg" strength={500}>
+        <div className="h-96 flex items-center justify-center">
+          <div className="bg-black bg-opacity-50 p-8 rounded-lg">
+            <h2 className="text-3xl font-bold text-white mb-4">Crafted with Passion</h2>
+            <p className="text-lg text-gray-200">
+              Every piece tells a story of artisanal excellence and timeless beauty.
+            </p>
+          </div>
+        </div>
+      </Parallax>
+
       <SocialBanner />
 
-      {/* Testimonials Section */}
-      <section className="bg-gray-100 py-10">
+      <section className="bg-white py-24">
         <MaxWidthWrapper>
-          <h2 className="text-3xl font-extrabold text-center mb-8 text-gray-900">What Our Customers Say</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Example testimonials */}
-            <div className="bg-white p-6 shadow-md rounded-lg">
-              <p className="text-gray-700 italic">
-              &quot;Absolutely stunning! The craftsmanship is incredible. I love how unique my piece is.&quot;
-              </p>
-              <div className="mt-4">
-                <p className="font-bold text-gray-900">- Sarah A.</p>
-                <p className="text-sm text-gray-600">Lahore, Pakistan</p>
-              </div>
-            </div>
-            <div className="bg-white p-6 shadow-md rounded-lg">
-              <p className="text-gray-700 italic">
-              &quot;Fast delivery and exceptional quality. Highly recommend!&quot;
-              </p>
-              <div className="mt-4">
-                <p className="font-bold text-gray-900">- Ahmed R.</p>
-                <p className="text-sm text-gray-600">Karachi, Pakistan</p>
-              </div>
-            </div>
-            <div className="bg-white p-6 shadow-md rounded-lg">
-              <p className="text-gray-700 italic">
-              &quot;The perfect gift! I can&apos;t wait to buy more from this collection.&quot;
-              </p>
-              <div className="mt-4">
-                <p className="font-bold text-gray-900">- Fatima K.</p>
-                <p className="text-sm text-gray-600">Islamabad, Pakistan</p>
-              </div>
-            </div>
+          <h2 className="text-4xl font-extrabold text-center mb-16 text-gray-900">Voices of Delight</h2>
+          <Carousel className="w-full max-w-xl mx-auto">
+            <CarouselContent>
+              {testimonials.map((testimonial, index) => (
+                <CarouselItem key={index}>
+                  <Card className="bg-gray-50 border-none shadow-md">
+                    <CardContent className="flex flex-col items-center justify-center p-8">
+                      <div className="flex mb-4">
+                        {[...Array(testimonial.rating)].map((_, i) => (
+                          <Star key={i} className="w-6 h-6 text-gold-500 fill-current" />
+                        ))}
+                      </div>
+                      <blockquote className="text-xl text-gray-700 italic text-center mb-6">
+                        &quot;{testimonial.quote}&quot;
+                      </blockquote>
+                      <div className="text-center">
+                        <p className="font-semibold text-gray-900">{testimonial.author}</p>
+                        <p className="text-sm text-gray-600">{testimonial.location}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious />
+            <CarouselNext />
+          </Carousel>
+        </MaxWidthWrapper>
+      </section>
+
+      <section className="bg-gold-50 text-gray-900 py-24">
+        <MaxWidthWrapper>
+          <div className="text-center max-w-2xl mx-auto mb-16">
+            <h2 className="text-4xl font-extrabold mb-6">Adorn Your Story</h2>
+            <p className="text-xl mb-10">
+              Every piece in our collection is a chapter waiting to be part of your journey.
+              Find the perfect jewelry that resonates with your unique style and spirit.
+            </p>
+          </div>
+          <div className="text-center mt-12">
+            <Link href="/products" passHref>
+              <Button size="lg" className="bg-gold-500 hover:bg-gold-600 text-black">
+                Explore All Collections &rarr;
+              </Button>
+            </Link>
           </div>
         </MaxWidthWrapper>
       </section>
+
+      {/* <section className="bg-white py-24">
+        <MaxWidthWrapper>
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-extrabold mb-4">Follow Our Journey</h2>
+            <p className="text-xl text-gray-600">Get inspired by our latest designs and behind-the-scenes moments.</p>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[...Array(8)].map((_, index) => (
+              <div key={index} className="relative aspect-square overflow-hidden">
+                <Image
+                  src={`/instagram-${index + 1}.jpg`}
+                  alt={`Instagram post ${index + 1}`}
+                  fill
+                  className="object-cover"
+                />
+                <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-50 transition-all duration-300 flex items-center justify-center">
+                  <Instagram className="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="text-center mt-12">
+            <Button asChild variant="outline" size="lg">
+              <a href="https://www.instagram.com/esu_jewelry" target="_blank" rel="noopener noreferrer">
+                Follow Us on Instagram
+              </a>
+            </Button>
+          </div>
+        </MaxWidthWrapper>
+      </section> */}
     </>
-  );
+  )
 }

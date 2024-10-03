@@ -90,7 +90,7 @@ const Footer = () => {
             </Link>
             <Link
               prefetch={false}
-              href="/company"
+              href="/about"
               className="text-sm text-gray-400 hover:text-white transition-colors duration-200"
             >
               Company

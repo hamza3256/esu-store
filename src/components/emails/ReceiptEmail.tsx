@@ -172,7 +172,7 @@ export const ReceiptEmail = ({
           <Hr style={productPriceLineBottom} />
 
           <Text style={footerLinksWrapper}>
-            <Link href={`${process.env.NEXT_PUBLIC_SERVER_URL}/company`}>Company</Link> •{" "}
+            <Link href={`${process.env.NEXT_PUBLIC_SERVER_URL}/about`}>Company</Link> •{" "}
             <Link href={`${process.env.NEXT_PUBLIC_SERVER_URL}/help-center`}>Help Center</Link> •{" "}
             <Link href={`${process.env.NEXT_PUBLIC_SERVER_URL}/privacy-policy`}>Privacy Policy </Link>
           </Text>
