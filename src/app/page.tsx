@@ -214,50 +214,57 @@ export default function Home() {
         </MaxWidthWrapper>
       </section>
 
-      <Parallax bgImage="/order-confirmation.jpg" strength={500}>
-        <div className="h-96 flex items-center justify-center">
-          <div className="bg-black bg-opacity-50 p-8 rounded-lg">
-            <h2 className="text-3xl font-bold text-white mb-4">Crafted with Passion</h2>
-            <p className="text-lg text-gray-200">
-              Every piece tells a story of artisanal excellence and timeless beauty.
-            </p>
+      <MaxWidthWrapper>
+        <Parallax bgImage="/order-confirmation.jpg" strength={500}>
+          <div className="h-96 flex items-center justify-center">
+            <div className="bg-black bg-opacity-50 p-8 rounded-lg">
+              <h2 className="text-3xl font-bold text-white mb-4">Crafted with Passion</h2>
+              <p className="text-lg text-gray-200">
+                Every piece tells a story of artisanal excellence and timeless beauty.
+              </p>
+            </div>
           </div>
-        </div>
-      </Parallax>
+        </Parallax>
 
-      <SocialBanner />
+        <SocialBanner />
+      </MaxWidthWrapper>
 
       <section className="bg-white py-24">
-        <MaxWidthWrapper>
-          <h2 className="text-4xl font-extrabold text-center mb-16 text-gray-900">Voices of Delight</h2>
-          <Carousel className="w-full max-w-xl mx-auto">
-            <CarouselContent>
-              {testimonials.map((testimonial, index) => (
-                <CarouselItem key={index}>
-                  <Card className="bg-gray-50 border-none shadow-md">
-                    <CardContent className="flex flex-col items-center justify-center p-8">
-                      <div className="flex mb-4">
-                        {[...Array(testimonial.rating)].map((_, i) => (
-                          <Star key={i} className="w-6 h-6 text-gold-500 fill-current" />
-                        ))}
-                      </div>
-                      <blockquote className="text-xl text-gray-700 italic text-center mb-6">
-                        &quot;{testimonial.quote}&quot;
-                      </blockquote>
-                      <div className="text-center">
-                        <p className="font-semibold text-gray-900">{testimonial.author}</p>
-                        <p className="text-sm text-gray-600">{testimonial.location}</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-            <CarouselPrevious />
-            <CarouselNext />
-          </Carousel>
-        </MaxWidthWrapper>
-      </section>
+  <MaxWidthWrapper>
+    <h2 className="text-4xl font-extrabold text-center mb-16 text-gray-900">Voices of Delight</h2>
+    <Carousel className="w-full overflow-hidden">
+      <CarouselContent className="flex justify-center items-center">
+        {testimonials.map((testimonial, index) => (
+          <CarouselItem
+            key={index}
+            className="flex justify-center w-full max-w-xs sm:max-w-md"
+          >
+            <Card className="bg-gray-50 border-none shadow-md w-full">
+              <CardContent className="flex flex-col items-center justify-center p-8">
+                <div className="flex mb-4">
+                  {[...Array(testimonial.rating)].map((_, i) => (
+                    <Star key={i} className="w-6 h-6 text-gold-500 fill-current" />
+                  ))}
+                </div>
+                <blockquote className="text-xl text-gray-700 italic text-center mb-6">
+                  &quot;{testimonial.quote}&quot;
+                </blockquote>
+                <div className="text-center">
+                  <p className="font-semibold text-gray-900">{testimonial.author}</p>
+                  <p className="text-sm text-gray-600">{testimonial.location}</p>
+                </div>
+              </CardContent>
+            </Card>
+          </CarouselItem>
+        ))}
+      </CarouselContent>
+      <CarouselPrevious />
+      <CarouselNext />
+    </Carousel>
+  </MaxWidthWrapper>
+</section>
+
+
 
       <section className="bg-gold-50 text-gray-900 py-24">
         <MaxWidthWrapper>
