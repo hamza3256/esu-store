@@ -1,16 +1,26 @@
-import { useState, useCallback, useMemo } from "react";
+"use client";
+
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, Heart, Minus, Plus, ShoppingCart, Star } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Heart,
+  Minus,
+  Plus,
+  ShoppingCart,
+  Star,
+} from "lucide-react";
 import Image from "next/image";
 import { toast } from "@/components/ui/use-toast";
-import { useSwipeable } from "react-swipeable";
-import { Media, Product } from "@/payload-types";
+import { Product } from "@/payload-types";
 import { cn, formatPrice } from "@/lib/utils";
 import { useCart } from "@/hooks/use-cart";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "./ui/card";
+import { useSwipeable } from "react-swipeable";
 import Link from "next/link";
 
 interface ProductListingProps {
@@ -47,37 +57,72 @@ export default function ProductListing({
   }, [product?.images]);
 
   const swipeHandlers = useSwipeable({
-    onSwipedLeft: product?.images?.length > 1 ? handleNextImage : () => {},
-    onSwipedRight: product?.images?.length > 1 ? handlePrevImage : () => {},
-    trackMouse: true, // Enable mouse swiping
-  });
+      onSwipedLeft: handleNextImage,
+      onSwipedRight: handlePrevImage,
+      trackMouse: true, 
+    })
 
   const productUrl = `/product/${product?.id}`;
+
+  const handleQuantityChange = useCallback(
+    (action: "increment" | "decrement") => {
+      setQuantity((prev) => {
+        if (action === "increment") {
+          return Math.min(prev + 1, product?.inventory ?? 1);
+        }
+        return Math.max(prev - 1, 1);
+      });
+    },
+    [product?.inventory]
+  );
+
+  const handleAddToCart = useCallback(() => {
+    if (!product) return;
+    addItem(product, quantity);
+    toast({
+      title: "Added to cart",
+      description: `${quantity} ${quantity > 1 ? "items" : "item"} added to your cart`,
+      className: "animate-toast-slide-in",
+    });
+  }, [addItem, product, quantity]);
+
+  const toggleFavorite = useCallback(() => {
+    if (!product) return;
+    setIsFavorite((prev) => !prev);
+    toast({
+      title: isFavorite ? "Removed from favorites" : "Added to favorites",
+      description: `${product.name} has been ${
+        isFavorite ? "removed from" : "added to"
+      } your favorites`,
+    });
+  }, [isFavorite, product?.name]);
 
   const displayPrice = product?.discountedPrice ?? product?.price ?? 0;
   const discount = product?.discountedPrice
     ? Math.round((1 - product.discountedPrice / product.price) * 100)
     : 0;
 
-  const getImageUrl = useCallback(
-    (image: string | Media): string => {
-      if (typeof image === "string") return image;
-      if (isMobile && image.sizes?.thumbnail?.url) return image.sizes.thumbnail.url;
-      if (isTablet && image.sizes?.tablet?.url) return image.sizes.tablet.url;
-      if (image.sizes?.card?.url) return image.sizes.card.url;
-      return image.url || "";
-    },
-    [isMobile, isTablet]
-  );
-
+  // Memoize image and video URLs
   const currentImage = product?.images?.[currentImageIndex]?.image;
   const imageUrl = useMemo(() => {
-    if (!currentImage) return '';
-    return getImageUrl(currentImage);
+    if (!currentImage) return "";
+    if (typeof currentImage === "string") return currentImage;
+    if (isMobile && currentImage.sizes?.thumbnail?.url) return currentImage.sizes.thumbnail.url;
+    if (isTablet && currentImage.sizes?.tablet?.url) return currentImage.sizes.tablet.url;
+    return currentImage.sizes?.card?.url || currentImage.url || "";
   }, [currentImage, isMobile, isTablet]);
 
-  const isVideo = typeof currentImage !== "string" && currentImage?.resourceType === "video";
+  const videoUrl = useMemo(() => {
+    if (!currentImage || typeof currentImage === "string") return "";
+    return currentImage.sizes?.video?.url || "";
+  }, [currentImage]);
 
+  const isVideo =
+    typeof currentImage !== "string" && currentImage?.resourceType === "video";
+
+    console.log(videoUrl)
+
+  // Return placeholder if no product is available
   if (!product) {
     return <ProductPlaceholder />;
   }
@@ -95,8 +140,8 @@ export default function ProductListing({
           >
             {isVideo ? (
               <video
-                key={imageUrl}
-                src={imageUrl}
+                key={videoUrl}
+                src={videoUrl}
                 className="w-full h-full object-cover"
                 autoPlay
                 loop
@@ -120,16 +165,14 @@ export default function ProductListing({
             {product.category}
           </Badge>
           <button
-            onClick={() => setIsFavorite(!isFavorite)}
+            onClick={toggleFavorite}
             className={cn(
               "absolute top-2 right-2 z-10 p-2 rounded-full bg-white/80 backdrop-blur-sm transition-colors duration-300",
               isFavorite
                 ? "text-red-500 hover:text-red-600"
                 : "text-gray-600 hover:text-gray-800"
             )}
-            aria-label={
-              isFavorite ? "Remove from favorites" : "Add to favorites"
-            }
+            aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
           >
             <Heart
               className="w-4 h-4"
@@ -137,6 +180,7 @@ export default function ProductListing({
             />
           </button>
 
+          {/* Chevron Navigation */}
           {product.images.length > 1 && (
             <>
               <Button
@@ -160,19 +204,20 @@ export default function ProductListing({
 
           <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-1">
             {product.images.map((_, index) => (
-              <div
-                key={index}
-                className={cn(
-                  "w-1.5 h-1.5 rounded-full transition-colors duration-300",
-                  index === currentImageIndex
-                    ? "bg-white"
-                    : "bg-white/50"
-                )}
-              />
+              product.images.length > 1 && (
+                <div
+                  key={index}
+                  className={cn(
+                    "w-1.5 h-1.5 rounded-full transition-colors duration-300",
+                    index === currentImageIndex ? "bg-white" : "bg-white/50"
+                  )}
+                />
+              )
             ))}
           </div>
         </div>
 
+        {/* Product Details */}
         <div className="p-3 sm:p-4">
           <Link href={productUrl}>
             <h2 className="text-lg sm:text-xl font-semibold mb-2 text-gray-800 h-12 line-clamp-2">
@@ -187,9 +232,7 @@ export default function ProductListing({
                   key={i}
                   className={cn(
                     "w-4 h-4",
-                    i < Math.round(product.rating)
-                      ? "fill-yellow-400"
-                      : "fill-gray-200"
+                    i < Math.round(product.rating) ? "fill-yellow-400" : "fill-gray-200"
                   )}
                 />
               ))}
@@ -214,6 +257,7 @@ export default function ProductListing({
             </div>
           </div>
 
+          {/* Quantity and Cart Button */}
           <div className="flex items-center gap-2 mb-3">
             <div className="flex items-center border border-gray-300 rounded-md overflow-hidden">
               <Button
