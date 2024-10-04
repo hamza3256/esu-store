@@ -31,8 +31,14 @@ const ProductReel = (props: ProductReelProps) => {
       },
       {
         getNextPageParam: (lastPage) => lastPage.nextPage,
+        onError: (error) => {
+          console.error('Failed to fetch more products:', error);
+        },
+        refetchOnWindowFocus: false, // Prevent unnecessary refetching when user returns to the tab
+        staleTime: 1000 * 60 * 5, // Cache for 5 minutes
       }
     );
+  
 
   const products = queryResults?.pages.flatMap((page) => page.items);
 

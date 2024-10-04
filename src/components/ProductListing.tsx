@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowLeft,
@@ -108,11 +108,14 @@ export default function ProductListing({
   );
 
   const currentImage = product?.images?.[currentImageIndex]?.image;
-  const imageUrl = currentImage ? getImageUrl(currentImage) : "";
+  const imageUrl = useMemo(() => {
+    if (!currentImage) return '';
+    return getImageUrl(currentImage);
+  }, [currentImage, isMobile, isTablet]);
+  
   const isVideo =
     typeof currentImage !== "string" && currentImage?.resourceType === "video";
 
-  // Return loading state early
   if (!product) {
     return <ProductPlaceholder />;
   }
@@ -144,6 +147,7 @@ export default function ProductListing({
                 alt={product.name}
                 fill
                 className="rounded-t-lg object-cover"
+                loading="lazy"
               />
             )}
           </motion.div>
