@@ -1,10 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import cloudinary from "@/lib/cloudinary";
 
 export const VideoBackground = () => {
-  const [videoLoaded, setVideoLoaded] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const videoUrlDesktop = `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/video/upload/q_auto:best/f_auto,dpr_auto,w_1920/desktop.webm`;
@@ -44,7 +42,6 @@ export const VideoBackground = () => {
       loop
       className="absolute top-0 left-0 w-full h-full object-cover -z-20"
       preload="auto"
-      onCanPlay={() => setVideoLoaded(true)}
       playsInline
       poster="/background.png"
     >
