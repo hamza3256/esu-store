@@ -22,6 +22,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "./ui/card";
+import { useSwipeable } from "react-swipeable";
+import Link from "next/link";
 
 interface ProductListingProps {
   product: Product | null;
@@ -42,6 +44,8 @@ export default function ProductListing({
 
   const { addItem } = useCart();
 
+
+
   const handlePrevImage = useCallback(() => {
     if (!product?.images?.length) return;
     setCurrentImageIndex((prevIndex) =>
@@ -55,6 +59,14 @@ export default function ProductListing({
       prevIndex === product.images.length - 1 ? 0 : prevIndex + 1
     );
   }, [product?.images]);
+
+  const swipeHandlers = useSwipeable({
+    onSwipedLeft: handleNextImage,
+    onSwipedRight: handlePrevImage,
+    trackMouse: true,
+  });
+
+  const productUrl = `\product\\${product?.id}`
 
   const handleQuantityChange = useCallback(
     (action: "increment" | "decrement") => {
@@ -123,7 +135,7 @@ export default function ProductListing({
   return (
     <Card className="w-full max-w-sm sm:max-w-sm mx-auto overflow-hidden bg-white shadow-lg hover:shadow-xl transition-shadow duration-300 rounded-lg">
       <CardContent className="p-0">
-        <div className="relative aspect-square">
+        <div className="relative aspect-square" {...swipeHandlers}>
           <motion.div
             key={currentImageIndex}
             initial={{ opacity: 0 }}
@@ -214,9 +226,12 @@ export default function ProductListing({
 
         {/* Product Details */}
         <div className="p-3 sm:p-4">
-          <h2 className="text-lg sm:text-xl font-semibold mb-2 text-gray-800 h-12 line-clamp-2">
-            {product.name}
-          </h2>
+          <Link href={productUrl}>
+            <h2 className="text-lg sm:text-xl font-semibold mb-2 text-gray-800 h-12 line-clamp-2">
+              {product.name}
+            </h2>
+          </Link>
+          
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center">
               {[...Array(5)].map((_, i) => (
