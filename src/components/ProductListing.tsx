@@ -3,8 +3,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { motion } from "framer-motion";
 import {
-  ArrowLeft,
-  ArrowRight,
   ChevronLeft,
   ChevronRight,
   Heart,
@@ -15,7 +13,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { toast } from "@/components/ui/use-toast";
-import { Media, Product } from "@/payload-types";
+import { Product } from "@/payload-types";
 import { cn, formatPrice } from "@/lib/utils";
 import { useCart } from "@/hooks/use-cart";
 import { Badge } from "@/components/ui/badge";
@@ -44,8 +42,6 @@ export default function ProductListing({
 
   const { addItem } = useCart();
 
-
-
   const handlePrevImage = useCallback(() => {
     if (!product?.images?.length) return;
     setCurrentImageIndex((prevIndex) =>
@@ -60,13 +56,15 @@ export default function ProductListing({
     );
   }, [product?.images]);
 
+  // Enable swiping only if there are multiple images
   const swipeHandlers = useSwipeable({
     onSwipedLeft: handleNextImage,
     onSwipedRight: handlePrevImage,
     trackMouse: true,
+    disabled: product?.images?.length <= 1, // Disable swipe if only one image
   });
 
-  const productUrl = `\product\\${product?.id}`
+  const productUrl = `/product/${product?.id}`;
 
   const handleQuantityChange = useCallback(
     (action: "increment" | "decrement") => {
@@ -85,9 +83,7 @@ export default function ProductListing({
     addItem(product, quantity);
     toast({
       title: "Added to cart",
-      description: `${quantity} ${
-        quantity > 1 ? "items" : "item"
-      } added to your cart`,
+      description: `${quantity} ${quantity > 1 ? "items" : "item"} added to your cart`,
       className: "animate-toast-slide-in",
     });
   }, [addItem, product, quantity]);
@@ -108,26 +104,27 @@ export default function ProductListing({
     ? Math.round((1 - product.discountedPrice / product.price) * 100)
     : 0;
 
-  const getImageUrl = useCallback(
-    (image: string | Media): string => {
-      if (typeof image === "string") return image;
-      if (isMobile && image.sizes?.thumbnail?.url) return image.sizes.thumbnail.url;
-      if (isTablet && image.sizes?.tablet?.url) return image.sizes.tablet.url;
-      if (image.sizes?.card?.url) return image.sizes.card.url;
-      return image.url || "";
-    },
-    [isMobile, isTablet]
-  );
-
+  // Memoize image and video URLs
   const currentImage = product?.images?.[currentImageIndex]?.image;
   const imageUrl = useMemo(() => {
-    if (!currentImage) return '';
-    return getImageUrl(currentImage);
+    if (!currentImage) return "";
+    if (typeof currentImage === "string") return currentImage;
+    if (isMobile && currentImage.sizes?.thumbnail?.url) return currentImage.sizes.thumbnail.url;
+    if (isTablet && currentImage.sizes?.tablet?.url) return currentImage.sizes.tablet.url;
+    return currentImage.sizes?.card?.url || currentImage.url || "";
   }, [currentImage, isMobile, isTablet]);
-  
+
+  const videoUrl = useMemo(() => {
+    if (!currentImage || typeof currentImage === "string") return "";
+    return currentImage.sizes?.video?.url || "";
+  }, [currentImage]);
+
   const isVideo =
     typeof currentImage !== "string" && currentImage?.resourceType === "video";
 
+    console.log(videoUrl)
+
+  // Return placeholder if no product is available
   if (!product) {
     return <ProductPlaceholder />;
   }
@@ -145,8 +142,8 @@ export default function ProductListing({
           >
             {isVideo ? (
               <video
-                key={imageUrl}
-                src={imageUrl}
+                key={videoUrl}
+                src={videoUrl}
                 className="w-full h-full object-cover"
                 autoPlay
                 loop
@@ -177,9 +174,7 @@ export default function ProductListing({
                 ? "text-red-500 hover:text-red-600"
                 : "text-gray-600 hover:text-gray-800"
             )}
-            aria-label={
-              isFavorite ? "Remove from favorites" : "Add to favorites"
-            }
+            aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
           >
             <Heart
               className="w-4 h-4"
@@ -210,16 +205,16 @@ export default function ProductListing({
           )}
 
           <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-1">
-            {product.images.map((_, index) => (product.images.length > 1 &&
-              <div
-                key={index}
-                className={cn(
-                  "w-1.5 h-1.5 rounded-full transition-colors duration-300",
-                  index === currentImageIndex
-                    ? "bg-white"
-                    : "bg-white/50"
-                )}
-              />
+            {product.images.map((_, index) => (
+              product.images.length > 1 && (
+                <div
+                  key={index}
+                  className={cn(
+                    "w-1.5 h-1.5 rounded-full transition-colors duration-300",
+                    index === currentImageIndex ? "bg-white" : "bg-white/50"
+                  )}
+                />
+              )
             ))}
           </div>
         </div>
@@ -231,7 +226,7 @@ export default function ProductListing({
               {product.name}
             </h2>
           </Link>
-          
+
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center">
               {[...Array(5)].map((_, i) => (
@@ -239,9 +234,7 @@ export default function ProductListing({
                   key={i}
                   className={cn(
                     "w-4 h-4",
-                    i < Math.round(product.rating)
-                      ? "fill-yellow-400"
-                      : "fill-gray-200"
+                    i < Math.round(product.rating) ? "fill-yellow-400" : "fill-gray-200"
                   )}
                 />
               ))}
