@@ -19,6 +19,7 @@ import { ZodError } from "zod";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useState } from "react";
+import BearLogo from "@/components/BearLogo";
 
 const Page = () => {
   const [showPassword, setShowPassword] = useState(false)
@@ -66,7 +67,8 @@ const Page = () => {
           className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]"
         >
           <div className="flex flex-col items-center space-y-2 text-center">
-            <Icons.logo className="h-20 w-20" />
+            {/* <Icons.logo className="h-20 w-20" /> */}
+            <BearLogo />
             <h1 className="text-2xl font-bold">Create an account</h1>
             <Link
               className={buttonVariants({
