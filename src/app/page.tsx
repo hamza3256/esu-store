@@ -7,6 +7,7 @@ import { ButtonLink } from "@/components/ButtonLink";
 import { Perks } from "@/components/Perks";
 import { Section } from "@/components/Section";
 import ParallaxSection from "@/components/ParallaxSection";
+import ProductShowcase from "@/components/ProductShowcase";
 
 export default function Home() {
   return (
@@ -38,7 +39,7 @@ export default function Home() {
       {/* Featured Products */}
       <Section>
         <MaxWidthWrapper>
-          <ProductReel title="New Arrivals" href="/products" query={{ sort: "desc", limit: 4 }} />
+          <ProductShowcase title="New Arrivals" href="/products" query={{ sort: "desc", limit: 4 }} />
         </MaxWidthWrapper>
       </Section>
 
