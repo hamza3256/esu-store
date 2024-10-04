@@ -6,7 +6,15 @@ import { trpc } from "@/trpc/client";
 import Link from "next/link";
 import ProductListing from "./ProductListing";
 import { useMediaQuery } from "@/hooks/use-media-query";
-import { url } from "inspector";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
+import { ChevronRight, Pointer, PointerIcon } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
 
 interface ProductReelProps {
   title: string;
@@ -18,10 +26,11 @@ interface ProductReelProps {
 const FALLBACK_LIMIT = 4;
 
 const ProductReel = (props: ProductReelProps) => {
-  const isTablet = useMediaQuery("(min-width: 768px) and (max-width: 1024px)");
-  const isMobile = useMediaQuery("(max-width: 767px)");
-  
   const { title, subtitle, href, query } = props;
+
+  const isMobile = useMediaQuery("(max-width: 767px)");
+  const isTablet = useMediaQuery("(min-width: 768px) and (max-width: 1024px)");
+  const [showSwipeIndicator, setShowSwipeIndicator] = useState(true);
 
   const { data: queryResults, isLoading } =
     trpc.getInfiniteProducts.useInfiniteQuery(
@@ -43,6 +52,18 @@ const ProductReel = (props: ProductReelProps) => {
   } else if (isLoading) {
     map = new Array<null>(query.limit ?? FALLBACK_LIMIT).fill(null);
   }
+
+  const handleSwipe = useCallback(() => {
+    setShowSwipeIndicator(false);
+    localStorage.setItem('hasSwipedProductReel', 'true');
+  }, []);
+
+  useEffect(() => {
+    const hasSwipedBefore = localStorage.getItem('hasSwipedProductReel');
+    if (hasSwipedBefore) {
+      setShowSwipeIndicator(false);
+    }
+  }, []);
 
   return (
     <section className="py-8 sm:py-12">
@@ -70,17 +91,47 @@ const ProductReel = (props: ProductReelProps) => {
         </div>
 
         <div className="relative">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-            {map.map((product, i) => (
-              <ProductListing
-                key={`product-${i}`}
-                product={product}
-                index={i}
-                isMobile={isMobile}
-                isTablet={isTablet}
-              />
-            ))}
-          </div>
+          {isMobile ? (
+            <Carousel className="w-full overflow-hidden" onPointerLeave={handleSwipe}>
+              <CarouselContent className="-ml-2 md:-ml-4">
+                {map.map((product, i) => (
+                  product && (
+                    <CarouselItem key={`product-${i}`} className="pl-2 md:pl-4 w-full sm:w-1/2 lg:w-1/3 xl:w-1/4">
+                      <div className="h-full">
+                        <ProductListing
+                          product={product}
+                          index={i}
+                          isMobile={isMobile}
+                          isTablet={isTablet}
+                        />
+                      </div>
+                    </CarouselItem>
+                  )
+                ))}
+              </CarouselContent>
+              <CarouselPrevious className="hidden sm:flex" />
+              <CarouselNext className="hidden sm:flex" />
+              {showSwipeIndicator && isMobile && (
+                <div className="absolute right-4 top-1/2   animate-swipe-indicator">
+                  <Pointer className="w-6 h-6 text-muted-foreground animate-swipe-gesture" />
+                </div>
+              )}
+            </Carousel>
+          ) : (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+              {map.map((product, i) => (
+                product && (
+                  <ProductListing
+                    key={`product-${i}`}
+                    product={product}
+                    index={i}
+                    isMobile={isMobile}
+                    isTablet={isTablet}
+                  />
+                )
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </section>

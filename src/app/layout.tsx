@@ -6,8 +6,9 @@ import { cn, constructMetadata } from "@/lib/utils";
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { getServerSideUser } from "@/lib/payload-utils";
-import { Toaster } from "@/components/ui/sonner";
+import { Toaster as ToasterUI } from "@/components/ui/toaster";
 import FreeShippingPopup from "@/components/FreeShippingPopup";
+import { Toaster } from "@/components/ui/sonner";
 
 export const metadata: Metadata = {
   title: "ESÜ Store | Jewelry, Clothing & Accessories",
@@ -79,6 +80,7 @@ export default async function RootLayout({
             <Footer />
           </Providers>
         </main>
+        <ToasterUI />
         <Toaster theme="light" position="top-center" richColors />
       </body>
     </html>
