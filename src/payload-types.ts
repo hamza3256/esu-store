@@ -28,7 +28,7 @@ export interface User {
   stripeCustomerId?: string | null;
   products?: (string | Product)[] | null;
   product_files?: (string | ProductFile)[] | null;
-  role?: ('admin' | 'user') | null;
+  role?: ('admin' | 'employee' | 'seller' | 'user') | null;
   updatedAt: string;
   createdAt: string;
   email: string;

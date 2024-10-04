@@ -39,10 +39,13 @@ const UserAccountNav = ({ user }: { user: User }) => {
           <Link href="/orders">Orders</Link>
         </DropdownMenuItem>
 
-        <DropdownMenuItem asChild>
-          <Link href="/sell">Seller Dashboard</Link>
-        </DropdownMenuItem>
+        {user.role === 'admin' && (
+          <DropdownMenuItem asChild>
+            <Link href="/sell">Seller Dashboard</Link>
+          </DropdownMenuItem>
+        )}
 
+      
         <DropdownMenuItem className="cursor-pointer" onClick={signOut}>
           Log out
         </DropdownMenuItem>

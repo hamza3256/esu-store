@@ -8,5 +8,6 @@ export async function middleware(req: NextRequest) {
   if (user && ["/sign-in", "/sign-up"].includes(nextUrl.pathname)) {
     return NextResponse.redirect(`${process.env.NEXT_PUBLIC_SERVER_URL}/`);
   }
+  
   return NextResponse.next();
 }
