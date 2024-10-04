@@ -56,13 +56,13 @@ export default function ProductListing({
     );
   }, [product?.images]);
 
-  // Enable swiping only if there are multiple images
-  const swipeHandlers = useSwipeable({
-    onSwipedLeft: handleNextImage,
-    onSwipedRight: handlePrevImage,
-    trackMouse: true,
-    disabled: product?.images?.length <= 1, // Disable swipe if only one image
-  });
+  const swipeHandlers = product?.images && product?.images.length > 1
+  ? useSwipeable({
+      onSwipedLeft: handleNextImage,
+      onSwipedRight: handlePrevImage,
+      trackMouse: true, 
+    })
+  : {};
 
   const productUrl = `/product/${product?.id}`;
 
