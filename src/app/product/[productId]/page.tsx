@@ -56,9 +56,18 @@ const Page = ({ params }: PageProps) => {
     ({ value }) => value === product.category
   )?.label;
 
-  const validUrls: string[] = product.images
-    ?.map(({ image }) => (typeof image === "string" ? image : image?.url))
-    .filter(Boolean) as string[];
+  const validUrls: { type: 'image' | 'video'; url: string }[] = product.images
+    ?.map(({ image }) => {
+      if (typeof image === "string") {
+        return { type: 'image', url: image };
+      } else if (image?.url && image?.resourceType === "video") {
+        return { type: 'video', url: image.url };
+      } else if (image?.url) {
+        return { type: 'image', url: image.url };
+      }
+      return null;
+    })
+    .filter(Boolean) as { type: 'image' | 'video'; url: string }[];
 
   const cartItemCount = getItemCount(product.id);
 
@@ -175,7 +184,8 @@ const Page = ({ params }: PageProps) => {
             {/* Product images */}
             <div className="mt-8 lg:col-start-2 lg:row-span-2 lg:mt-0 lg:self-center">
               <div className="aspect-square rounded-lg overflow-hidden shadow-md">
-                <ImageSlider urls={validUrls} productId={productId} />
+                {/* ImageSlider component should handle both images and videos */}
+                <ImageSlider items={validUrls} productId={productId} />
               </div>
             </div>
 
@@ -277,7 +287,6 @@ const Page = ({ params }: PageProps) => {
           <Tabs defaultValue="description" className="w-full">
             <TabsList className="w-full justify-start">
               <TabsTrigger value="description">Description</TabsTrigger>
-              {/* <TabsTrigger value="specifications">Specifications</TabsTrigger> */}
               <TabsTrigger value="reviews">Reviews</TabsTrigger>
             </TabsList>
             <TabsContent value="description" className="mt-4">
@@ -285,15 +294,6 @@ const Page = ({ params }: PageProps) => {
                 {product.description}
               </p>
             </TabsContent>
-            {/* <TabsContent value="specifications" className="mt-4">
-              <ul className="list-disc pl-4 sm:pl-5 text-gray-600 text-sm sm:text-base">
-                <li>High-quality materials</li>
-                <li>Adjustable height and tilt</li>
-                <li>Breathable mesh back</li>
-                <li>Padded armrests</li>
-                <li>360-degree swivel</li>
-              </ul>
-            </TabsContent> */}
             <TabsContent value="reviews" className="mt-4">
               <p className="text-gray-600 text-sm sm:text-base">
                 No reviews.
