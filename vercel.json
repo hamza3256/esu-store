@@ -1,0 +1,15 @@
+{
+    "build": {
+      "env": {
+        "PAYLOAD_SECRET": "@payload-secret",
+        "MONGO_URL": "@mongo-url"
+      }
+    },
+    "rewrites": [
+      {
+        "source": "/cms/(.*)",
+        "destination": "/api/payload"
+      }
+    ]
+  }
+  
