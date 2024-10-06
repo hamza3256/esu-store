@@ -13,11 +13,13 @@ export function VideoBackground() {
   })
   const videoRef = useRef<HTMLVideoElement>(null)
 
-  // Video URLs for different formats
+  // Desktop and mobile video URLs for different formats
   const desktopHlsUrl = `https://res.cloudinary.com/dn20h4mis/video/upload/sp_auto/v1728219664/desktop-optimised.m3u8`
   const mobileHlsUrl = `https://res.cloudinary.com/dn20h4mis/video/upload/sp_auto/v1728219497/mobile-optimised.m3u8`
-  const mp4Url = `https://res.cloudinary.com/dn20h4mis/video/upload/q_auto,f_auto/v1728219664/desktop-optimised.mp4`
-  const webmUrl = `https://res.cloudinary.com/dn20h4mis/video/upload/q_auto,f_auto/v1728219664/desktop-optimised.webm`
+  const desktopMp4Url = `https://res.cloudinary.com/dn20h4mis/video/upload/q_auto,f_auto/v1728219664/desktop-optimised.mp4`
+  const mobileMp4Url = `https://res.cloudinary.com/dn20h4mis/video/upload/q_auto,f_auto/v1728219497/mobile-optimised.mp4`
+  const desktopWebmUrl = `https://res.cloudinary.com/dn20h4mis/video/upload/q_auto,f_auto/v1728219664/desktop-optimised.webm`
+  const mobileWebmUrl = `https://res.cloudinary.com/dn20h4mis/video/upload/q_auto,f_auto/v1728219497/mobile-optimised.webm`
 
   useEffect(() => {
     const videoElement = videoRef.current
@@ -25,6 +27,8 @@ export function VideoBackground() {
 
     const isMobile = window.innerWidth < 768
     const hlsUrl = isMobile ? mobileHlsUrl : desktopHlsUrl
+    const mp4Url = isMobile ? mobileMp4Url : desktopMp4Url
+    const webmUrl = isMobile ? mobileWebmUrl : desktopWebmUrl
 
     // HLS support check
     if (videoElement.canPlayType('application/vnd.apple.mpegurl')) {
@@ -44,7 +48,7 @@ export function VideoBackground() {
       videoElement.src = videoElement.canPlayType('video/webm') ? webmUrl : mp4Url
       videoElement.play().catch(() => setVideoError(true))
     }
-  }, [inView, desktopHlsUrl, mobileHlsUrl, mp4Url, webmUrl])
+  }, [inView, desktopHlsUrl, mobileHlsUrl, desktopMp4Url, mobileMp4Url, desktopWebmUrl, mobileWebmUrl])
 
   return (
     <div ref={inViewRef} className="relative w-full h-full bg-black">
