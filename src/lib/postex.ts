@@ -1,5 +1,3 @@
-import useSWR from 'swr';
-
 export const createPostexOrder = async (orderData: any) => {
     try {
       const response = await fetch("https://api.postex.pk/services/integration/api/order/v3/create-order", {
@@ -26,35 +24,37 @@ export const createPostexOrder = async (orderData: any) => {
   };
   
 
-  export const fetchOperationalCities = async () => {
-    try {
-      const response = await fetch("/api/postex/cities");
-      if (!response.ok) {
-        throw new Error(`Failed to fetch operational cities: ${response.statusText}`);
-      }
-      const data = await response.json(); 
-      return data;
-    } catch (error) {
-      console.error("Error fetching operational cities:", error);
-      return [];
-    }
-  };
+  // export const fetchOperationalCities = async () => {
+  //   try {
+  //     const response = await fetch("/api/postex/cities");
+  //     if (!response.ok) {
+  //       throw new Error(`Failed to fetch operational cities: ${response.statusText}`);
+  //     }
+  //     const data = await response.json(); 
+  //     return data;
+  //   } catch (error) {
+  //     console.error("Error fetching operational cities:", error);
+  //     return [];
+  //   }
+  // };
 
+ // src/lib/getOperationalCities.ts (Server-side fetching function)
 
-const fetcher = (url: string) => fetch(url).then(res => res.json());
-
-export const useOperationalCities = () => {
-  const { data, error } = useSWR('/api/postex/cities', fetcher, {
-    revalidateOnFocus: false,
-    dedupingInterval: 86400 * 1000, // Revalidate only once a day (24 hours)
+const fetchOperationalCities = async () => {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/postex/cities`, {
+    next: { revalidate: 86400 }, // Cache for 24 hours
   });
 
-  return {
-    cities:  data?.dist.map((city: any) => ({
-        label: city.operationalCityName,
-        value: city.operationalCityName,
-      })) ?? [],
-    isLoading: !error && !data,
-    isError: error,
-  };
+  if (!res.ok) {
+    throw new Error('Failed to fetch operational cities');
+  }
+
+  const data = await res.json();
+  return data?.dist.map((city: any) => ({
+    label: city.operationalCityName,
+    value: city.operationalCityName,
+  })) ?? [];
 };
+
+// Export this function without `cache()`
+export const getOperationalCities = fetchOperationalCities;
