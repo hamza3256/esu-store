@@ -120,8 +120,6 @@ export default function ProductListing({
   const isVideo =
     typeof currentImage !== "string" && currentImage?.resourceType === "video";
 
-    console.log(videoUrl)
-
   // Return placeholder if no product is available
   if (!product) {
     return <ProductPlaceholder />;

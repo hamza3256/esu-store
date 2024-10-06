@@ -45,16 +45,34 @@ const start = async () => {
     },
   });
 
+  // Define the /api/postex/cities route globally here
+  app.get("/api/postex/cities", async (req, res) => {
+    try {
+      const response = await fetch(`https://api.postex.pk/services/integration/api/order/v2/get-operational-city?operationCityType=Delivery`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "token": process.env.NEXT_PUBLIC_POSTEX_API_TOKEN!, // Ensure the token is correct
+        },
+      });
+  
+      if (!response.ok) {
+        return res.status(response.status).json({ error: `Failed to fetch operational cities: ${response.statusText}` });
+      }
+  
+      const data = await response.json();
+      return res.status(200).json(data); // Send the list of cities
+    } catch (error) {
+      console.error("Error fetching PostEx cities:", error);
+      return res.status(500).json({ error: "Failed to fetch operational cities." });
+    }
+  });
+
   const cartRouter = express.Router();
 
   cartRouter.use(payload.authenticate);
   cartRouter.get("/", (req, res) => {
-    // const request = req as PayloadRequest;
-
-    // if (!request.user) return res.redirect("/sign-in?origin=cart");
-
     const parsedUrl = parse(req.url, true);
-
     return nextApp.render(req, res, "/cart", parsedUrl.query);
   });
 

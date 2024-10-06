@@ -6,10 +6,18 @@ export type Order = {
     id: string;
     orderNumber: string;
     email: string;
+    name: string;
     createdAt: string;
     updatedAt: string;
     status?: ('pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled') | null;
     _isPaid: boolean;
+    _isPostexOrderCreated: boolean;
+    trackingInfo?: {
+      trackingNumber?: string | null;
+      orderStatus?: string | null;
+      orderDate?: string | null;
+    };
+    _emailSent: boolean;
     total: number;
     user: string | User;
     productItems: {
@@ -21,10 +29,11 @@ export type Order = {
       line1: string;
       line2?: string;
       city: string;
-      state: string;
-      postalCode: string;
+      state?: string;
+      postalCode?: string;
       country: string;
     };
+    phone: string;
   };
 
   export interface ProductType {

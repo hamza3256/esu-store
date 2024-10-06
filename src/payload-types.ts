@@ -139,8 +139,16 @@ export interface Media {
 export interface Order {
   id: string;
   _isPaid: boolean;
+  _isPostexOrderCreated: boolean;
+  trackingInfo?: {
+    trackingNumber?: string | null;
+    orderStatus?: string | null;
+    orderDate?: string | null;
+  };
   user?: (string | null) | User;
+  name: string;
   email: string;
+  phone: string;
   productItems: {
     product: string | Product;
     quantity: number;
@@ -150,8 +158,8 @@ export interface Order {
     line1: string;
     line2?: string | null;
     city: string;
-    state: string;
-    postalCode: string;
+    state?: string | null;
+    postalCode?: string | null;
     country: string;
   };
   status?: ('pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled') | null;

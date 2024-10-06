@@ -23,11 +23,10 @@ const CartItem = ({ product, quantity }: { product: Product; quantity: number })
   // Use discounted price if available, otherwise use the original price
   const price = product.discountedPrice ?? product.price;
 
-  // Find the first image from the product.images that is actually an image (filter out videos)
-  const image = product.images.find(({ image }) => {
-    return typeof image === "object" && image.mimeType?.startsWith("image/");
-  })?.image as Media;
-
+  
+  const firstImage = product.images?.find((img) => typeof img.image === "object" && img.image?.url)?.image || null;
+  const imageUrl = (firstImage as Media).url
+  
   const label = PRODUCT_CATEGORIES.find(({ value }) => value === product.category)?.label;
 
   return (
@@ -36,17 +35,13 @@ const CartItem = ({ product, quantity }: { product: Product; quantity: number })
         <div className="flex items-center space-x-4">
           <div className="relative aspect-square h-16 w-16 min-w-fit overflow-hidden rounded">
             {/* Display the image only if it's valid, otherwise show the fallback */}
-            {image && image.url ? (
+            {imageUrl && (
               <Image
-                src={image.url as string}
+                src={imageUrl}
                 alt={`${product.name} image`}
                 fill
                 className="absolute object-cover"
               />
-            ) : (
-              <div className="flex h-full items-center justify-center bg-secondary">
-                <ImageIcon aria-hidden="true" />
-              </div>
             )}
           </div>
           <div className="flex flex-col self-start">

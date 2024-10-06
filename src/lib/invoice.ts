@@ -2,13 +2,14 @@ import { PDFDocument, rgb, StandardFonts, PDFFont, PDFPage } from "pdf-lib";
 import { getPayloadClient } from "@/get-payload";
 import { Order } from "@/lib/types";
 import { User } from "@/payload-types";
+import { FREE_SHIPPING_THRESHOLD } from "./config";
 
 interface ShippingAddressType {
   line1: string;
   line2?: string | null;
   city: string;
-  state: string;
-  postalCode: string;
+  state?: string | null; // Made optional
+  postalCode?: string | null; // Made optional
   country: string;
 }
 
@@ -17,7 +18,7 @@ interface ProductItem {
   product: {
     name: string;
     price: number;
-    discountedPrice?: number
+    discountedPrice?: number;
   };
 }
 
@@ -44,7 +45,10 @@ const drawLine = (
 ) => {
   page.drawLine({
     start: { x: startX, y: startY },
-    end: { x: endX, y: endY },
+    end: {
+      x: endX,
+      y: endY
+    },
     thickness,
     color: rgb(...color),
   });
@@ -118,8 +122,7 @@ export const generateInvoice = async (orderId: string, logoUrl?: string): Promis
 
   // Customer Info
   const shippingAddress = order.shippingAddress as ShippingAddressType;
-  const orderUser = order.user as User
-  const userDetail = orderUser.name ? orderUser.name : order.email;
+  const userDetail = order.name ? order.name : order.email;
   let line2 = 0;
   drawText(page, "Bill To:", 50, height - 250, helveticaBold, 12, primaryColor);
   drawText(page, userDetail, 50, height - 270, helvetica, 10, secondaryColor);
@@ -128,7 +131,10 @@ export const generateInvoice = async (orderId: string, logoUrl?: string): Promis
     line2 = 15;
     drawText(page, shippingAddress.line2, 50, height - 300 - line2, helvetica, 10, secondaryColor);
   }
-  drawText(page, `${shippingAddress.city}, ${shippingAddress.state} ${shippingAddress.postalCode}`, 50, height - 300 - line2, helvetica, 10, secondaryColor);
+  const addressLine = `${shippingAddress.city}, ${
+    shippingAddress.state ? shippingAddress.state + " " : ""
+  }${shippingAddress.postalCode ? shippingAddress.postalCode : ""}`;
+  drawText(page, addressLine, 50, height - 300 - line2, helvetica, 10, secondaryColor);
   drawText(page, shippingAddress.country, 50, height - 315 - line2, helvetica, 10, secondaryColor);
 
   // Order Details
@@ -143,8 +149,8 @@ export const generateInvoice = async (orderId: string, logoUrl?: string): Promis
 
   // Table Headers
   const tableTop = height - 350;
-  const tableHeaders = ["Item", "SKU", "Quantity", "Unit Price", "Total"];
-  const columnWidths = [200, 100, 80, 80, 80];
+  const tableHeaders = ["Item", "SKU", "Quantity", "Unit Price (Rs)", "Total (Rs)"];
+  const columnWidths = [200, 100, 80, 100, 100];
   
   // Table background
   page.drawRectangle({
@@ -177,38 +183,35 @@ export const generateInvoice = async (orderId: string, logoUrl?: string): Promis
         color: rgb(0.95, 0.95, 0.95),
       });
     }
-    const productPrice = item.product.discountedPrice ?? item.product.price
+    const productPrice = item.product.discountedPrice ?? item.product.price;
 
     drawText(page, item.product.name, 50, yPos, helvetica, 10, secondaryColor);
     drawText(page, generateSKU(), 250, yPos, helvetica, 10, secondaryColor);
     drawText(page, item.quantity.toString(), 350, yPos, helvetica, 10, secondaryColor);
-    drawText(page, `$${productPrice.toFixed(2)}`, 430, yPos, helvetica, 10, secondaryColor);
-    drawText(page, `$${(productPrice * item.quantity).toFixed(2)}`, 510, yPos, helvetica, 10, secondaryColor);
+    drawText(page, `${productPrice.toFixed(2)}`, 430, yPos, helvetica, 10, secondaryColor);
+    drawText(page, `${(productPrice * item.quantity).toFixed(2)}`, 510, yPos, helvetica, 10, secondaryColor);
     yPos -= 20;
   });
 
   // Total
-  const subtotal = orderProductItems.reduce((acc, item) => acc + item.quantity * (item.product.discountedPrice 
-    ?? item.product.price), 0);
-  const taxRate = 0.08; // 8% tax rate
-  const tax = subtotal * taxRate;
-  const shipping = 10; // Flat rate shipping
-  const total = subtotal + tax + shipping;
+  const subtotal = orderProductItems.reduce(
+    (acc, item) => acc + item.quantity * (item.product.discountedPrice ?? item.product.price), 
+    0
+  );
+  const shipping = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : 250; // Flat rate shipping
+  const total = subtotal + shipping;
 
   yPos -= 20;
   drawLine(page, 50, yPos, width - 50, yPos, 1, secondaryColor);
   
   yPos -= 20;
   drawText(page, "Subtotal:", 400, yPos, helveticaBold, 10, primaryColor);
-  drawText(page, `$${subtotal.toFixed(2)}`, 510, yPos, helvetica, 10, secondaryColor);
+  drawText(page, `Rs ${subtotal.toFixed(2)}`, 510, yPos, helvetica, 10, secondaryColor);
 
-  yPos -= 20;
-  drawText(page, "Tax (8%):", 400, yPos, helveticaBold, 10, primaryColor);
-  drawText(page, `$${tax.toFixed(2)}`, 510, yPos, helvetica, 10, secondaryColor);
-
+  const shippingText = shipping === 0 ? "Free" : `Rs ${shipping.toFixed(2)}`;
   yPos -= 20;
   drawText(page, "Shipping:", 400, yPos, helveticaBold, 10, primaryColor);
-  drawText(page, `$${shipping.toFixed(2)}`, 510, yPos, helvetica, 10, secondaryColor);
+  drawText(page, shippingText, 510, yPos, helvetica, 10, secondaryColor);
 
   yPos -= 25;
   page.drawRectangle({
@@ -219,7 +222,7 @@ export const generateInvoice = async (orderId: string, logoUrl?: string): Promis
     color: rgb(...accentColor),
   });
   drawText(page, "Total:", 400, yPos, helveticaBold, 14, [1, 1, 1]);
-  drawText(page, `$${total.toFixed(2)}`, 510, yPos, helveticaBold, 14, [1, 1, 1]);
+  drawText(page, `Rs ${total.toFixed(2)}`, 500, yPos, helveticaBold, 1, [1, 1, 1]);
 
   // Footer
   const footerText = "Thank you for your business!";

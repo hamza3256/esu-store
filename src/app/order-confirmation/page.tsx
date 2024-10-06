@@ -10,6 +10,7 @@ import PaymentStatus from "@/components/PaymentStatus";
 import { Order } from "@/lib/types";
 import { getPayloadClient } from "@/get-payload";
 import { generateInvoice } from "@/lib/invoice";
+import { FREE_SHIPPING_THRESHOLD, SHIPPING_FEE } from "@/lib/config";
 
 interface PageProps {
   searchParams: { [key: string]: string | string[] | undefined };
@@ -42,7 +43,7 @@ const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
   const [order] = orders as Order[];
   if (!order) return notFound();
 
-  const orderUserId = typeof order.user === "string" ? order.user : (order.user as User)?.id;
+  // const orderUserId = typeof order.user === "string" ? order.user : (order.user as User)?.id;
   
   // If no logged-in user, validate the guest email
   if (!user && (!guestEmail || guestEmail !== order.email)) {
@@ -57,15 +58,15 @@ const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
     0
   );
 
-  const transactionFee = 5;
+  const total = orderTotal >= FREE_SHIPPING_THRESHOLD ? orderTotal : orderTotal + SHIPPING_FEE;
 
   // Structured Address Display
   const shippingAddress = order.shippingAddress || {
     line1: "N/A",
     line2: "",
     city: "N/A",
-    state: "N/A",
-    postalCode: "N/A",
+    state: "",
+    postalCode: "",
     country: "N/A",
   };
 
@@ -83,15 +84,19 @@ const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
   let invoiceDownloadLink: string | null = null;
   if (isPaid) {
     try {
-      // Call the generateInvoice utility function
       const pdfBytes = await generateInvoice(order.id, `${process.env.NEXT_PUBLIC_SERVER_URL}/esu-transparent.png`); // Adjust the logo path accordingly
 
-      // Convert the PDF to a base64 data URL for download
       invoiceDownloadLink = `data:application/pdf;base64,${Buffer.from(pdfBytes).toString("base64")}`;
     } catch (error) {
       console.error("Error generating invoice:", error);
     }
   }
+
+  // PostEx order tracking details
+  const postexOrderCreated = order._isPostexOrderCreated;
+  const postexTrackingNumber = order?.trackingInfo?.trackingNumber;
+  const postexOrderStatus = order?.trackingInfo?.orderStatus;
+  const postexOrderDate = order?.trackingInfo?.orderDate;
 
   return (
     <main className="relative lg:min-h-full bg-gray-50">
@@ -149,6 +154,35 @@ const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
                 <h3 className="text-lg font-medium text-gray-900">Shipping Address</h3>
                 <p className="text-sm text-gray-600">{formattedAddress}</p>
               </div>
+
+              {/* PostEx Tracking Information */}
+              {postexOrderCreated && postexTrackingNumber && (
+                <div className="mb-6">
+                  <h3 className="text-lg font-medium text-gray-900">Tracking Information</h3>
+                  <p className="text-sm text-gray-600">
+                    <span>Tracking Number: </span>
+                    <span className="font-medium">{postexTrackingNumber}</span>
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    <span>Order Status: </span>
+                    <span className="font-medium">{postexOrderStatus}</span>
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    <span>Order Date: </span>
+                    <span className="font-medium">{postexOrderDate}</span>
+                  </p>
+                  <p className="mt-2">
+                    <a
+                      href={`https://www.trackingmore.com/track/en/${postexTrackingNumber}?express=postex`}
+                      className="text-blue-600 hover:underline"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Track your order &rarr;
+                    </a>
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="mt-16 text-sm font-medium">
@@ -160,18 +194,16 @@ const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
                 {products.map(({ product, quantity }) => {
                   const label = PRODUCT_CATEGORIES.find((c) => c.value === product.category)?.label;
                   
-                  const image = product.images.find(({ image }) => {
-                    return typeof image === "object" && image.mimeType?.startsWith("image/");
-                  })?.image as Media;
+                  const firstImage = product.images?.find((img) => typeof img.image === "object" && img.image?.url)?.image || null;
+                  const imageUrl = (firstImage as Media).url
 
                   return (
                     <li key={product.id} className="flex space-x-6 py-6">
                       <div className="relative h-24 w-24">
-                        {product.images && product.images[0]?.image && typeof product.images[0].image === 'object' && 'url' in product.images[0].image
-                        && product.images[0].image.url ? (
+                        {imageUrl ? (
                           <Image
                             fill
-                            src={image!.url as string}
+                            src={imageUrl}
                             alt={`${product.name} image`}
                             className="flex-none rounded-md bg-gray-100 object-cover object-center"
                           />
@@ -213,12 +245,14 @@ const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
                   <p className="text-gray-900">{formatPrice(orderTotal)}</p>
                 </div>
                 <div className="flex justify-between">
-                  <p>Transaction Fee</p>
-                  <p className="text-gray-900">{formatPrice(transactionFee)}</p>
+                  <p>Shipping Fee</p>
+                  {total >= FREE_SHIPPING_THRESHOLD ? 
+                  (<p className="text-gray-900 text-green-600">FREE</p>) 
+                  : (<p className="text-gray-900">{formatPrice(SHIPPING_FEE)}</p>)}
                 </div>
                 <div className="flex items-center justify-between border-t border-gray-200 pt-6 text-gray-900">
                   <p className="text-base">Total</p>
-                  <p className="text-base">{formatPrice(orderTotal + transactionFee)}</p>
+                  <p className="text-base">{formatPrice(total)}</p>
                 </div>
               </div>
 

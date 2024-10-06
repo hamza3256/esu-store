@@ -32,7 +32,7 @@ const NavItems = ({
               href: `/product/${product.id}`,
               imageSrc: product.images.find(({ image } : {image: Media}) => {
                 return typeof image === "object" && image.mimeType?.startsWith("image/");
-              })?.image.sizes?.card?.url || "/fallback.jpg",
+              })?.image.sizes?.thumbnail?.url || "/fallback.jpg",
             })),
       };
     }

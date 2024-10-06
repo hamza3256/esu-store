@@ -1,9 +1,27 @@
 import { z } from "zod";
-import { privateProcedure, router } from "./trpc";
+import { privateProcedure, publicProcedure, router } from "./trpc";
 import { TRPCError } from "@trpc/server";
 import { getPayloadClient } from "../get-payload";
 import { stripe } from "../lib/stripe";
 import type Stripe from "stripe";
+import { Product, User } from "@/payload-types";
+import { Order } from "@/lib/types";
+import { createPostexOrder } from "../lib/postex";
+import { FREE_SHIPPING_THRESHOLD } from "../lib/config";
+
+interface ShippingAddressType {
+  line1: string;
+  line2?: string | null;
+  city: string;
+  state?: string | null;
+  postalCode?: string | null;
+  country: string;
+}
+
+interface ProductItemType {
+  product: Product; 
+  quantity: number; 
+}
 
 // Function to generate a simple unique order number
 const generateOrderNumber = () => {
@@ -12,6 +30,17 @@ const generateOrderNumber = () => {
   return `ESU-2410${timestamp.slice(-3)}-${randomPart}`; // Use last 6 digits of timestamp + random number
 };
 
+const isValidPhoneNumber = (phone: string): boolean => {
+  const phoneRegex = /^03\d{9}$/; // Starts with 03 and has exactly 11 digits
+  return phoneRegex.test(phone);
+};
+
+const phoneSchema = z
+  .string()
+  .regex(/^03\d{9}$/, {
+    message: "Phone number must start with '03' and be 11 digits long.",
+  });
+
 const createCustomer = async (
   email: string | null | undefined,
   shippingAddress?: {
@@ -19,7 +48,7 @@ const createCustomer = async (
     line2?: string;
     city: string;
     state?: string;
-    postalCode: string;
+    postalCode?: string;
     country: string;
     name: string;
   }
@@ -35,8 +64,8 @@ const createCustomer = async (
               line1: shippingAddress.line1,
               line2: shippingAddress.line2 || "",
               city: shippingAddress.city,
-              state: shippingAddress.state,
-              postal_code: shippingAddress.postalCode,
+              state: shippingAddress.state || "",
+              postal_code: shippingAddress.postalCode || "",
               country: shippingAddress.country,
             },
           },
@@ -63,19 +92,20 @@ export const paymentRouter = router({
           quantity: z.number(),
         })
       ),
+      phone: z.string(),
       shippingAddress: z.object({
         line1: z.string(),
         line2: z.string().optional(),
         city: z.string(),
-        state: z.string(),
-        postalCode: z.string(),
+        state: z.string().optional(),
+        postalCode: z.string().optional(),
         country: z.string(),
       }),
     })
   )
   .mutation(async ({ ctx, input }) => {
     const { user } = ctx;
-    const { productItems, shippingAddress } = input;
+    const { productItems, shippingAddress, phone } = input;
 
     if (!user || !user.id) {
       throw new TRPCError({
@@ -138,12 +168,15 @@ export const paymentRouter = router({
       collection: "orders",
       data: {
         _isPaid: false,
+        _isPostexOrderCreated: false,
         productItems: productItems.map((item) => ({
           product: item.productId,
           quantity: item.quantity,
         })),
+        name: user.name ?? user.email,
         email: user.email,
         user: user.id,
+        phone: phone,
         shippingAddress,
         orderNumber,
         total,
@@ -205,18 +238,19 @@ export const paymentRouter = router({
             line1: shippingAddress.line1,
             line2: shippingAddress.line2 || '',  // Optional field
             city: shippingAddress.city,
-            state: shippingAddress.state,
-            postal_code: shippingAddress.postalCode,
+            state: shippingAddress.state || '',
+            postal_code: shippingAddress.postalCode || '',
             country: shippingAddress.country,
           },
+          phone: phone
         },
       });
     }
 
-
-    // Step 2: Create Stripe session
     let stripeSession;
     try {
+      const isFreeShipping = total >= FREE_SHIPPING_THRESHOLD;
+
       stripeSession = await stripe.checkout.sessions.create({
         customer: customerId,
         success_url: `${process.env.NEXT_PUBLIC_SERVER_URL}/order-confirmation?orderId=${order.id}`,
@@ -228,38 +262,59 @@ export const paymentRouter = router({
           orderId: order.id,
           orderNumber,
           email: user.email,
+          phone: phone,
         },
         line_items,
-        // This will collect the shipping address from the user during checkout
         shipping_address_collection: {
-          // allowed_countries: ['US', 'CA','PK', 'GB'], 
-          allowed_countries: ['PK'],
-
+          allowed_countries: ['PK'], // Only Pakistan in this case
         },
-        // If you want to define specific shipping options (such as free shipping or flat rate), you can do so here:
-        shipping_options: [
-          {
-            shipping_rate_data: {
-              type: 'fixed_amount',
-              fixed_amount: {
-                amount: 500, 
-                currency: 'pkr',
-              },
-              display_name: 'Standard Shipping',
-              // Optionally, specify delivery estimate information
-              delivery_estimate: {
-                minimum: {
-                  unit: 'business_day',
-                  value: 5,
+        shipping_options: isFreeShipping
+          ? [
+              // Free shipping option
+              {
+                shipping_rate_data: {
+                  type: "fixed_amount",
+                  fixed_amount: {
+                    amount: 0, // Free shipping
+                    currency: "pkr",
+                  },
+                  display_name: "Free Shipping",
+                  delivery_estimate: {
+                    minimum: {
+                      unit: "business_day",
+                      value: 5,
+                    },
+                    maximum: {
+                      unit: "business_day",
+                      value: 7,
+                    },
+                  },
                 },
-                maximum: {
-                  unit: 'business_day',
-                  value: 7,
+              },
+            ]
+          : [
+              // Standard shipping option with a cost of 250 PKR
+              {
+                shipping_rate_data: {
+                  type: "fixed_amount",
+                  fixed_amount: {
+                    amount: 250 * 100, // 250 PKR in cents
+                    currency: "pkr",
+                  },
+                  display_name: "Standard Shipping",
+                  delivery_estimate: {
+                    minimum: {
+                      unit: "business_day",
+                      value: 5,
+                    },
+                    maximum: {
+                      unit: "business_day",
+                      value: 7,
+                    },
+                  },
                 },
               },
-            },
-          },
-        ],
+            ],
       });
        
     } catch (error) {
@@ -318,8 +373,7 @@ export const paymentRouter = router({
     return { url: stripeSession.url };
   }),
 
-
-  pollOrderStatus: privateProcedure
+  pollOrderStatus: publicProcedure
     .input(z.object({ orderId: z.string() }))
     .query(async ({ input }) => {
       const { orderId } = input;
@@ -336,15 +390,60 @@ export const paymentRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "Order not found" });
       }
 
-      const [order] = orders;
+      const [order] = orders as Order[];
+      
+      // If the order is paid, create the order in Postex
+      if (order._isPaid) {
+        if (!order._isPostexOrderCreated) {
+          try {
+            const orderShippingAddress = order.shippingAddress as ShippingAddressType
+            const deliveryAddress = orderShippingAddress.line1.concat(
+              orderShippingAddress.line2 ? ", ".concat(orderShippingAddress.line2) : ""
+            )
+            const itemTotal = order.productItems.reduce((count, item) => count + item.quantity, 0);
+            
+            const orderDetail = order.productItems
+              .map(item => `${item.quantity}x ${item.product.name} (${item.product.category})`)
+              .join(', ');
+            
+            console.log("using payment router")
+            const customerName = order.name ?? order.email
+            
+            const postexOrderData = {
+              cityName: orderShippingAddress.city,
+              customerName: customerName,
+              customerPhone: order.phone,
+              deliveryAddress,
+              invoiceDivison: 0,
+              invoicePayment: order.total.toString(),
+              items: itemTotal,
+              orderDetail,
+              orderRefNumber: order.orderNumber,
+              orderType: "Normal",
+              pickupAddressCode: "001",
+            };
 
-      await payload.update({
-        collection: "orders",
-        id: orderId,
-        data: {
-          status: "processing"
-        },
-      });
+            const postexResponse = await createPostexOrder(postexOrderData);
+            console.log("Postex order created:", postexResponse);
+          } catch (error) {
+            console.error("Error while creating order in Postex:", error);
+            throw new TRPCError({
+              code: "INTERNAL_SERVER_ERROR",
+              message: "Failed to create order in Postex.",
+            });
+          }
+        }
+        
+
+        // Update the order status to processing
+        await payload.update({
+          collection: "orders",
+          id: orderId,
+          data: {
+            status: "processing",
+          },
+        });
+      }
 
       return { isPaid: order._isPaid };
     }),

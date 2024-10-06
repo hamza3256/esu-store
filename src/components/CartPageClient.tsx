@@ -13,6 +13,10 @@ import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import ShippingAddressForm from "@/components/ShippingAddressForm";
 import { Media, User } from "@/payload-types";
+import { SHIPPING_FEE, FREE_SHIPPING_THRESHOLD } from "@/lib/config"; // Import the shipping config
+import { toast } from "./ui/use-toast";
+import { Toast } from "./ui/toast";
+import { fetchOperationalCities, useOperationalCities } from "@/lib/postex";
 
 interface CartPageProps {
   user: User | null; // User is passed from server-side as a prop
@@ -31,7 +35,25 @@ const CartPageClient = ({ user }: CartPageProps) => {
     postalCode: "",
     country: "",
   });
+  const [guestName, setGuestName] = useState<string>(""); // New state for guest user name
   const [guestEmail, setGuestEmail] = useState<string>("");
+  const [phone, setPhone] = useState<string>("");
+  const { cities, isLoading } = useOperationalCities();
+
+  // useEffect(() => {
+  //   const loadCities = async () => {
+  //     setLoading(true);
+  //     const fetchedCities = await fetchOperationalCities();
+  //     setCities(
+  //       fetchedCities.dist.map((city: any) => ({
+  //         label: city.operationalCityName,
+  //         value: city.operationalCityName,
+  //       }))
+  //     );
+  //     setLoading(false);
+  //   };
+  //   loadCities();
+  // }, []);
 
   const productItems = items.map(({ product, quantity }) => ({
     productId: product.id,
@@ -52,15 +74,39 @@ const CartPageClient = ({ user }: CartPageProps) => {
     }));
   };
 
+  type HandleCityChange = (selectedOption: { label: string; value: string } | null) => void;
+
+  const handleCityChange: HandleCityChange = (selectedOption) => {
+    if (selectedOption) {
+      setShippingAddress((prevState) => ({
+        ...prevState,
+        city: selectedOption.value, // Set the city from the selected value
+      }));
+    }
+  };
+
+  const handleGuestNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setGuestName(e.target.value);
+  };
+
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setGuestEmail(e.target.value);
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPhone(e.target.value);
+  };
+
+  const validatePhoneNumber = (phone: string): boolean => {
+    const phoneRegex = /^03\d{9}$/; // Regex for validating Pakistan phone numbers (03XXXXXXXXX)
+    return phoneRegex.test(phone);
   };
 
   // TRPC mutation for logged-in user
   const { mutate: createCheckoutSession, isLoading: isCheckoutLoading } = trpc.payment.createSession.useMutation({
     onSuccess: ({ url }) => {
       if (url) {
-        clearCart()
+        clearCart();
         router.push(url);
       }
     },
@@ -73,31 +119,39 @@ const CartPageClient = ({ user }: CartPageProps) => {
   const { mutate: createPublicSession, isLoading: isGuestCheckoutLoading } = trpc.order.createPublicSession.useMutation({
     onSuccess: ({ url }) => {
       if (url) {
-        clearCart()
+        clearCart();
         router.push(url);
-      } 
+      }
     },
-      onError: (error) => {
+    onError: (error) => {
       console.error("Error creating guest checkout session:", error);
     },
   });
 
   const handleCheckout = () => {
-    if (!shippingAddress.line1 || !shippingAddress.city || !shippingAddress.state || !shippingAddress.postalCode || !shippingAddress.country) {
+    if (!shippingAddress.line1 || !shippingAddress.city || !shippingAddress.country) {
       alert("Please fill out all required fields.");
+      return;
+    }
+
+    if (!validatePhoneNumber(phone)) {
+      toast({
+        title: "Invalid number",
+        description: "Please enter a valid phone number (e.g., 03XXXXXXXXX).",
+        className: "animate-toast-slide-in",
+      });
       return;
     }
 
     // Ensure user is available before creating a session
     if (isGuest) {
-      if (!guestEmail) {
-        alert("Please provide a valid email address.");
+      if (!guestEmail || !guestName) {
+        alert("Please provide a valid email address and name.");
         return;
       }
-      createPublicSession({ productItems, shippingAddress, email: guestEmail });
+      createPublicSession({ productItems, shippingAddress, email: guestEmail, name: guestName, phone });
     } else if (user?.id) {
-      // Proceed with checkout for logged-in users only if `user.id` is available
-      createCheckoutSession({ productItems, shippingAddress });
+      createCheckoutSession({ productItems, shippingAddress, phone });
     } else {
       console.error("User not found. Cannot proceed with checkout.");
       alert("User not found. Please log in and try again.");
@@ -113,11 +167,13 @@ const CartPageClient = ({ user }: CartPageProps) => {
     router.push(`/sign-in?origin=cart`);
   };
 
-  const fee = 5;
-
   const isFormComplete = () => {
-    const requiredFields = ["line1", "city", "state", "postalCode", "country"];
-    return requiredFields.every((field) => !!shippingAddress[field as keyof typeof shippingAddress]) && (!isGuest || !!guestEmail);
+    const requiredFields = ["line1", "city", "country"];
+    return (
+      requiredFields.every((field) => !!shippingAddress[field as keyof typeof shippingAddress]) &&
+      (!isGuest || (!!guestEmail && !!guestName)) &&
+      !!phone
+    );
   };
 
   // Updated cartTotal function to use discounted prices
@@ -127,6 +183,11 @@ const CartPageClient = ({ user }: CartPageProps) => {
       return total + price * quantity;
     }, 0);
   };
+
+  const orderTotal = calculateCartTotal();
+
+  // Determine shipping fee based on cart total
+  const shippingFee = orderTotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE;
 
   return (
     <div className="bg-white">
@@ -245,74 +306,141 @@ const CartPageClient = ({ user }: CartPageProps) => {
           {/* Shipping Form */}
           <section className="mt-16 rounded-lg bg-gray-50 px-4 py-6 sm:p-6 lg:col-span-5 lg:mt-0 lg:p-8">
             <div className="mt-6 space-y-4">
+            <div className="mt-6 space-y-4">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-gray-600">Subtotal</p>
                 <p className="text-sm font-medium text-gray-900">
                   {isMounted ? formatPrice(calculateCartTotal()) : <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
                 </p>
               </div>
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-600">Shipping</p>
+                <p className={cn((calculateCartTotal() >= FREE_SHIPPING_THRESHOLD) ? "text-green-600": "text-gray-900", "text-sm font-medium")}>
+                  {isMounted ? (calculateCartTotal() >= FREE_SHIPPING_THRESHOLD ? "FREE" : formatPrice(SHIPPING_FEE)) : <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                </p>
+              </div>
 
               <div className="flex items-center justify-between border-t border-gray-200 pt-4 py-6">
                 <div className="text-base font-medium text-gray-900">Order Total</div>
                 <div className="text-base font-medium text-gray-900">
-                  {isMounted ? formatPrice(calculateCartTotal() + fee) : <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                  {isMounted ? formatPrice(calculateCartTotal() + shippingFee) : <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
                 </div>
               </div>
             </div>
-            {!userTypeSelected ? (
-              <div className="flex flex-col items-center px-4 border-t py-6">
-                <h1 className="text-2xl font-bold mb-6 text-gray-900">How do you want to checkout?</h1>
-                <div className="flex space-x-4">
-                  <Button onClick={handleContinueAsGuest} className="px-6 py-4 text-lg font-medium">
-                    Continue as Guest
-                  </Button>
-                  <Button onClick={handleLogin} variant="outline" className="px-6 py-4 text-lg font-medium">
-                    Sign In
-                  </Button>
+              {!userTypeSelected ? (
+                <div className="flex flex-col items-center px-4 border-t py-6">
+                  <h1 className="text-2xl font-bold mb-6 text-gray-900">How do you want to checkout?</h1>
+                  <div className="flex space-x-4">
+                    <Button onClick={handleContinueAsGuest} className="px-6 py-4 text-lg font-medium">
+                      Continue as Guest
+                    </Button>
+                    <Button onClick={handleLogin} variant="outline" className="px-6 py-4 text-lg font-medium">
+                      Sign In
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <>
-                {isGuest && (
-                  <div className="mb-6 border-t py-6">
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                      Email
+              ) : (
+                <>
+                  <h2 className="text-lg font-medium text-gray-900 py-6">Shipping Details</h2>
+
+                  {isGuest ? (
+                    <>
+                      <div className="mb-6">
+                        <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                          Name
+                        </label>
+                        <div className="mt-1">
+                          <Input
+                            id="name"
+                            name="name"
+                            placeholder="Your Name"
+                            value={guestName}
+                            onChange={handleGuestNameChange}
+                            required
+                            className="block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                          />
+                        </div>
+                      </div>
+                      <div className="mb-6">
+                        <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                          Email
+                        </label>
+                        <div className="mt-1">
+                          <Input
+                            id="email"
+                            name="email"
+                            placeholder="you@example.com"
+                            value={guestEmail}
+                            onChange={handleEmailChange}
+                            required
+                            className="block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                          />
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="mb-6">
+                      <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                        Name
+                      </label>
+                      <div className="mt-1">
+                        <Input
+                          id="name"
+                          name="name"
+                          value={user?.name || ""}
+                          readOnly
+                          className="block w-full p-3 border border-gray-300 rounded-md shadow-sm bg-gray-100 cursor-not-allowed"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="mb-6">
+                    <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+                      Phone Number
                     </label>
                     <div className="mt-1">
                       <Input
-                        id="email"
-                        name="email"
-                        placeholder="you@example.com"
-                        value={guestEmail}
-                        onChange={handleEmailChange}
-                        required={isGuest}
+                        id="phone"
+                        name="phone"
+                        placeholder="03XXXXXXXXX"
+                        value={phone}
+                        onChange={handlePhoneChange}
+                        required
                         className="block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
                       />
                     </div>
                   </div>
-                )}
-                <ShippingAddressForm shippingAddress={shippingAddress} handleInputChange={handleInputChange} />
 
-                <div className="mt-6">
-                  <Button
-                    disabled={
-                      items.length === 0 ||
-                      isCheckoutLoading ||
-                      isGuestCheckoutLoading ||
-                      items.some((i) => i.product.inventory === 0 || !isFormComplete())
-                    }
-                    onClick={handleCheckout}
-                    className="w-full"
-                    size="lg"
-                  >
-                    {isCheckoutLoading || isGuestCheckoutLoading ? (
-                      <Loader2 className="w-4 h-4 animate-spin text-muted-foreground mr-1.5" />
-                    ) : null}
-                    Checkout
-                  </Button>
-                </div>
-              </>
-            )}
+                  <ShippingAddressForm
+                    shippingAddress={shippingAddress}
+                    handleInputChange={handleInputChange}
+                    handleCityChange={handleCityChange}
+                    cities={cities}
+                    loading={isLoading}
+                  />
+
+                  <div className="mt-6">
+                    <Button
+                      disabled={
+                        items.length === 0 ||
+                        isCheckoutLoading ||
+                        isGuestCheckoutLoading ||
+                        items.some((i) => i.product.inventory === 0 || !isFormComplete())
+                      }
+                      onClick={handleCheckout}
+                      className="w-full"
+                      size="lg"
+                    >
+                      {isCheckoutLoading || isGuestCheckoutLoading ? (
+                        <Loader2 className="w-4 h-4 animate-spin text-muted-foreground mr-1.5" />
+                      ) : null}
+                      Checkout
+                    </Button>
+                  </div>
+                </>
+              )}
+            </div>
           </section>
         </div>
       </div>

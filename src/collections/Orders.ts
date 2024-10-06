@@ -36,6 +36,34 @@ export const Orders: CollectionConfig = {
       required: true,
     },
     {
+      name: "_isPostexOrderCreated",
+      type: "checkbox",
+      access: {
+        read: ({ req }) => req.user.role === "admin",
+        create: () => false,
+        update: () => false,
+      },
+      admin: {
+        hidden: true,
+      },
+      required: true,
+    },
+    {
+      name: "trackingInfo", // Add tracking information for PostEx
+      type: "group",
+      fields: [
+        { name: "trackingNumber", type: "text" },
+        { name: "orderStatus", type: "text" },
+        { name: "orderDate", type: "text" },
+      ],
+      admin: {
+        hidden: true, // Hidden from UI by default
+      },
+      access: {
+        read: ({ req }) => req.user.role === "admin",
+      },
+    },
+    {
       name: "user",
       type: "relationship",
       admin: {
@@ -45,8 +73,18 @@ export const Orders: CollectionConfig = {
       required: false,
     },
     {
+      name: "name",
+      type: "text",
+      required: true,
+    },
+    {
       name: "email", // Collect email for anonymous orders
       type: "email",
+      required: true,
+    },
+    {
+      name: "phone", // Add phone field for customer phone number
+      type: "text",
       required: true,
     },
     {
@@ -75,8 +113,8 @@ export const Orders: CollectionConfig = {
         { name: "line1", type: "text", required: true },
         { name: "line2", type: "text" },
         { name: "city", type: "text", required: true },
-        { name: "state", type: "text", required: true },
-        { name: "postalCode", type: "text", required: true },
+        { name: "state", type: "text",},
+        { name: "postalCode", type: "text" },
         { name: "country", type: "text", required: true },
       ],
     },

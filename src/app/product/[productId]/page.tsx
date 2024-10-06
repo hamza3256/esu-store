@@ -22,7 +22,8 @@ import {
   TooltipProvider,
 } from "@/components/ui/tooltip";
 import { useCart } from "@/hooks/use-cart";
-import { Product } from "@/payload-types";
+import { Media, Product } from "@/payload-types";
+import { useMediaQuery } from "@/hooks/use-media-query";
 
 interface PageProps {
   params: {
@@ -57,17 +58,18 @@ const Page = ({ params }: PageProps) => {
   )?.label;
 
   const validUrls: { type: 'image' | 'video'; url: string }[] = product.images
-    ?.map(({ image }) => {
-      if (typeof image === "string") {
-        return { type: 'image', url: image };
-      } else if (image?.url && image?.resourceType === "video") {
-        return { type: 'video', url: image.url };
-      } else if (image?.url) {
-        return { type: 'image', url: image.url };
+  ?.map(({ image }) => {
+    if (typeof image === "object" && image?.url) {
+      if (image.resourceType === "video") {
+        return { type: 'video', url: image.sizes.video.url };
+      } else {
+        return { type: 'image', url: image.sizes.card.url };
       }
-      return null;
-    })
-    .filter(Boolean) as { type: 'image' | 'video'; url: string }[];
+    }
+    return null;
+  })
+  .filter(Boolean) as { type: 'image' | 'video'; url: string }[];
+
 
   const cartItemCount = getItemCount(product.id);
 
@@ -88,6 +90,8 @@ const Page = ({ params }: PageProps) => {
       toast.error(`Cannot add more than ${product.inventory} items`);
     }
   };
+
+  console.log(validUrls)
 
   return (
     <TooltipProvider>

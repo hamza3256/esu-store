@@ -8,11 +8,11 @@ import Image from "next/image";
 import { Media } from "@/payload-types";
 
 const searchSuggestions = [
-  "Search for... Shirts",
-  "Search for... Dresses",
+  "Search for... Earrings",
+  "Search for... Rings",
   "Search for... Jeans",
   "Search for... Necklaces",
-  "Search for... Earrings",
+  "Search for... Pendants",
   "Search for... Watches",
   "Search for... Sneakers",
   "Search for... Bags",
@@ -122,7 +122,7 @@ export default function SearchBar({
           category: item.category || "Uncategorized", // Adjust as necessary
           imageUrl: item.images.find(({ image } : {image: Media}) => {
             return typeof image === "object" && image.mimeType?.startsWith("image/");
-          })?.image || item.image?.url || "", // Fallback to a generic image URL if none exist
+          })?.image.sizes?.thumbnail?.url || item.image?.url || "", // Fallback to a generic image URL if none exist
         }));
 
         setSearchResults(mappedResults);
@@ -272,6 +272,8 @@ export default function SearchBar({
                     <Image
                       src={result.imageUrl}
                       alt={result.name}
+                      height={40}
+                      width={40}
                       className="w-12 h-12 object-cover rounded-md mr-4"
                     />
                     <div>
