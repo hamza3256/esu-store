@@ -43,10 +43,10 @@ function HeroSection() {
         <MaxWidthWrapper>
           <div className="py-16 mx-auto flex flex-col items-center max-w-3xl">
             <h1 id="hero-heading" className="text-4xl font-extrabold tracking-tight sm:text-6xl text-white">
-              Luxury <em className="text-diamond-600 font-serif not-italic">Jewellery</em> for Every Occasion
+              Luxury <em className="text-gold-600 font-serif not-italic">Jewellery</em> for Every Occasion
             </h1>
             <p className="mt-4 text-lg max-w-prose text-gray-200">
-              Welcome to <span className="font-bold">esü</span>. Discover timeless pieces, handcrafted with care, delivered to your doorstep across Pakistan.
+              Welcome to <span className="font-bold font-outfit">esü</span>. Discover timeless pieces, handcrafted with care, delivered to your doorstep across Pakistan.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 mt-6">
               <ButtonLink href="/products" label="Shop Now" variant="default" />

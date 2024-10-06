@@ -18,6 +18,9 @@ const config = {
   		}
   	},
   	extend: {
+		fontFamily: {
+			outfit: ['Outfit', 'Inter', 'sans-serif'],
+		  },
   		backgroundImage: {
   			'gradient-to-r': 'linear-gradient(to right, #eef2f3, #8e9eab)'
   		},

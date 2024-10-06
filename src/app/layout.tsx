@@ -55,7 +55,6 @@ export default async function RootLayout({
     <html lang="en" className="h-full">
       <head>
         <link rel="icon" href="https://esustore.com/favicon.ico" type="image/x-icon" />
-        {/* Adding meta tags dynamically */}
         <meta name="description" content={metadata.description ?? undefined} />
         <meta property="og:title" content={metadata.openGraph?.title?.toString() ?? undefined} />
         <meta property="og:description" content={metadata.openGraph?.description ?? undefined} />
