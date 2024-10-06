@@ -11,6 +11,7 @@ import { Order } from "@/lib/types";
 import { getPayloadClient } from "@/get-payload";
 import { generateInvoice } from "@/lib/invoice";
 import { FREE_SHIPPING_THRESHOLD, SHIPPING_FEE } from "@/lib/config";
+import { Truck } from "lucide-react";
 
 interface PageProps {
   searchParams: { [key: string]: string | string[] | undefined };
@@ -165,22 +166,21 @@ const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
                   </p>
                   <p className="text-sm text-gray-600">
                     <span>Order Status: </span>
-                    <span className="font-medium">{postexOrderStatus}</span>
+                    <span className="font-medium capitalize">{postexOrderStatus}</span>
                   </p>
                   <p className="text-sm text-gray-600">
                     <span>Order Date: </span>
                     <span className="font-medium">{postexOrderDate}</span>
                   </p>
-                  <p className="mt-2">
-                    <a
-                      href={`https://www.trackingmore.com/track/en/${postexTrackingNumber}?express=postex`}
-                      className="text-blue-600 hover:underline"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      Track your order &rarr;
-                    </a>
-                  </p>
+                  <a
+                    href={`https://www.trackingmore.com/track/en/${postexTrackingNumber}?express=postex`}
+                    className="mt-2 inline-flex items-center text-sm text-blue-600 hover:text-blue-500"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Truck className="w-4 h-4 mr-1" />
+                    Track your order
+                  </a>
                 </div>
               )}
             </div>
