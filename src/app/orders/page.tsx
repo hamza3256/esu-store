@@ -18,99 +18,37 @@ import { motion, AnimatePresence } from "framer-motion"
 import Link from "next/link"
 import { CalendarIcon, SearchIcon, PackageIcon, TruckIcon, CreditCardIcon } from "lucide-react"
 import Image from "next/image"
+import PageLoader from "@/components/PageLoader"
+import { Media, Order, Product } from "@/payload-types"
 
-interface Order {
-  id: string;
-  _isPaid: boolean;
-  _isPostexOrderCreated: boolean;
-  trackingInfo?: {
-    trackingNumber?: string | null;
-    orderStatus?: string | null;
-    orderDate?: string | null;
-  };
-  user?: string | { id: string; name?: string };
-  name: string;
-  email: string;
-  phone: string;
-  productItems: {
-    product: string | Product;
-    quantity: number;
-    id?: string | null;
-  }[];
-  shippingAddress: {
-    line1: string;
-    line2?: string | null;
-    city: string;
-    state?: string | null;
-    postalCode?: string | null;
-    country: string;
-  };
-  status?: ('pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled') | null;
-  total: number;
-  orderNumber: string;
-  _emailSent?: boolean | null;
-  updatedAt: string;
-  createdAt: string;
-}
-
-interface Product {
-  id: string;
-  name: string;
-  price: number;
-  images: {
-    image: Media;
-    id?: string | null;
-  }[];
-}
-
-interface Media {
-  id: string;
-  cloudinaryId?: string | null;
-  resourceType?: string | null;
-  sizes?: {
-    thumbnail?: {
-      width?: number | null;
-      height?: number | null;
-      mimeType?: string | null;
-      filesize?: number | null;
-      url?: string | null;
-    };
-    card?: {
-      width?: number | null;
-      height?: number | null;
-      mimeType?: string | null;
-      filesize?: number | null;
-      url?: string | null;
-    };
-    tablet?: {
-      width?: number | null;
-      height?: number | null;
-      mimeType?: number | null;
-      filesize?: number | null;
-      url?: string | null;
-    };
-  };
-  url?: string | null;
-  filename?: string | null;
-  mimeType?: string | null;
-  filesize?: number | null;
-  width?: number | null;
-  height?: number | null;
-}
-
-const statusColors = {
+const statusColors: { [key in NonNullable<Order['status']>]: string } = {
   pending: "bg-yellow-100 text-yellow-800",
   processing: "bg-blue-100 text-blue-800",
   shipped: "bg-green-100 text-green-800",
   delivered: "bg-purple-100 text-purple-800",
-  cancelled: "bg-red-100 text-red-800"
+  cancelled: "bg-red-100 text-red-800",
+};
+
+interface StatusType { 
+  pending: string; 
+  processing: string; 
+  shipped: string; 
+  delivered: string; 
+  cancelled: string; 
 }
+
+interface ProductItem {
+  product: string | Product;
+  quantity: number;
+  id?: string | null;
+};
 
 const getThumbnailUrl = (product: Product): string => {
   const imageCheck = product.images.find(({ image } : {image: Media | string}) => {
     return typeof image === "object" && (image.resourceType?.startsWith("image") || image.mimeType?.startsWith("image"));
   })?.image
-  const firstImage = imageCheck
+  
+  const firstImage = imageCheck as Media
   if (firstImage?.sizes?.thumbnail?.url) {
     return firstImage.sizes.thumbnail.url
   }
@@ -128,11 +66,11 @@ export default function OrderViewer() {
   const [filterRange, setFilterRange] = useState<string>("1_week")
   const [selectedTab, setSelectedTab] = useState<string>("all")
 
-  const { data: orders, isLoading } = trpc.order.getOrders.useQuery<Order[]>({
+  const { data: orders, isLoading } = trpc.order.getOrders.useQuery({
     range: filterRange,
   })
 
-  const filteredOrders = orders?.filter((order) =>
+  const filteredOrders = orders?.filter((order: any) =>
     order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) &&
     (selectedTab === "all" || order.status === selectedTab)
   ) || []
@@ -143,9 +81,7 @@ export default function OrderViewer() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-gray-900"></div>
-      </div>
+      <PageLoader />
     )
   }
 
@@ -209,7 +145,7 @@ export default function OrderViewer() {
             transition={{ duration: 0.5 }}
             className="space-y-6"
           >
-            {filteredOrders.map((order) => (
+            {filteredOrders.map((order: any) => (
               <motion.div
                 key={order.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -222,13 +158,13 @@ export default function OrderViewer() {
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
                       <div className="flex-1">
                         <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                          Order #{order.orderNumber}
+                          Order #{(order.orderNumber as string)}
                         </h3>
                         <div className="flex items-center text-sm text-gray-500 mb-2">
                           <CalendarIcon className="mr-2 h-4 w-4" aria-hidden="true" />
-                          {formatDate(order.createdAt)}
+                          {formatDate((order.createdAt as string))}
                         </div>
-                        <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[order.status || 'pending']}`}>
+                        <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[order.status as keyof StatusType || 'pending']}`}>
                           {order.status || 'Pending'}
                         </div>
                       </div>
@@ -267,13 +203,13 @@ export default function OrderViewer() {
                     <div className="mt-6">
                       <h4 className="text-lg font-semibold mb-2">Order Items:</h4>
                       <ul className="divide-y divide-gray-200">
-                        {order.productItems.map((item, index) => {
+                        {order.productItems.map(({item, index} : {item: ProductItem, index: number}) => {
                           const product = typeof item.product === 'string' ? { name: 'Unknown Product', price: 0, images: [] } : item.product;
                           return (
                             <li key={index} className="py-2 flex items-center justify-between">
                               <div className="flex items-center">
                                 <Image
-                                  src={getThumbnailUrl(product)}
+                                  src={getThumbnailUrl(product as Product)}
                                   alt={product.name}
                                   width={50}
                                   height={50}
