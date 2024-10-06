@@ -15,14 +15,13 @@ import ShippingAddressForm from "@/components/ShippingAddressForm";
 import { Media, User } from "@/payload-types";
 import { SHIPPING_FEE, FREE_SHIPPING_THRESHOLD } from "@/lib/config"; // Import the shipping config
 import { toast } from "./ui/use-toast";
-import { Toast } from "./ui/toast";
-import { fetchOperationalCities, useOperationalCities } from "@/lib/postex";
 
 interface CartPageProps {
   user: User | null; // User is passed from server-side as a prop
+  cities: { label: string; value: string; }[]
 }
 
-const CartPageClient = ({ user }: CartPageProps) => {
+const CartPageClient = ({ user, cities }: CartPageProps) => {
   const { items, updateQuantity, removeItem, cartTotal, clearCart } = useCart();
   const router = useRouter();
   const [userTypeSelected, setUserTypeSelected] = useState(Boolean(user));
@@ -38,7 +37,6 @@ const CartPageClient = ({ user }: CartPageProps) => {
   const [guestName, setGuestName] = useState<string>(""); // New state for guest user name
   const [guestEmail, setGuestEmail] = useState<string>("");
   const [phone, setPhone] = useState<string>("");
-  const { cities, isLoading } = useOperationalCities();
 
   // useEffect(() => {
   //   const loadCities = async () => {
@@ -417,7 +415,7 @@ const CartPageClient = ({ user }: CartPageProps) => {
                     handleInputChange={handleInputChange}
                     handleCityChange={handleCityChange}
                     cities={cities}
-                    loading={isLoading}
+                    loading={false}
                   />
 
                   <div className="mt-6">

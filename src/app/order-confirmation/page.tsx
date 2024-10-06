@@ -194,8 +194,11 @@ const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
                 {products.map(({ product, quantity }) => {
                   const label = PRODUCT_CATEGORIES.find((c) => c.value === product.category)?.label;
                   
-                  const firstImage = product.images?.find((img) => typeof img.image === "object" && img.image?.url)?.image || null;
-                  const imageUrl = (firstImage as Media).url
+                  const firstImage = product.images.find(({ image } : {image: Media | string}) => {
+                    return typeof image === "object" && (image.resourceType?.startsWith("image") || image.mimeType?.startsWith("image"));
+                  })?.image
+                
+                  const imageUrl = (firstImage as Media).sizes?.thumbnail?.url
 
                   return (
                     <li key={product.id} className="flex space-x-6 py-6">

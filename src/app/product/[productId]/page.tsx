@@ -61,9 +61,9 @@ const Page = ({ params }: PageProps) => {
   ?.map(({ image }) => {
     if (typeof image === "object" && image?.url) {
       if (image.resourceType === "video") {
-        return { type: 'video', url: image.sizes.video.url };
+        return { type: 'video', url: image?.sizes?.video?.url };
       } else {
-        return { type: 'image', url: image.sizes.card.url };
+        return { type: 'image', url: image?.sizes?.card?.url };
       }
     }
     return null;

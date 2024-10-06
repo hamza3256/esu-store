@@ -22,10 +22,12 @@ const CartItem = ({ product, quantity }: { product: Product; quantity: number })
 
   // Use discounted price if available, otherwise use the original price
   const price = product.discountedPrice ?? product.price;
-
   
-  const firstImage = product.images?.find((img) => typeof img.image === "object" && img.image?.url)?.image || null;
-  const imageUrl = (firstImage as Media).url
+  const firstImage = product.images.find(({ image } : {image: Media | string}) => {
+    return typeof image === "object" && (image.resourceType?.startsWith("image") || image.mimeType?.startsWith("image"));
+  })?.image
+
+  const imageUrl = (firstImage as Media).sizes?.thumbnail?.url
   
   const label = PRODUCT_CATEGORIES.find(({ value }) => value === product.category)?.label;
 
