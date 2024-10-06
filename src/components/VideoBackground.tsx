@@ -9,17 +9,15 @@ export function VideoBackground() {
   const [videoError, setVideoError] = useState(false)
   const { ref: inViewRef, inView } = useInView({
     threshold: 0.1,
-    triggerOnce: true, 
+    triggerOnce: true,
   })
   const videoRef = useRef<HTMLVideoElement>(null)
 
-  // Desktop and mobile video URLs for different formats
-  const desktopHlsUrl = `https://res.cloudinary.com/dn20h4mis/video/upload/sp_auto/v1728219664/desktop-optimised.m3u8`
-  const mobileHlsUrl = `https://res.cloudinary.com/dn20h4mis/video/upload/sp_auto/v1728219497/mobile-optimised.m3u8`
-  const desktopMp4Url = `https://res.cloudinary.com/dn20h4mis/video/upload/q_auto,f_auto/v1728219664/desktop-optimised.mp4`
-  const mobileMp4Url = `https://res.cloudinary.com/dn20h4mis/video/upload/q_auto,f_auto/v1728219497/mobile-optimised.mp4`
-  const desktopWebmUrl = `https://res.cloudinary.com/dn20h4mis/video/upload/q_auto,f_auto/v1728219664/desktop-optimised.webm`
-  const mobileWebmUrl = `https://res.cloudinary.com/dn20h4mis/video/upload/q_auto,f_auto/v1728219497/mobile-optimised.webm`
+  const desktopHlsUrl = `https://res.cloudinary.com/dn20h4mis/video/upload/f_webm,vc_vp9,q_auto/v1728242042/desktop-optimised.m3u8`
+  const mobileHlsUrl = `https://res.cloudinary.com/dn20h4mis/video/upload/f_webm,vc_vp9,q_auto/v1728242171/mobile-optimised.m3u8`
+  const desktopOptimisedUrl = `https://res.cloudinary.com/dn20h4mis/video/upload/f_webm,vc_vp9,q_auto/v1728242042/desktop-optimised.mp4`
+  const mobileOptimisedUrl = `https://res.cloudinary.com/dn20h4mis/video/upload/f_webm,vc_vp9,q_auto/v1728242171/mobile-optimised.mp4`
+  const fallbackImageUrl = "https://res.cloudinary.com/dn20h4mis/image/upload/q_auto,f_auto/v1728227615/background.png"
 
   useEffect(() => {
     const videoElement = videoRef.current
@@ -27,55 +25,100 @@ export function VideoBackground() {
 
     const isMobile = window.innerWidth < 768
     const hlsUrl = isMobile ? mobileHlsUrl : desktopHlsUrl
-    const mp4Url = isMobile ? mobileMp4Url : desktopMp4Url
-    const webmUrl = isMobile ? mobileWebmUrl : desktopWebmUrl
+    const optimisedUrl = isMobile ? mobileOptimisedUrl : desktopOptimisedUrl
 
-    // HLS support check
-    if (videoElement.canPlayType('application/vnd.apple.mpegurl')) {
-      // Native HLS support (Safari, iOS)
-      videoElement.src = hlsUrl
-      videoElement.play().catch(() => setVideoError(true))
-    } else if (Hls.isSupported()) {
-      // Fallback for non-HLS supported browsers (Chrome, Firefox)
-      const hls = new Hls()
-      hls.loadSource(hlsUrl)
-      hls.attachMedia(videoElement)
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        videoElement.play().catch(() => setVideoError(true))
-      })
-    } else {
-      // Fallback to MP4/WebM if HLS is not supported
-      videoElement.src = videoElement.canPlayType('video/webm') ? webmUrl : mp4Url
-      videoElement.play().catch(() => setVideoError(true))
+    let hls: Hls | null = null
+
+    const loadVideo = async () => {
+      try {
+        if (Hls.isSupported()) {
+          hls = new Hls({
+            maxBufferLength: 30,
+            maxMaxBufferLength: 600,
+            enableWorker: true,
+            lowLatencyMode: true,
+          })
+          hls.loadSource(hlsUrl)
+          hls.attachMedia(videoElement)
+          hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            videoElement.play().catch(console.error)
+          })
+          hls.on(Hls.Events.ERROR, (event, data) => {
+            if (data.fatal) {
+              console.error('HLS error:', data)
+              if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+                hls?.destroy()
+                fallbackToMP4()
+              }
+            }
+          })
+        } else if (videoElement.canPlayType('application/vnd.apple.mpegurl')) {
+          videoElement.src = hlsUrl
+          videoElement.addEventListener('loadedmetadata', () => {
+            videoElement.play().catch(console.error)
+          })
+        } else {
+          fallbackToMP4()
+        }
+      } catch (error) {
+        console.error('Video playback error:', error)
+        setVideoError(true)
+      }
     }
-  }, [inView, desktopHlsUrl, mobileHlsUrl, desktopMp4Url, mobileMp4Url, desktopWebmUrl, mobileWebmUrl])
+
+    const fallbackToMP4 = () => {
+      videoElement.src = optimisedUrl
+      videoElement.play().catch(() => {
+        console.error('MP4 fallback failed')
+        setVideoError(true)
+      })
+    }
+
+    videoElement.muted = true
+    videoElement.playsInline = true
+    loadVideo()
+
+    videoElement.addEventListener('canplay', () => setVideoLoaded(true))
+
+    return () => {
+      if (hls) {
+        hls.destroy()
+      }
+      if (videoElement) {
+        videoElement.pause()
+        videoElement.src = ''
+        videoElement.load()
+      }
+    }
+  }, [inView])
 
   return (
     <div ref={inViewRef} className="relative w-full h-full bg-black">
-      {/* Fallback background image for non-HLS compatible devices */}
       {videoError && (
         <div
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: "url('https://res.cloudinary.com/dn20h4mis/image/upload/q_auto,f_auto/v1728227615/background.png')" }}
+          style={{ backgroundImage: `url('${fallbackImageUrl}')` }}
           aria-hidden="true"
         />
       )}
 
-      {/* Video element */}
       <video
         ref={videoRef}
         autoPlay
         muted
         loop
         playsInline
-        preload="auto" // Optimize video preload for faster play
+        preload="metadata"
         className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${
           videoLoaded ? 'opacity-100' : 'opacity-0'
         }`}
-        onCanPlayThrough={() => setVideoLoaded(true)} // Set video loaded state when fully buffered
-        onError={() => setVideoError(true)} 
-        poster="https://res.cloudinary.com/dn20h4mis/image/upload/q_auto,f_auto/v1728227615/background.png" // Poster as fallback for load
-      />
+        onError={() => setVideoError(true)}
+        poster={fallbackImageUrl}
+        aria-hidden="true"
+      >
+        <source src={desktopOptimisedUrl} type="video/webm" />
+        <source src={desktopOptimisedUrl.replace('f_webm,vc_vp9', 'f_mp4')} type="video/mp4" />
+      </video>
     </div>
   )
 }
