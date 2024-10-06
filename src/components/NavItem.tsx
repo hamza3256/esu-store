@@ -4,8 +4,9 @@ import { PRODUCT_CATEGORIES } from "@/config";
 import { Button } from "./ui/button";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
-import Link from "next/link";
 import Image from "next/image";
+import { useEffect, useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 
 type Category = (typeof PRODUCT_CATEGORIES)[number];
 
@@ -16,6 +17,7 @@ interface NavItemProps {
   isAnyOpen: boolean;
   isTransparent: boolean;
   isHovered: boolean;
+  closeMenu: () => void; // Function to close the dropdown menu
 }
 
 const NavItem = ({
@@ -25,9 +27,55 @@ const NavItem = ({
   isOpen,
   isTransparent,
   isHovered,
+  closeMenu,
 }: NavItemProps) => {
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const router = useRouter(); // Use Next.js router for programmatic navigation
+
+  // Add keyboard navigation: Close menu on "Escape" key press
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isOpen) {
+        closeMenu();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, closeMenu]);
+
+  // Clear the timeout when the component unmounts or on menu interaction
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
+
+  // Close the menu after a short delay when not hovered
+  const handleMouseLeave = () => {
+    timeoutRef.current = setTimeout(() => {
+      closeMenu();
+    }, 300); // Delay to avoid accidental closing
+  };
+
+  const handleMouseEnter = () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+  };
+
+  const handleNavigation = async (href: string) => {
+    // Navigate programmatically with the router
+    router.push(href);
+
+    // Once navigation is complete, close the menu
+    closeMenu();
+  };
+
   return (
-    <div className="flex">
+    <div
+      className="flex"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave} // Close on mouse leave with delay
+    >
       <div className="relative flex items-center">
         <Button
           className={`gap-1.5 ${
@@ -46,7 +94,7 @@ const NavItem = ({
         </Button>
       </div>
 
-      {isOpen ? (
+      {isOpen && (
         <div
           className={cn(
             "absolute inset-x-0 top-full text-sm text-muted-foreground",
@@ -76,12 +124,13 @@ const NavItem = ({
                             className="object-cover object-center"
                           />
                         </div>
-                        <Link
-                          href={item.href}
+                        {/* Replace Link with a button to handle navigation */}
+                        <button
                           className="mt-6 block font-medium text-gray-900"
+                          onClick={() => handleNavigation(item.href)} // Use the custom handler
                         >
                           {item.name}
-                        </Link>
+                        </button>
                         <p className="mt-1" aria-hidden="true">
                           Shop now
                         </p>
@@ -93,7 +142,7 @@ const NavItem = ({
             </div>
           </div>
         </div>
-      ) : null}
+      )}
     </div>
   );
 };
