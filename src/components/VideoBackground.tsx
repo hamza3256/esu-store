@@ -42,7 +42,7 @@ export function VideoBackground() {
     } else {
       videoElement.pause() // Pause video when out of view
     }
-  }, [inView])
+  }, [inView, desktopHlsUrl, mobileHlsUrl]) // Added dependencies
 
   return (
     <div ref={inViewRef} className="relative w-full h-full">
