@@ -55,7 +55,7 @@ function HeroSection() {
         </MaxWidthWrapper>
       </div>
     </section>
-  )
+  );
 }
 
 function FeaturedProducts() {
