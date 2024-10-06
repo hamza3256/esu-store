@@ -13,8 +13,11 @@ export function VideoBackground() {
   })
   const videoRef = useRef<HTMLVideoElement>(null)
 
+  // Video URLs for different formats
   const desktopHlsUrl = `https://res.cloudinary.com/dn20h4mis/video/upload/sp_auto/v1728219664/desktop-optimised.m3u8`
   const mobileHlsUrl = `https://res.cloudinary.com/dn20h4mis/video/upload/sp_auto/v1728219497/mobile-optimised.m3u8`
+  const mp4Url = `https://res.cloudinary.com/dn20h4mis/video/upload/q_auto,f_auto/v1728219664/desktop-optimised.mp4`
+  const webmUrl = `https://res.cloudinary.com/dn20h4mis/video/upload/q_auto,f_auto/v1728219664/desktop-optimised.webm`
 
   useEffect(() => {
     const videoElement = videoRef.current
@@ -23,10 +26,13 @@ export function VideoBackground() {
     const isMobile = window.innerWidth < 768
     const hlsUrl = isMobile ? mobileHlsUrl : desktopHlsUrl
 
+    // HLS support check
     if (videoElement.canPlayType('application/vnd.apple.mpegurl')) {
+      // Native HLS support (Safari, iOS)
       videoElement.src = hlsUrl
       videoElement.play().catch(() => setVideoError(true))
     } else if (Hls.isSupported()) {
+      // Fallback for non-HLS supported browsers (Chrome, Firefox)
       const hls = new Hls()
       hls.loadSource(hlsUrl)
       hls.attachMedia(videoElement)
@@ -34,32 +40,37 @@ export function VideoBackground() {
         videoElement.play().catch(() => setVideoError(true))
       })
     } else {
-      setVideoError(true) 
+      // Fallback to MP4/WebM if HLS is not supported
+      videoElement.src = videoElement.canPlayType('video/webm') ? webmUrl : mp4Url
+      videoElement.play().catch(() => setVideoError(true))
     }
-  }, [inView, desktopHlsUrl, mobileHlsUrl])
+  }, [inView, desktopHlsUrl, mobileHlsUrl, mp4Url, webmUrl])
 
   return (
     <div ref={inViewRef} className="relative w-full h-full bg-black">
-      {(videoError || !videoLoaded) && (
+      {/* Fallback background image for non-HLS compatible devices */}
+      {videoError && (
         <div
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
           style={{ backgroundImage: "url('https://res.cloudinary.com/dn20h4mis/image/upload/q_auto,f_auto/v1728227615/background.png')" }}
           aria-hidden="true"
         />
       )}
+
+      {/* Video element */}
       <video
         ref={videoRef}
         autoPlay
         muted
         loop
         playsInline
-        preload="none" 
+        preload="auto" // Optimize video preload for faster play
         className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${
           videoLoaded ? 'opacity-100' : 'opacity-0'
         }`}
-        onCanPlayThrough={() => setVideoLoaded(true)} 
+        onCanPlayThrough={() => setVideoLoaded(true)} // Set video loaded state when fully buffered
         onError={() => setVideoError(true)} 
-        poster="https://res.cloudinary.com/dn20h4mis/image/upload/q_auto,f_auto/v1728227615/background.png" 
+        poster="https://res.cloudinary.com/dn20h4mis/image/upload/q_auto,f_auto/v1728227615/background.png" // Poster as fallback for load
       />
     </div>
   )
