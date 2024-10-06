@@ -20,8 +20,10 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useState } from "react";
 import BearLogo from "@/components/BearLogo";
+import PageLoader from "@/components/PageLoader";
 
 const Page = () => {
+  const [redirecting, setRedirecting] = useState(false);
   const [showPassword, setShowPassword] = useState(false)
   const {
     register,
@@ -48,6 +50,7 @@ const Page = () => {
       toast.error("Something went wrong. Please try again.");
     },
     onSuccess: ({ sentToEmail }) => {
+      setRedirecting(true)
       toast.success(`Verification email sent to ${sentToEmail}`);
       router.push("/verify-email?to=" + sentToEmail);
     },
@@ -59,6 +62,7 @@ const Page = () => {
 
   return (
     <>
+     {redirecting ? ( <PageLoader />) : (
       <div className="container relative flex flex-col items-center justify-center min-h-screen lg:px-0">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -146,6 +150,7 @@ const Page = () => {
           </div>
         </motion.div>
       </div>
+     )}
     </>
   );
 };
