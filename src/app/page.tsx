@@ -1,6 +1,5 @@
 import { Suspense } from 'react'
 import MaxWidthWrapper from "@/components/MaxWidthWrapper"
-import SocialBanner from "@/components/SocialBanner"
 import { CarouselComponent } from "@/components/CarouselComponent"
 import { VideoBackground } from "@/components/VideoBackground"
 import { ButtonLink } from "@/components/ButtonLink"
@@ -8,6 +7,9 @@ import { Perks } from "@/components/Perks"
 import { Section } from "@/components/Section"
 import ParallaxSection from "@/components/ParallaxSection"
 import ProductShowcase from "@/components/ProductShowcase"
+import dynamic from 'next/dynamic';
+
+const SocialBanner = dynamic(() => import('@/components/SocialBanner'), { ssr: false });
 
 export const metadata = {
   title: 'esü - Luxury Jewellery for Every Occasion',

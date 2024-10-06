@@ -48,7 +48,7 @@ export default function AboutUs() {
         </div>
         <div className="relative h-[400px] rounded-lg overflow-hidden">
           <Image
-            src="/background.png?height=400&width=600"
+            src="https://res.cloudinary.com/dn20h4mis/image/upload/q_auto,f_auto,h_400,w_600/v1728227615/background.png"
             alt="Jewelry craftsmanship"
             fill
             className="object-cover"

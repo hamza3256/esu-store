@@ -103,7 +103,7 @@ const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
       <div className="hidden lg:block h-80 overflow-hidden lg:absolute lg:h-full lg:w-1/2 lg:pr-4 xl:pr-12">
         <Image
           fill
-          src="/order-confirmation.jpg"
+          src="https://res.cloudinary.com/dn20h4mis/image/upload/q_auto,f_auto/v1728227919/order-confirmation.jpg"
           alt="Thank you for your order"
           priority
           sizes="(max-width: 1024px) 100vw, 50vw"
