@@ -212,9 +212,11 @@ const CartPageClient = ({ user, cities }: CartPageProps) => {
                 items.map(({ product, quantity }) => {
                   const label = PRODUCT_CATEGORIES.find((c) => c.value === product.category)?.label;
                   
-                  const image = product.images.find(({ image }) => {
-                    return typeof image === "object" && image.mimeType?.startsWith("image/");
-                  })?.image as Media;
+                  const firstImage = product.images.find(({ image } : {image: Media | string}) => {
+                    return typeof image === "object" && (image.resourceType?.startsWith("image") || image.mimeType?.startsWith("image"));
+                  })?.image
+                
+                  const imageUrl = (firstImage as Media).sizes?.thumbnail?.url
 
                   // Use discountedPrice if available
                   const price = product.discountedPrice ?? product.price;
@@ -223,8 +225,8 @@ const CartPageClient = ({ user, cities }: CartPageProps) => {
                     <li key={product.id} className="flex py-6 sm:py-10">
                       <div className="flex-shrink-0">
                         <div className="relative h-24 w-24">
-                          {typeof image !== "string" && image.url ? (
-                            <Image fill src={image.url} alt="product image" className="h-full w-full rounded-md object-cover object-center sm:h-48 sm:w-48" />
+                          {imageUrl ? (
+                            <Image fill src={imageUrl} alt="product image" className="h-full w-full rounded-md object-cover object-center sm:h-48 sm:w-48" />
                           ) : null}
                         </div>
                       </div>
