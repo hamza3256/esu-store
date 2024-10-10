@@ -75,10 +75,6 @@ const nextConfig = withPayload(
               value: '*', // You can limit this to specific domains, e.g. 'https://www.facebook.com'
             },
             {
-              key: 'Content-Security-Policy',
-              value: "default-src 'self'; script-src 'self' https://connect.facebook.net; object-src 'none';",
-            },
-            {
               key: 'Access-Control-Allow-Methods',
               value: 'GET, POST, OPTIONS',
             },

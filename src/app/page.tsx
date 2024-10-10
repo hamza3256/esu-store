@@ -8,13 +8,44 @@ import { Section } from "@/components/Section"
 import ParallaxSection from "@/components/ParallaxSection"
 import ProductShowcase from "@/components/ProductShowcase"
 import dynamic from 'next/dynamic';
+import { Button } from '@/components/ui/button'
+import Link from 'next/link'
+import { Metadata } from "next";
 
 const SocialBanner = dynamic(() => import('@/components/SocialBanner'), { ssr: false });
 
-export const metadata = {
-  title: 'esü - Luxury Jewellery for Every Occasion',
-  description: 'Discover timeless pieces, handcrafted with care, delivered to your doorstep across Pakistan.',
-}
+export const metadata: Metadata = {
+  title: "ESÜ Store | Jewellery, Clothing & Accessories",
+  description: "Discover premium jewellery, clothing, and accessories at ESÜ Store. Every product is handpicked and verified for quality. Shop today and elevate your style with high-quality, affordable fashion.",
+  openGraph: {
+    title: "ESÜ Store | Jewellery, Clothing & Accessories",
+    description: "Discover premium jewellery, clothing, and accessories at ESÜ Store. Shop our exclusive collection and elevate your style today.",
+    url: "https://esustore.com",
+    siteName: "ESÜ Store",
+    images: [
+      {
+        url: "https://esustore.com/esu.png",
+        width: 1200,
+        height: 630,
+        alt: "ESÜ Store - Jewellery, Clothing, and Accessories",
+      },
+      {
+        url: "https://esustore.com/esu-official.jpg",
+        width: 1080,
+        height: 1080,
+        alt: "ESÜ Store - Jewellery, Clothing, and Accessories (Instagram optimized)",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "ESÜ Store | Jewellery, Clothing & Accessories",
+    description: "Discover premium jewellery, clothing, and accessories at ESÜ Store. Shop our high-quality collection today.",
+    images: ["https://esustore.com/esu.png"],
+  },
+};
 
 export default function Home() {
   return (
