@@ -71,11 +71,17 @@ function HeroSection() {
       <div className="absolute inset-0 z-0">
         <VideoBackground />
       </div>
-      <div className="absolute inset-0 bg-black bg-opacity-40 z-10" aria-hidden="true"></div>
+      <div 
+        className="absolute inset-0 bg-black/40 z-10" 
+        aria-hidden="true"
+      />
       <div className="relative z-20 flex flex-col items-center justify-center h-full text-center text-white">
         <MaxWidthWrapper>
           <div className="py-16 mx-auto flex flex-col items-center max-w-3xl">
-            <h1 id="hero-heading" className="text-4xl font-extrabold tracking-tight sm:text-6xl text-white">
+            <h1 
+              id="hero-heading" 
+              className="text-4xl font-extrabold tracking-tight sm:text-6xl text-white"
+            >
               Luxury <em className="text-gold-600 font-serif not-italic">Jewellery</em> for Every Occasion
             </h1>
             <p className="mt-4 text-lg max-w-prose text-gray-200">
