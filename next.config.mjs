@@ -65,6 +65,27 @@ const nextConfig = withPayload(
     },
     reactStrictMode: true,
     swcMinify: true,
+    async headers() {
+      return [
+        {
+          source: '/(.*)', // Apply to all routes
+          headers: [
+            {
+              key: 'Access-Control-Allow-Origin',
+              value: '*', // You can limit this to specific domains, e.g. 'https://www.facebook.com'
+            },
+            {
+              key: 'Access-Control-Allow-Methods',
+              value: 'GET, POST, OPTIONS',
+            },
+            {
+              key: 'Access-Control-Allow-Headers',
+              value: 'X-Requested-With, Content-Type, Accept',
+            },
+          ],
+        },
+      ]
+    },
     /*async headers() {
       return [
         {
