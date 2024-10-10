@@ -1,3 +1,4 @@
+import { SHIPPING_FEE } from "@/lib/config";
 import { formatPrice } from "../../lib/utils";
 import { Media, Product } from "../../payload-types";
 import {
@@ -35,7 +36,7 @@ export const ReceiptEmail = ({
   orderId,
   products,
   orderNumber,
-  shippingFee = 250, // Default shipping fee
+  shippingFee = SHIPPING_FEE, 
   trackingNumber,
   trackingOrderDate,
 }: ReceiptEmailProps) => {

@@ -5,7 +5,7 @@ import { TRPCError } from "@trpc/server";
 import Stripe from "stripe";
 import { stripe } from "../lib/stripe";
 import { PDFDocument } from "pdf-lib";
-import { FREE_SHIPPING_THRESHOLD } from "../lib/config";
+import { FREE_SHIPPING_THRESHOLD, SHIPPING_FEE } from "../lib/config";
 
 const shippingAddressSchema = z.object({
   line1: z.string(),
@@ -376,7 +376,7 @@ export const orderRouter = router({
                   shipping_rate_data: {
                     type: "fixed_amount",
                     fixed_amount: {
-                      amount: 250 * 100, // 250 PKR in cents
+                      amount: SHIPPING_FEE * 100, 
                       currency: "pkr",
                     },
                     display_name: "Standard Shipping",

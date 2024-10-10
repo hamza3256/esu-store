@@ -7,7 +7,7 @@ import type Stripe from "stripe";
 import { Product, User } from "@/payload-types";
 import { Order } from "@/lib/types";
 import { createPostexOrder } from "../lib/postex";
-import { FREE_SHIPPING_THRESHOLD } from "../lib/config";
+import { FREE_SHIPPING_THRESHOLD, SHIPPING_FEE } from "../lib/config";
 
 interface ShippingAddressType {
   line1: string;
@@ -298,7 +298,7 @@ export const paymentRouter = router({
                 shipping_rate_data: {
                   type: "fixed_amount",
                   fixed_amount: {
-                    amount: 250 * 100, // 250 PKR in cents
+                    amount: SHIPPING_FEE * 100,
                     currency: "pkr",
                   },
                   display_name: "Standard Shipping",
