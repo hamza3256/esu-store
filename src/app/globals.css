@@ -100,7 +100,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url('/fonts/inter/Inter-Regular.woff2') format('woff2');
+  src: url('/fonts/Inter/Inter-Regular.woff2') format('woff2');
 }
 
 @font-face {
@@ -108,7 +108,7 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url('/fonts/inter/Inter-Bold.woff2') format('woff2');
+  src: url('/fonts/Inter/Inter-Bold.woff2') format('woff2');
 }
 
 body {
