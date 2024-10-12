@@ -14,7 +14,7 @@ import { parse } from "url";
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 
-console.log("PORT: " + PORT)
+console.log("PORT: " + PORT);
 
 const createContext = ({
   req,
@@ -52,7 +52,7 @@ const start = async () => {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          "token": process.env.NEXT_PUBLIC_POSTEX_API_TOKEN!, // Ensure the token is correct
+          "token": process.env.NEXT_PUBLIC_POSTEX_API_TOKEN!,
         },
       });
   

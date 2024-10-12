@@ -17,19 +17,6 @@ dotenv.config({
 
 console.log("Environment: " + process.env.NODE_ENV)
 
-// const db = (() => {
-//   if (process.env.NODE_ENV === "development") {
-//     console.log("Connecting to development database...")
-//     return process.env.MONGODB_DEV!;
-//   } else if (process.env.NODE_ENV === "production") {
-//     console.log("Connecting to production database...")
-//     return process.env.MONGODB_PROD!; // TODO: use production url
-//   } else {
-//     console.log("Connecting to default testing database...")
-//     return process.env.MONGODB_URI!;
-//   }
-// })();
-
 const db = process.env.MONGODB_URI!
 
 export default buildConfig({
@@ -70,7 +57,7 @@ export default buildConfig({
     },
   },
   rateLimit: {
-    max: 500, //TODO: reduce to 500 for production
+    max: 500,
   },
   editor: slateEditor({}),
   db: mongooseAdapter({

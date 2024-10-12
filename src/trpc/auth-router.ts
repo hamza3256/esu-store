@@ -1,6 +1,6 @@
-import { AccountCredentialsValidator } from "../lib/validators/account-credentials-validator"; // TODO: fix using @ instead of ..
+import { AccountCredentialsValidator } from "../lib/validators/account-credentials-validator";
 import { publicProcedure, router } from "./trpc";
-import { getPayloadClient } from "../get-payload"; // TODO: fix using @ instead of ..
+import { getPayloadClient } from "../get-payload";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { AuthCredentialsValidator } from "../lib/validators/auth-credentials-validator";

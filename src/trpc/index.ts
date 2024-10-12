@@ -153,7 +153,7 @@ export const appRouter = router({
           //   equals: ctx.user.id, // Ensure the user only sees their own orders
           // },
         },
-        depth: 1, // Fetch relationships deeply (products, etc.)
+        depth: 1,
       });
 
       const product = products[0];
