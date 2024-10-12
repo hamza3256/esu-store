@@ -1,4 +1,4 @@
-import { SHIPPING_FEE } from "@/lib/config";
+import { SHIPPING_FEE } from "../../lib/config";
 import { formatPrice } from "../../lib/utils";
 import { Media, Product } from "../../payload-types";
 import {
