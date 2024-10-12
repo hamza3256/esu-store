@@ -7,9 +7,10 @@ const isAdminOrHasAccessToImages =
   (): Access =>
   async ({ req }) => {
     const user = req.user as User | undefined;
+    const allowedRoles = ["admin", "seller", "employee"];
 
     if (!user) return false;
-    if (user.role === "admin") return true;
+    if (allowedRoles.includes(user.role!)) return true;
 
     return {
       user: {

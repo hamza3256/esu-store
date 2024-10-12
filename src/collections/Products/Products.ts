@@ -166,9 +166,10 @@ const isAdminOrHasAccess =
   (): Access =>
   ({ req: { user: _user } }) => {
     const user = _user as User | undefined;
+    const allowedRoles = ["admin", "seller", "employee"];
 
     if (!user) return false;
-    if (user.role === "admin") return true;
+    if (user && allowedRoles.includes(user.role!)) return true;
 
     const userProductIds = (user.products || []).reduce<Array<string>>(
       (acc, product) => {

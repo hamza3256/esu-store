@@ -15,6 +15,7 @@ import { useAuth } from "@/hooks/use-auth";
 
 const UserAccountNav = ({ user }: { user: User }) => {
   const { signOut } = useAuth();
+  const isAdminEmployeeSeller = user.role === 'admin' || user.role === 'employee' || user.role === 'seller'
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild className="overflow-visible">
@@ -39,7 +40,7 @@ const UserAccountNav = ({ user }: { user: User }) => {
           <Link href="/orders">Orders</Link>
         </DropdownMenuItem>
 
-        {user.role === 'admin' && (
+        {isAdminEmployeeSeller && (
           <DropdownMenuItem asChild>
             <Link href="/sell">Seller Dashboard</Link>
           </DropdownMenuItem>
