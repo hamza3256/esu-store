@@ -28,6 +28,7 @@ interface ReceiptEmailProps {
   shippingFee?: number;
   trackingNumber?: string;
   trackingOrderDate?: string;
+  totalPrice?: number;
 }
 
 export const ReceiptEmail = ({
@@ -39,11 +40,12 @@ export const ReceiptEmail = ({
   shippingFee = SHIPPING_FEE, 
   trackingNumber,
   trackingOrderDate,
+  totalPrice
 }: ReceiptEmailProps) => {
-  const total = products.reduce(
+  const total = (totalPrice ?? products.reduce(
     (acc, { product, quantity }) => acc + product.price * quantity,
     0
-  ) + shippingFee;
+  )) + shippingFee;
 
   // Tracking link generation
   const trackingLink = trackingNumber

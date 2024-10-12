@@ -8,6 +8,9 @@ import { Product, User } from "@/payload-types";
 import { Order } from "@/lib/types";
 import { createPostexOrder } from "../lib/postex";
 import { FREE_SHIPPING_THRESHOLD, SHIPPING_FEE } from "../lib/config";
+import { OrderNotificationHtml } from "../components/emails/OrderNotification";
+import { ReceiptEmailHtml } from "../components/emails/ReceiptEmail";
+import { resend } from "../lib/resend";
 
 interface ShippingAddressType {
   line1: string;
@@ -40,6 +43,12 @@ const phoneSchema = z
   .regex(/^03\d{9}$/, {
     message: "Phone number must start with '03' and be 11 digits long.",
   });
+
+interface ProductItem {
+  product: string | Product;
+  quantity: number;
+  id?: string | null;
+}
 
 const createCustomer = async (
   email: string | null | undefined,
@@ -372,6 +381,270 @@ export const paymentRouter = router({
     // Step 4: Return the Stripe session URL for the client to redirect
     return { url: stripeSession.url };
   }),
+
+    // Inside your trpc mutation file
+    createCODOrder: privateProcedure
+    .input(
+      z.object({
+        productItems: z.array(
+          z.object({
+            productId: z.string(),
+            quantity: z.number(),
+          })
+        ),
+        phone: z.string(),
+        shippingAddress: z.object({
+          line1: z.string(),
+          line2: z.string().optional(),
+          city: z.string(),
+          state: z.string().optional(),
+          postalCode: z.string().optional(),
+          country: z.string(),
+        }),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { user } = ctx;
+      const { productItems, shippingAddress, phone } = input;
+  
+      if (!user || !user.id) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "User not authenticated",
+        });
+      }
+  
+      if (productItems.length === 0) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "No products in the order",
+        });
+      }
+  
+      const payload = await getPayloadClient();
+  
+      // Fetch products to ensure they exist and have enough inventory
+      const { docs: products } = await payload.find({
+        collection: "products",
+        where: {
+          id: {
+            in: productItems.map((item) => item.productId),
+          },
+        },
+      });
+  
+      // Ensure products exist and have prices
+      const filteredProductsHavePrice = products.filter((product) =>
+        Boolean(product.priceId)
+      );
+  
+      if (filteredProductsHavePrice.length !== productItems.length) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Some products do not have prices or were not found",
+        });
+      }
+  
+      // Calculate the total
+      const total = productItems.reduce((acc, item) => {
+        const product = filteredProductsHavePrice.find(
+          (p) => p.id === item.productId
+        );
+        if (!product) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Product with ID ${item.productId} not found`,
+          });
+        }
+      const productPrice = product.discountedPrice ?? product.price
+        return acc + (productPrice as number) * item.quantity;
+      }, 0);
+  
+      // Generate unique order number
+      const orderNumber = generateOrderNumber();
+  
+      // Step 1: Create the order but don't deduct inventory yet
+      const order = await payload.create({
+        collection: "orders",
+        data: {
+          _isPaid: false,
+          _isPostexOrderCreated: false,
+          productItems: productItems.map((item) => ({
+            product: item.productId,
+            quantity: item.quantity,
+          })),
+          name: user.name ?? user.email,
+          email: user.email,
+          user: user.id,
+          phone: phone,
+          shippingAddress,
+          orderNumber,
+          total,
+        },
+      }) as Order;
+
+      try {
+        
+          const orderShippingAddress = order.shippingAddress as ShippingAddressType;
+          const deliveryAddress = orderShippingAddress.line1.concat(
+            orderShippingAddress.line2 ? ", ".concat(orderShippingAddress.line2) : ""
+          );
+          const itemTotal = order.productItems.reduce(
+            (count, item) => count + item.quantity,
+            0
+          );
+
+          const orderDetail = order.productItems
+            .map((item) => `${item.quantity}x ${item.product.name} (${item.product.category})`)
+            .join(", ");
+
+          const customerName = order.name ?? order.email
+
+          // Prepare PostEx order data
+          const postexOrderData = {
+            cityName: orderShippingAddress.city,
+            customerName: customerName,
+            customerPhone: order.phone,
+            deliveryAddress,
+            invoiceDivison: 0,
+            invoicePayment: order.total.toString(),
+            items: itemTotal,
+            orderDetail,
+            orderRefNumber: order.orderNumber,
+            orderType: "Normal",
+            pickupAddressCode: "001",
+          };
+
+          console.log("postex order data: " + postexOrderData)
+
+          // Create order in PostEx
+          const postexResponse = await createPostexOrder(postexOrderData);
+
+          // Update order with PostEx tracking info
+          await payload.update({
+            collection: "orders",
+            id: order.id,
+            data: {
+              _isPostexOrderCreated: true,
+              trackingInfo: {
+                trackingNumber: postexResponse.dist.trackingNumber,
+                orderStatus: postexResponse.dist.orderStatus,
+                orderDate: postexResponse.dist.orderDate,
+              },
+            },
+          });
+
+          console.log("PostEx order created:", postexResponse);
+        } catch (error) {
+          console.error("Error while creating order in PostEx:", error);
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to create Postex order.",
+          });
+        }
+
+
+      try {
+      const orderProductItems = order.productItems as ProductItem[];
+
+        const products = orderProductItems.map((item: any) => {
+          if (typeof item.product === "string") {
+            return {
+              product: { id: item.product },
+              quantity: item.quantity,
+            };
+          } else {
+            return {
+              product: item.product,
+              quantity: item.quantity,
+            };
+          }
+        }).filter((item: { product: null }) => item.product !== null);
+
+        await resend.emails.send({
+          from: "ESÜ TEAM <info@esustore.com>",
+          to: [user.email],
+          subject: "Thanks for your order! Here’s your receipt.",
+          html: ReceiptEmailHtml({
+            date: new Date(),
+            email: user.email,
+            orderId: order.id,
+            products: products,
+            orderNumber,
+            shippingFee: SHIPPING_FEE,
+            trackingNumber: order.trackingInfo?.trackingNumber || undefined,
+            trackingOrderDate: order.trackingInfo?.orderDate || undefined,
+            totalPrice: total
+          }),
+        });
+
+        console.log("Receipt email sent successfully.");
+
+        const notificationHtml = OrderNotificationHtml({
+          customerEmail: order.email,
+          customerName: order.name ?? order.email,
+          date: new Date(),
+          orderId: order.id,
+          products: products,
+          orderNumber: order.orderNumber,
+          shippingFee: SHIPPING_FEE, 
+          total: order.total, 
+          shippingAddress: order.shippingAddress,
+          trackingNumber: order.trackingInfo?.trackingNumber ?? "", 
+          
+        });
+    
+        await resend.emails.send({
+          from: "ESÜ STORE <info@esustore.com>",
+          to: ["gems@esustore.com", "orders@esustore.com"],
+          subject: `New Order Notification - Order #${order.orderNumber}`,
+          html: notificationHtml,
+        });
+      } catch (emailError) {
+        console.error("Email sending failed:", emailError);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to send receipt email",
+        });
+      }
+
+      for (const item of productItems) {
+        const product = filteredProductsHavePrice.find(
+          (p) => p.id === item.productId
+        );
+  
+        if (!product || !product.id) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Product ID is missing for product: ${product?.name}`,
+          });
+        }
+  
+        // Check if product has enough inventory
+        if ((product.inventory as number) < item.quantity) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Insufficient inventory for product: ${product.name}`,
+          });
+        }
+  
+        const updatedInventory = Math.max(
+          (product.inventory as number) - item.quantity,
+          0
+        );
+
+        // Deduct the quantity from the product's inventory
+        await payload.update({
+          collection: "products",
+          id: product.id,
+          data: {
+            inventory: updatedInventory,
+          },
+        });
+      }
+  
+      return { order };
+    }),
 
   pollOrderStatus: publicProcedure
     .input(z.object({ orderId: z.string() }))

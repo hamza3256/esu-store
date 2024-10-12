@@ -3,15 +3,13 @@ import { WebhookRequest } from "./server";
 import { stripe } from "./lib/stripe";
 import type Stripe from "stripe";
 import { getPayloadClient } from "./get-payload";
-import { Resend } from "resend";
 import { Product, User } from "./payload-types";
 import { ReceiptEmailHtml } from "./components/emails/ReceiptEmail";
 import { createPostexOrder } from "./lib/postex";
 import { Order } from "./lib/types";
 import { SHIPPING_FEE } from "./lib/config";
 import { OrderNotificationHtml } from "./components/emails/OrderNotification";
-
-const resend = new Resend(process.env.RESEND_API_KEY);
+import { resend } from "./lib/resend";
 
 interface ProductItem {
   product: string | Product;

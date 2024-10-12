@@ -5,27 +5,38 @@ import { PRODUCT_CATEGORIES } from "@/config";
 import { useCart } from "@/hooks/use-cart";
 import { cn, formatPrice } from "@/lib/utils";
 import { trpc } from "@/trpc/client";
-import { Check, Loader2, Minus, Plus, X } from "lucide-react";
+import { Check, Loader2, Minus, Plus, X, CreditCard, Truck, DollarSign } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import ShippingAddressForm from "@/components/ShippingAddressForm";
 import { Media, User } from "@/payload-types";
-import { SHIPPING_FEE, FREE_SHIPPING_THRESHOLD } from "@/lib/config"; // Import the shipping config
+import { SHIPPING_FEE, FREE_SHIPPING_THRESHOLD } from "@/lib/config";
 import { toast } from "./ui/use-toast";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 interface CartPageProps {
-  user: User | null; // User is passed from server-side as a prop
-  cities: { label: string; value: string; }[]
+  user: User | null;
+  cities: { label: string; value: string }[];
 }
 
-const CartPageClient = ({ user, cities }: CartPageProps) => {
+export default function CartPageClient({ user, cities }: CartPageProps) {
   const { items, updateQuantity, removeItem, cartTotal, clearCart } = useCart();
   const router = useRouter();
+  const [paymentMethod, setPaymentMethod] = useState<"cod" | "online">("online");
   const [userTypeSelected, setUserTypeSelected] = useState(Boolean(user));
-  const [isGuest, setIsGuest] = useState(!user); // Track if the user is a guest, based on server-side user prop
+  const [isGuest, setIsGuest] = useState(!user);
   const [shippingAddress, setShippingAddress] = useState({
     line1: "",
     line2: "",
@@ -34,30 +45,9 @@ const CartPageClient = ({ user, cities }: CartPageProps) => {
     postalCode: "",
     country: "",
   });
-  const [guestName, setGuestName] = useState<string>(""); // New state for guest user name
+  const [guestName, setGuestName] = useState<string>("");
   const [guestEmail, setGuestEmail] = useState<string>("");
   const [phone, setPhone] = useState<string>("");
-
-  // useEffect(() => {
-  //   const loadCities = async () => {
-  //     setLoading(true);
-  //     const fetchedCities = await fetchOperationalCities();
-  //     setCities(
-  //       fetchedCities.dist.map((city: any) => ({
-  //         label: city.operationalCityName,
-  //         value: city.operationalCityName,
-  //       }))
-  //     );
-  //     setLoading(false);
-  //   };
-  //   loadCities();
-  // }, []);
-
-  const productItems = items.map(({ product, quantity }) => ({
-    productId: product.id,
-    quantity,
-  }));
-
   const [isMounted, setIsMounted] = useState<boolean>(false);
 
   useEffect(() => {
@@ -72,35 +62,20 @@ const CartPageClient = ({ user, cities }: CartPageProps) => {
     }));
   };
 
-  type HandleCityChange = (selectedOption: { label: string; value: string } | null) => void;
-
-  const handleCityChange: HandleCityChange = (selectedOption) => {
+  const handleCityChange = (selectedOption: { label: string; value: string } | null) => {
     if (selectedOption) {
       setShippingAddress((prevState) => ({
         ...prevState,
-        city: selectedOption.value, // Set the city from the selected value
+        city: selectedOption.value,
       }));
     }
   };
 
-  const handleGuestNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setGuestName(e.target.value);
-  };
-
-  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setGuestEmail(e.target.value);
-  };
-
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPhone(e.target.value);
-  };
-
   const validatePhoneNumber = (phone: string): boolean => {
-    const phoneRegex = /^03\d{9}$/; // Regex for validating Pakistan phone numbers (03XXXXXXXXX)
+    const phoneRegex = /^03\d{9}$/;
     return phoneRegex.test(phone);
   };
 
-  // TRPC mutation for logged-in user
   const { mutate: createCheckoutSession, isLoading: isCheckoutLoading } = trpc.payment.createSession.useMutation({
     onSuccess: ({ url }) => {
       if (url) {
@@ -110,10 +85,14 @@ const CartPageClient = ({ user, cities }: CartPageProps) => {
     },
     onError: (error) => {
       console.error("Error creating checkout session:", error);
+      toast({
+        title: "Error",
+        description: "There was a problem processing your order.",
+        variant: "destructive",
+      });
     },
   });
 
-  // TRPC mutation for guest users
   const { mutate: createPublicSession, isLoading: isGuestCheckoutLoading } = trpc.order.createPublicSession.useMutation({
     onSuccess: ({ url }) => {
       if (url) {
@@ -123,28 +102,65 @@ const CartPageClient = ({ user, cities }: CartPageProps) => {
     },
     onError: (error) => {
       console.error("Error creating guest checkout session:", error);
+      toast({
+        title: "Error",
+        description: "There was a problem processing your order.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const { mutate: createCODOrder, isLoading: isCODLoading } = trpc.payment.createCODOrder.useMutation({
+    onSuccess: ({ order }) => {
+      clearCart();
+      router.push(`${process.env.NEXT_PUBLIC_SERVER_URL}/order-confirmation?orderId=${order.id}`);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "There was a problem processing your order.",
+        variant: "destructive",
+      });
     },
   });
 
   const handleCheckout = () => {
     if (!shippingAddress.line1 || !shippingAddress.city || !shippingAddress.country) {
-      alert("Please fill out all required fields.");
+      toast({
+        title: "Incomplete Address",
+        description: "Please fill out all required address fields.",
+        variant: "destructive",
+      });
       return;
     }
 
     if (!validatePhoneNumber(phone)) {
       toast({
-        title: "Invalid number",
+        title: "Invalid Phone Number",
         description: "Please enter a valid phone number (e.g., 03XXXXXXXXX).",
-        className: "animate-toast-slide-in",
+        variant: "destructive",
       });
       return;
     }
 
-    // Ensure user is available before creating a session
-    if (isGuest) {
+    const productItems = items.map(({ product, quantity }) => ({
+      productId: product.id,
+      quantity,
+    }));
+
+    if (paymentMethod === "cod" && user) {
+      createCODOrder({
+        productItems,
+        shippingAddress,
+        phone,
+      });
+    } else if (isGuest) {
       if (!guestEmail || !guestName) {
-        alert("Please provide a valid email address and name.");
+        toast({
+          title: "Incomplete Information",
+          description: "Please provide a valid email address and name.",
+          variant: "destructive",
+        });
         return;
       }
       createPublicSession({ productItems, shippingAddress, email: guestEmail, name: guestName, phone });
@@ -152,7 +168,11 @@ const CartPageClient = ({ user, cities }: CartPageProps) => {
       createCheckoutSession({ productItems, shippingAddress, phone });
     } else {
       console.error("User not found. Cannot proceed with checkout.");
-      alert("User not found. Please log in and try again.");
+      toast({
+        title: "Authentication Error",
+        description: "User not found. Please log in and try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -174,7 +194,6 @@ const CartPageClient = ({ user, cities }: CartPageProps) => {
     );
   };
 
-  // Updated cartTotal function to use discounted prices
   const calculateCartTotal = () => {
     return items.reduce((total, { product, quantity }) => {
       const price = product.discountedPrice ?? product.price;
@@ -183,269 +202,269 @@ const CartPageClient = ({ user, cities }: CartPageProps) => {
   };
 
   const orderTotal = calculateCartTotal();
-
-  // Determine shipping fee based on cart total
   const shippingFee = orderTotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE;
 
   return (
-    <div className="bg-white">
+    <div className="bg-gray-50 min-h-screen">
       <div className="mx-auto max-w-2xl px-4 pb-24 pt-16 sm:px-6 lg:max-w-7xl lg:px-8">
-        <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">Shopping Cart</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl mb-8">Shopping Cart</h1>
 
-        <div className="mt-12 lg:grid lg:grid-cols-12 lg:items-start lg:gap-x-12 xl:gap-x-16">
+        <div className="lg:grid lg:grid-cols-12 lg:items-start lg:gap-x-12 xl:gap-x-16">
           {/* Cart Items */}
-          <div className={cn("lg:col-span-7", { "rounded-lg border-2 border-dashed border-zinc-200 p-12": isMounted && items.length === 0 })}>
-            <h2 className="sr-only">Items in your shopping cart</h2>
-
-            {isMounted && items.length === 0 ? (
-              <div className="flex h-full flex-col items-center justify-center space-y-1">
-                <div aria-hidden="true" className="relative mb-4 h-40 w-40 text-muted-foreground">
-                  <Image src="/bear_empty_cart.png" fill loading="eager" alt="empty shopping cart bear" />
+          <Card className="lg:col-span-7">
+            <CardHeader>
+              <CardTitle>Items in your cart</CardTitle>
+              <CardDescription>Review and adjust your items before checkout</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isMounted && items.length === 0 ? (
+                <div className="flex h-full flex-col items-center justify-center space-y-1 py-12">
+                  <div aria-hidden="true" className="relative mb-4 h-40 w-40 text-muted-foreground">
+                    <Image src="/bear_empty_cart.png" fill loading="eager" alt="empty shopping cart bear" />
+                  </div>
+                  <h3 className="font-semibold text-2xl">Your cart is empty</h3>
+                  <p className="text-muted-foreground text-center">Whoops! Nothing to show here yet.</p>
                 </div>
-                <h3 className="font-semibold text-2xl">Your cart is empty</h3>
-                <p className="text-muted-foreground text-center">Whoops! Nothing to show here yet.</p>
-              </div>
-            ) : null}
+              ) : (
+                <ul className="divide-y divide-gray-200">
+                  {isMounted &&
+                    items.map(({ product, quantity }) => {
+                      const label = PRODUCT_CATEGORIES.find((c) => c.value === product.category)?.label;
+                      const firstImage = product.images.find(({ image }: {image: Media | string}) => {
+                        return typeof image === "object" && (image.resourceType?.startsWith("image") || image.mimeType?.startsWith("image"));
+                      })?.image;
+                      const imageUrl = (firstImage as Media).sizes?.thumbnail?.url;
+                      const price = product.discountedPrice ?? product.price;
 
-            <ul className={cn({ "divide-y divide-gray-200 border-b border-t border-gray-200": isMounted && items.length > 0 })}>
-              {isMounted &&
-                items.map(({ product, quantity }) => {
-                  const label = PRODUCT_CATEGORIES.find((c) => c.value === product.category)?.label;
-                  
-                  const firstImage = product.images.find(({ image } : {image: Media | string}) => {
-                    return typeof image === "object" && (image.resourceType?.startsWith("image") || image.mimeType?.startsWith("image"));
-                  })?.image
-                
-                  const imageUrl = (firstImage as Media).sizes?.thumbnail?.url
-
-                  // Use discountedPrice if available
-                  const price = product.discountedPrice ?? product.price;
-
-                  return (
-                    <li key={product.id} className="flex py-6 sm:py-10">
-                      <div className="flex-shrink-0">
-                        <div className="relative h-24 w-24">
-                          {imageUrl ? (
-                            <Image fill src={imageUrl} alt="product image" className="h-full w-full rounded-md object-cover object-center sm:h-48 sm:w-48" />
-                          ) : null}
-                        </div>
-                      </div>
-
-                      <div className="ml-4 flex flex-1 flex-col justify-between sm:ml-6">
-                        <div className="relative pr-9 sm:grid sm:grid-cols-2 sm:gap-x-6 sm:pr-0">
-                          <div>
-                            <div className="flex justify-between">
-                              <h3 className="text-sm">
-                                <Link href={`/product/${product.id}`} className="font-medium text-gray-700 hover:text-gray-800">
-                                  {product.name}
-                                </Link>
-                              </h3>
+                      return (
+                        <li key={product.id} className="flex py-6 sm:py-10">
+                          <div className="flex-shrink-0">
+                            <div className="relative h-24 w-24">
+                              {imageUrl ? (
+                                <Image fill src={imageUrl} alt="product image" className="h-full w-full rounded-md object-cover object-center sm:h-48 sm:w-48" />
+                              ) : null}
                             </div>
-                            <div className="mt-1 flex text-sm">
-                              <p className="text-muted-foreground">Category: {label}</p>
+                          </div>
+
+                          <div className="ml-4 flex flex-1 flex-col justify-between sm:ml-6">
+                            <div className="relative pr-9 sm:grid sm:grid-cols-2 sm:gap-x-6 sm:pr-0">
+                              <div>
+                                <div className="flex justify-between">
+                                  <h3 className="text-sm">
+                                    <Link href={`/product/${product.id}`} className="font-medium text-gray-700 hover:text-gray-800">
+                                      {product.name}
+                                    </Link>
+                                  </h3>
+                                </div>
+                                <div className="mt-1 flex text-sm">
+                                  <p className="text-muted-foreground">Category: {label}</p>
+                                </div>
+                                <p className="mt-1 text-sm font-medium text-gray-900">
+                                  {product.discountedPrice ? (
+                                    <>
+                                      <span className="line-through text-gray-500 mr-2">
+                                        {formatPrice(product.price)}
+                                      </span>
+                                      <span>{formatPrice(product.discountedPrice)}</span>
+                                    </>
+                                  ) : (
+                                    <span>{formatPrice(product.price)}</span>
+                                  )}
+                                </p>
+                              </div>
+
+                              <div className="mt-4 sm:mt-0 sm:pr-9 w-20">
+                                <div className="absolute right-0 top-0">
+                                  <Button aria-label="remove product" onClick={() => removeItem(product.id)} variant="ghost">
+                                    <X className="h-5 w-5" aria-hidden="true" />
+                                  </Button>
+                                </div>
+
+                                <div className="flex items-center mt-4 space-x-2">
+                                  <Button
+                                    size="icon"
+                                    variant="outline"
+                                    onClick={() => updateQuantity(product.id, quantity - 1)}
+                                    disabled={quantity <= 1}
+                                    className="p-2 transition-all duration-150 ease-in-out hover:bg-gray-100 active:bg-gray-200"
+                                  >
+                                    <Minus className="w-4 h-4 text-gray-700" />
+                                  </Button>
+
+                                  <Input type="text" readOnly value={quantity} className="mx-2 w-12 text-center bg-gray-50 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" />
+
+                                  <Button
+                                    size="icon"
+                                    variant="outline"
+                                    onClick={() => updateQuantity(product.id, quantity + 1)}
+                                    disabled={quantity >= product.inventory}
+                                    className="p-2 transition-all duration-150 ease-in-out hover:bg-gray-100 active:bg-gray-200"
+                                  >
+                                    <Plus className="w-4 h-4 text-gray-700" />
+                                  </Button>
+                                </div>
+                              </div>
                             </div>
-                            {/* Display original and discounted prices */}
-                            <p className="mt-1 text-sm font-medium text-gray-900">
-                              {product.discountedPrice ? (
-                                <>
-                                  <span className="line-through text-gray-500 mr-2">
-                                    {formatPrice(product.price)}
-                                  </span>
-                                  <span>{formatPrice(product.discountedPrice)}</span>
-                                </>
-                              ) : (
-                                <span>{formatPrice(product.price)}</span>
-                              )}
+                            <p className="mt-4 flex space-x-2 text-gray-700">
+                              <Check className="h-5 w-5 flex-shrink-0 text-green-500" />
+                              <span>Eligible for shipping</span>
                             </p>
+                            <span className="text-xs text-gray-500">{product.inventory > 0 ? `In stock: ${product.inventory}` : "Out of stock"}</span>
                           </div>
+                        </li>
+                      );
+                    })}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
 
-                          <div className="mt-4 sm:mt-0 sm:pr-9 w-20">
-                            <div className="absolute right-0 top-0">
-                              <Button aria-label="remove product" onClick={() => removeItem(product.id)} variant="ghost">
-                                <X className="h-5 w-5" aria-hidden="true" />
-                              </Button>
-                            </div>
-
-                            <div className="flex items-center mt-4 space-x-2">
-                              <Button
-                                size="icon"
-                                variant="outline"
-                                onClick={() => updateQuantity(product.id, quantity - 1)}
-                                disabled={quantity <= 1}
-                                className="p-2 transition-all duration-150 ease-in-out hover:bg-gray-100 active:bg-gray-200"
-                              >
-                                <Minus className="w-4 h-4 text-gray-700" />
-                              </Button>
-
-                              <Input type="text" readOnly value={quantity} className="mx-2 w-12 text-center bg-gray-50 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" />
-
-                              <Button
-                                size="icon"
-                                variant="outline"
-                                onClick={() => updateQuantity(product.id, quantity + 1)}
-                                disabled={quantity >= product.inventory}
-                                className="p-2 transition-all duration-150 ease-in-out hover:bg-gray-100 active:bg-gray-200"
-                              >
-                                <Plus className="w-4 h-4 text-gray-700" />
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                        <p className="mt-4 flex space-x-2 text-gray-700">
-                          <Check className="h-5 w-5 flex-shrink-0 text-green-500" />
-                          <span>Eligible for shipping</span>
-                        </p>
-                        <span className="text-xs text-gray-500">{product.inventory > 0 ? `In stock: ${product.inventory}` : "Out of stock"}</span>
-                      </div>
-                    </li>
-                  );
-                })}
-            </ul>
-          </div>
-
-          {/* Shipping Form */}
-          <section className="mt-16 rounded-lg bg-gray-50 px-4 py-6 sm:p-6 lg:col-span-5 lg:mt-0 lg:p-8">
-            <div className="mt-6 space-y-4">
-            <div className="mt-6 space-y-4">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-600">Subtotal</p>
-                <p className="text-sm font-medium text-gray-900">
-                  {isMounted ? formatPrice(calculateCartTotal()) : <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-                </p>
-              </div>
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-600">Shipping</p>
-                <p className={cn((calculateCartTotal() >= FREE_SHIPPING_THRESHOLD) ? "text-green-600": "text-gray-900", "text-sm font-medium")}>
-                  {isMounted ? (calculateCartTotal() >= FREE_SHIPPING_THRESHOLD ? "FREE" : formatPrice(SHIPPING_FEE)) : <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-                </p>
-              </div>
-
-              <div className="flex items-center justify-between border-t border-gray-200 pt-4 py-6">
-                <div className="text-base font-medium text-gray-900">Order Total</div>
-                <div className="text-base font-medium text-gray-900">
-                  {isMounted ? formatPrice(calculateCartTotal() + shippingFee) : <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+          {/* Checkout Form */}
+          <Card className="mt-16 lg:col-span-5 lg:mt-0">
+            <CardHeader>
+              <CardTitle>Order Summary</CardTitle>
+              <CardDescription>Complete your purchase by providing shipping and payment details</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-gray-600">Subtotal</p>
+                  <p className="text-sm font-medium text-gray-900">
+                    {isMounted ? formatPrice(calculateCartTotal()) : <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                  </p>
+                </div>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-gray-600">Shipping</p>
+                  <p className={cn((calculateCartTotal() >= FREE_SHIPPING_THRESHOLD) ? "text-green-600": "text-gray-900", "text-sm font-medium")}>
+                    {isMounted ? (calculateCartTotal() >= FREE_SHIPPING_THRESHOLD ? "FREE" : formatPrice(SHIPPING_FEE)) : <Loader2 className="h-4 w-4 animate-spin  text-muted-foreground" />}
+                  </p>
+                </div>
+                <div className="flex items-center justify-between border-t border-gray-200 pt-4">
+                  <div className="text-base font-medium text-gray-900">Order Total</div>
+                  <div className="text-base font-medium text-gray-900">
+                    {isMounted ? formatPrice(calculateCartTotal() + shippingFee) : <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                  </div>
                 </div>
               </div>
-            </div>
+
               {!userTypeSelected ? (
-                <div className="flex flex-col items-center px-4 border-t py-6">
-                  <h1 className="text-2xl font-bold mb-6 text-gray-900">How do you want to checkout?</h1>
+                <div className="mt-6">
+                  <h2 className="text-lg font-medium text-gray-900 mb-4">How do you want to checkout?</h2>
                   <div className="flex space-x-4">
-                    <Button onClick={handleContinueAsGuest} className="px-6 py-4 text-lg font-medium">
+                    <Button onClick={handleContinueAsGuest} className="flex-1">
                       Continue as Guest
                     </Button>
-                    <Button onClick={handleLogin} variant="outline" className="px-6 py-4 text-lg font-medium">
+                    <Button onClick={handleLogin} variant="outline" className="flex-1">
                       Sign In
                     </Button>
                   </div>
                 </div>
               ) : (
                 <>
-                  <h2 className="text-lg font-medium text-gray-900 py-6">Shipping Details</h2>
-
-                  {isGuest ? (
-                    <>
-                      <div className="mb-6">
-                        <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                          Name
-                        </label>
-                        <div className="mt-1">
-                          <Input
-                            id="name"
-                            name="name"
-                            placeholder="Your Name"
-                            value={guestName}
-                            onChange={handleGuestNameChange}
-                            required
-                            className="block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                          />
+                  <div className="mt-6">
+                    <h2 className="text-lg font-medium text-gray-900 mb-4">Shipping Details</h2>
+                    {isGuest ? (
+                      <>
+                        <div className="space-y-4">
+                          <div>
+                            <Label htmlFor="name">Name</Label>
+                            <Input
+                              id="name"
+                              placeholder="Your Name"
+                              value={guestName}
+                              onChange={(e) => setGuestName(e.target.value)}
+                              required
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="email">Email</Label>
+                            <Input
+                              id="email"
+                              type="email"
+                              placeholder="you@example.com"
+                              value={guestEmail}
+                              onChange={(e) => setGuestEmail(e.target.value)}
+                              required
+                            />
+                          </div>
                         </div>
-                      </div>
-                      <div className="mb-6">
-                        <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                          Email
-                        </label>
-                        <div className="mt-1">
-                          <Input
-                            id="email"
-                            name="email"
-                            placeholder="you@example.com"
-                            value={guestEmail}
-                            onChange={handleEmailChange}
-                            required
-                            className="block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-                          />
-                        </div>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="mb-6">
-                      <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                        Name
-                      </label>
-                      <div className="mt-1">
+                      </>
+                    ) : (
+                      <div>
+                        <Label htmlFor="name">Name</Label>
                         <Input
                           id="name"
-                          name="name"
                           value={user?.name || ""}
                           readOnly
-                          className="block w-full p-3 border border-gray-300 rounded-md shadow-sm bg-gray-100 cursor-not-allowed"
+                          className="bg-gray-100 cursor-not-allowed"
                         />
                       </div>
-                    </div>
-                  )}
-
-                  <div className="mb-6">
-                    <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-                      Phone Number
-                    </label>
-                    <div className="mt-1">
+                    )}
+                    <div className="mt-4">
+                      <Label htmlFor="phone">Phone Number</Label>
                       <Input
                         id="phone"
-                        name="phone"
                         placeholder="03XXXXXXXXX"
                         value={phone}
-                        onChange={handlePhoneChange}
+                        onChange={(e) => setPhone(e.target.value)}
                         required
-                        className="block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                      />
+                    </div>
+                    <div className="mt-4">
+                      <ShippingAddressForm
+                        shippingAddress={shippingAddress}
+                        handleInputChange={handleInputChange}
+                        handleCityChange={handleCityChange}
+                        cities={cities}
+                        loading={false}
                       />
                     </div>
                   </div>
 
-                  <ShippingAddressForm
-                    shippingAddress={shippingAddress}
-                    handleInputChange={handleInputChange}
-                    handleCityChange={handleCityChange}
-                    cities={cities}
-                    loading={false}
-                  />
-
                   <div className="mt-6">
-                    <Button
-                      disabled={
-                        items.length === 0 ||
-                        isCheckoutLoading ||
-                        isGuestCheckoutLoading ||
-                        items.some((i) => i.product.inventory === 0 || !isFormComplete())
-                      }
-                      onClick={handleCheckout}
-                      className="w-full"
-                      size="lg"
-                    >
-                      {isCheckoutLoading || isGuestCheckoutLoading ? (
-                        <Loader2 className="w-4 h-4 animate-spin text-muted-foreground mr-1.5" />
-                      ) : null}
-                      Checkout
-                    </Button>
+                    <h2 className="text-lg font-medium text-gray-900 mb-4">Payment Method</h2>
+                    <RadioGroup value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as "cod" | "online")}>
+                      <div className="flex items-center space-x-2 mb-2">
+                        <RadioGroupItem value="online" id="online" />
+                        <Label htmlFor="online" className="flex items-center">
+                          <CreditCard className="w-4 h-4 mr-2" />
+                          Online Payment
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="cod" id="cod" disabled={!user} />
+                        <Label htmlFor="cod" className={cn("flex items-center", !user && "opacity-50")}>
+                          Rs Cash on Delivery {!user && "(Login required)"}
+                        </Label>
+                      </div>
+                    </RadioGroup>
                   </div>
                 </>
               )}
-            </div>
-          </section>
+            </CardContent>
+            <CardFooter>
+              <Button
+                disabled={
+                  isCODLoading ||
+                  items.length === 0 ||
+                  isCheckoutLoading ||
+                  isGuestCheckoutLoading ||
+                  items.some((i) => i.product.inventory === 0) ||
+                  !isFormComplete()
+                }
+                onClick={handleCheckout}
+                className="w-full"
+                size="lg"
+              >
+                {isCheckoutLoading || isGuestCheckoutLoading || isCODLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                ) : null}
+                {paymentMethod === "cod" ? "Place Order (COD)" : "Proceed to Payment"}
+              </Button>
+            </CardFooter>
+          </Card>
         </div>
       </div>
     </div>
   );
-};
-
-export default CartPageClient;
+}
