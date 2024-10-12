@@ -2,14 +2,14 @@ import { PDFDocument, rgb, StandardFonts, PDFFont, PDFPage } from "pdf-lib";
 import { getPayloadClient } from "@/get-payload";
 import { Order } from "@/lib/types";
 import { User } from "@/payload-types";
-import { FREE_SHIPPING_THRESHOLD } from "./config";
+import { FREE_SHIPPING_THRESHOLD, SHIPPING_FEE } from "./config";
 
 interface ShippingAddressType {
   line1: string;
   line2?: string | null;
   city: string;
-  state?: string | null; // Made optional
-  postalCode?: string | null; // Made optional
+  state?: string | null;
+  postalCode?: string | null;
   country: string;
 }
 
@@ -45,10 +45,7 @@ const drawLine = (
 ) => {
   page.drawLine({
     start: { x: startX, y: startY },
-    end: {
-      x: endX,
-      y: endY
-    },
+    end: { x: endX, y: endY },
     thickness,
     color: rgb(...color),
   });
@@ -80,11 +77,11 @@ export const generateInvoice = async (orderId: string, logoUrl?: string): Promis
   const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
   const timesRoman = await pdfDoc.embedFont(StandardFonts.TimesRoman);
 
-  // Colors
-  const primaryColor = [0.1, 0.1, 0.1] as [number, number, number];
-  const secondaryColor = [0.4, 0.4, 0.4] as [number, number, number];
-  const accentColor = [0.8, 0.6, 0.2] as [number, number, number];
-  const backgroundColor = [0.98, 0.98, 0.98] as [number, number, number];
+  // Colors (Updated to black theme)
+  const primaryColor = [0, 0, 0] as [number, number, number]; // Black
+  const secondaryColor = [0.3, 0.3, 0.3] as [number, number, number]; // Dark Gray
+  const accentColor = [0.7, 0.7, 0.7] as [number, number, number]; // Light Gray
+  const backgroundColor = [1, 1, 1] as [number, number, number]; // White
 
   // Background
   page.drawRectangle({
@@ -117,8 +114,8 @@ export const generateInvoice = async (orderId: string, logoUrl?: string): Promis
   drawText(page, "Website: www.esustore.com", 50, height - 210, helvetica, 10, secondaryColor);
 
   // Invoice Title and Number
-  drawText(page, "INVOICE", width - 200, height - 50, helveticaBold, 28, accentColor);
-  drawText(page, `#${order.orderNumber}`, width - 200, height - 80, helveticaBold, 14, primaryColor);
+  drawText(page, "INVOICE", width - 200, height - 50, helveticaBold, 28, primaryColor);
+  drawText(page, `#${order.orderNumber}`, width - 200, height - 80, helveticaBold, 14, secondaryColor);
 
   // Customer Info
   const shippingAddress = order.shippingAddress as ShippingAddressType;
@@ -135,22 +132,24 @@ export const generateInvoice = async (orderId: string, logoUrl?: string): Promis
     shippingAddress.state ? shippingAddress.state + " " : ""
   }${shippingAddress.postalCode ? shippingAddress.postalCode : ""}`;
   drawText(page, addressLine, 50, height - 300 - line2, helvetica, 10, secondaryColor);
-  drawText(page, shippingAddress.country, 50, height - 315 - line2, helvetica, 10, secondaryColor);
+  drawText(page, (shippingAddress.country === 'PK' ? 'Pakistan' : shippingAddress.country) , 50, height - 315 - line2, helvetica, 10, secondaryColor);
 
   // Order Details
   drawText(page, "Order Date:", width - 210, height - 250, helveticaBold, 10, primaryColor);
   drawText(page, new Date(order.createdAt as string).toLocaleDateString(), width - 120, height - 250, helvetica, 10, secondaryColor);
 
   drawText(page, "Payment Status:", width - 210, height - 270, helveticaBold, 10, primaryColor);
-  drawText(page, order._isPaid ? "Paid" : "Unpaid", width - 120, height - 270, helvetica, 10, order._isPaid ? [0, 0.5, 0] : [0.8, 0, 0]);
+  const paymentStatus = order.paymentType === 'cod' ? (order._isPaid ? "Paid" : "Awaiting Payment") : (order._isPaid ? "Paid" : "Unpaid");
+  drawText(page, paymentStatus, width - 120, height - 270, helvetica, 10, order._isPaid ? [0, 0.5, 0] : [0.8, 0, 0]);
 
   drawText(page, "Payment Method:", width - 210, height - 290, helveticaBold, 10, primaryColor);
-  drawText(page, "Credit Card", width - 120, height - 290, helvetica, 10, secondaryColor);
+  const paymentMethod = order.paymentType === 'cod' ? "Cash on Delivery" : "Credit Card";
+  drawText(page, paymentMethod, width - 120, height - 290, helvetica, 10, secondaryColor);
 
   // Table Headers
   const tableTop = height - 350;
   const tableHeaders = ["Item", "SKU", "Quantity", "Unit Price (Rs)", "Total (Rs)"];
-  const columnWidths = [200, 100, 80, 100, 100];
+  const columnWidths = [170, 100, 80, 90, 100];
   
   // Table background
   page.drawRectangle({
@@ -158,7 +157,7 @@ export const generateInvoice = async (orderId: string, logoUrl?: string): Promis
     y: tableTop - 10,
     width: width - 80,
     height: 30,
-    color: rgb(...accentColor),
+    color: rgb(...primaryColor),
   });
 
   tableHeaders.forEach((header, index) => {
@@ -186,10 +185,10 @@ export const generateInvoice = async (orderId: string, logoUrl?: string): Promis
     const productPrice = item.product.discountedPrice ?? item.product.price;
 
     drawText(page, item.product.name, 50, yPos, helvetica, 10, secondaryColor);
-    drawText(page, generateSKU(), 250, yPos, helvetica, 10, secondaryColor);
-    drawText(page, item.quantity.toString(), 350, yPos, helvetica, 10, secondaryColor);
-    drawText(page, `${productPrice.toFixed(2)}`, 430, yPos, helvetica, 10, secondaryColor);
-    drawText(page, `${(productPrice * item.quantity).toFixed(2)}`, 510, yPos, helvetica, 10, secondaryColor);
+    drawText(page, generateSKU(), 220, yPos, helvetica, 10, secondaryColor);
+    drawText(page, item.quantity.toString(), 320, yPos, helvetica, 10, secondaryColor);
+    drawText(page, `${productPrice.toFixed(2)}`, 400, yPos, helvetica, 10, secondaryColor);
+    drawText(page, `${(productPrice * item.quantity).toFixed(2)}`, 490, yPos, helvetica, 10, secondaryColor);
     yPos -= 20;
   });
 
@@ -198,7 +197,7 @@ export const generateInvoice = async (orderId: string, logoUrl?: string): Promis
     (acc, item) => acc + item.quantity * (item.product.discountedPrice ?? item.product.price), 
     0
   );
-  const shipping = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : 250; // Flat rate shipping
+  const shipping = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE; // Flat rate shipping
   const total = subtotal + shipping;
 
   yPos -= 20;
@@ -217,17 +216,17 @@ export const generateInvoice = async (orderId: string, logoUrl?: string): Promis
   page.drawRectangle({
     x: 390,
     y: yPos - 5,
-    width: 170,
+    width: 190,
     height: 25,
-    color: rgb(...accentColor),
+    color: rgb(...primaryColor),
   });
   drawText(page, "Total:", 400, yPos, helveticaBold, 14, [1, 1, 1]);
-  drawText(page, `Rs ${total.toFixed(2)}`, 500, yPos, helveticaBold, 1, [1, 1, 1]);
+  drawText(page, `Rs ${total.toFixed(2)}`, 490, yPos, helveticaBold, 14, [1, 1, 1]);
 
   // Footer
   const footerText = "Thank you for your business!";
   const footerTextWidth = helvetica.widthOfTextAtSize(footerText, 10);
-  drawText(page, footerText, (width - footerTextWidth) / 2, 70, helveticaBold, 10, accentColor);
+  drawText(page, footerText, (width - footerTextWidth) / 2, 70, helveticaBold, 10, primaryColor);
 
   drawText(page, "Terms & Conditions", 50, 50, helveticaBold, 8, primaryColor);
   drawText(page, "If you have any questions about this invoice, please contact our customer service.", 50, 30, timesRoman, 8, secondaryColor);
