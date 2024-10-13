@@ -100,18 +100,18 @@ export const generateInvoice = async (orderId: string, logoUrl?: string): Promis
   const logoHeight = logoWidth / logoAspectRatio;
   page.drawImage(logoImage, {
     x: 50,
-    y: height - 100,
+    y: height - 85,
     width: logoWidth,
     height: logoHeight,
   });
 
   // Company Info
-  drawText(page, "ESU STORE LLC", 50, height - 130, helveticaBold, 16, primaryColor);
-  drawText(page, "7901 4TH ST N # 16774", 50, height - 150, helvetica, 10, secondaryColor);
-  drawText(page, "ST PETERSBURG FL 33702-4305", 50, height - 165, helvetica, 10, secondaryColor);
-  drawText(page, "Phone: (800) 123-4567", 50, height - 180, helvetica, 10, secondaryColor);
-  drawText(page, "Email: info@esustore.com", 50, height - 195, helvetica, 10, secondaryColor);
-  drawText(page, "Website: www.esustore.com", 50, height - 210, helvetica, 10, secondaryColor);
+  drawText(page, "ESU STORE LLC", 50, height - 115, helveticaBold, 16, primaryColor);
+  drawText(page, "7901 4TH ST N # 16774", 50, height - 135, helvetica, 10, secondaryColor);
+  drawText(page, "ST PETERSBURG FL 33702-4305", 50, height - 150, helvetica, 10, secondaryColor);
+  drawText(page, "Phone: +1 (727) 405-6739", 50, height - 165, helvetica, 10, secondaryColor);
+  drawText(page, "Email: info@esustore.com", 50, height - 180, helvetica, 10, secondaryColor);
+  drawText(page, "Website: www.esustore.com", 50, height - 195, helvetica, 10, secondaryColor);
 
   // Invoice Title and Number
   drawText(page, "INVOICE", width - 200, height - 50, helveticaBold, 28, primaryColor);
@@ -121,18 +121,20 @@ export const generateInvoice = async (orderId: string, logoUrl?: string): Promis
   const shippingAddress = order.shippingAddress as ShippingAddressType;
   const userDetail = order.name ? order.name : order.email;
   let line2 = 0;
-  drawText(page, "Bill To:", 50, height - 250, helveticaBold, 12, primaryColor);
-  drawText(page, userDetail, 50, height - 270, helvetica, 10, secondaryColor);
-  drawText(page, shippingAddress.line1, 50, height - 285, helvetica, 10, secondaryColor);
+  drawText(page, "Bill To:", 50, height - 215, helveticaBold, 12, primaryColor);
+  drawText(page, userDetail, 50, height - 235, helvetica, 10, secondaryColor);
+  drawText(page, shippingAddress.line1, 50, height - 250, helvetica, 10, secondaryColor);
   if (shippingAddress.line2) {
     line2 = 15;
-    drawText(page, shippingAddress.line2, 50, height - 300 - line2, helvetica, 10, secondaryColor);
+    drawText(page, shippingAddress.line2, 50, height - 265 - line2, helvetica, 10, secondaryColor);
   }
   const addressLine = `${shippingAddress.city}, ${
     shippingAddress.state ? shippingAddress.state + " " : ""
   }${shippingAddress.postalCode ? shippingAddress.postalCode : ""}`;
-  drawText(page, addressLine, 50, height - 300 - line2, helvetica, 10, secondaryColor);
-  drawText(page, (shippingAddress.country === 'PK' ? 'Pakistan' : shippingAddress.country) , 50, height - 315 - line2, helvetica, 10, secondaryColor);
+  drawText(page, addressLine, 50, height - 265 - line2, helvetica, 10, secondaryColor);
+  drawText(page, (shippingAddress.country === 'PK' ? 'Pakistan' : shippingAddress.country) , 50, height - 280 - line2, helvetica, 10, secondaryColor);
+  drawText(page, order.email, 50, height - 295 - line2, helvetica, 10, secondaryColor);
+  drawText(page, order.phone, 50, height - 310 - line2, helvetica, 10, secondaryColor);
 
   // Order Details
   drawText(page, "Order Date:", width - 210, height - 250, helveticaBold, 10, primaryColor);
@@ -145,6 +147,9 @@ export const generateInvoice = async (orderId: string, logoUrl?: string): Promis
   drawText(page, "Payment Method:", width - 210, height - 290, helveticaBold, 10, primaryColor);
   const paymentMethod = order.paymentType === 'cod' ? "Cash on Delivery" : "Credit Card";
   drawText(page, paymentMethod, width - 120, height - 290, helvetica, 10, secondaryColor);
+
+  drawText(page, "Tracking Number:", width - 210, height - 310, helveticaBold, 10, primaryColor);
+  drawText(page, order.trackingInfo?.trackingNumber ?? "N/A", width - 120, height - 310, helvetica, 10, secondaryColor);
 
   // Table Headers
   const tableTop = height - 350;
