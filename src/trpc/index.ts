@@ -67,6 +67,28 @@ export const appRouter = router({
       return { items, nextPage: hasNextPage ? nextPage : null };
     }),
 
+    getProductsByIds: publicProcedure
+    .input(
+      z.object({
+        productIds: z.array(z.string()),
+      })
+    )
+    .query(async ({ input }) => {
+      const { productIds } = input;
+      const payload = await getPayloadClient();
+
+      const { docs: products } = await payload.find({
+        collection: "products",
+        where: {
+          id: {
+            in: productIds,
+          },
+        },
+      });
+
+      return products;
+    }),
+
   getJewelleryBestRated: publicProcedure
     .input(
       z.object({
