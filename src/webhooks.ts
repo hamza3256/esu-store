@@ -135,8 +135,6 @@ export const stripeWebhookHandler = async (
             pickupAddressCode: "001",
           };
 
-          console.log("postex order data: " + postexOrderData)
-
           // Create order in PostEx
           const postexResponse = await createPostexOrder(postexOrderData);
 
@@ -153,8 +151,6 @@ export const stripeWebhookHandler = async (
               },
             },
           });
-
-          console.log("PostEx order created:", postexResponse);
         } catch (error) {
           console.error("Error while creating order in PostEx:", error);
           return res.status(500).send({
@@ -166,11 +162,8 @@ export const stripeWebhookHandler = async (
 
       // Ensure email hasn't been sent already
       if (order._emailSent) {
-        console.log("Email has already been sent for this order.");
         return res.status(200).json({ message: "Email already sent." });
       }
-
-      console.log("Order found, updating payment status...");
 
       // 4. Update the order as paid
       await payload.update({
@@ -178,7 +171,8 @@ export const stripeWebhookHandler = async (
         id: orderId,
         data: {
           _isPaid: true,
-          _isPostexOrderCreated: true
+          _isPostexOrderCreated: true,
+          status: "processing"
         },
       });
 
@@ -293,8 +287,6 @@ const updateOrder = async (payload: any, orderId: string, order: any) => {
             inventory: updatedInventory,
           },
         });
-
-        console.log(`Inventory for product ${productId} updated to ${updatedInventory}`);
       }
     }
 
