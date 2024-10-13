@@ -22,6 +22,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "./ui/card";
 import { useSwipeable } from "react-swipeable";
 import Link from "next/link";
+import ImageSlider from "./ImageSlider";
 
 interface ProductListingProps {
   product: Product | null;
@@ -120,6 +121,19 @@ export default function ProductListing({
   const isVideo =
     typeof currentImage !== "string" && currentImage?.resourceType === "video";
 
+    const validUrls: { type: 'image' | 'video'; url: string }[] = product?.images
+    ?.map(({ image }) => {
+      if (typeof image === "object" && image?.url) {
+        if (image.resourceType === "video") {
+          return { type: 'video', url: image?.sizes?.video?.url };
+        } else {
+          return { type: 'image', url: image?.sizes?.card?.url };
+        }
+      }
+      return null;
+    })
+    .filter(Boolean) as { type: 'image' | 'video'; url: string }[];
+
   // Return placeholder if no product is available
   if (!product) {
     return <ProductPlaceholder />;
@@ -128,97 +142,12 @@ export default function ProductListing({
   return (
     <Card className="w-full max-w-sm sm:max-w-sm mx-auto overflow-hidden bg-white shadow-lg hover:shadow-xl transition-shadow duration-300 rounded-lg">
       <CardContent className="p-0">
-        <div className="relative aspect-square" {...swipeHandlers}>
-          <motion.div
-            key={currentImageIndex}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, ease: "easeInOut" }}
-            className="absolute inset-0"
-          >
-            {isVideo ? (
-              <video
-                key={videoUrl}
-                src={videoUrl}
-                className="w-full h-full object-cover"
-                autoPlay
-                loop
-                muted
-                playsInline
-              />
-            ) : (
-              <Image
-                src={imageUrl}
-                alt={product.name}
-                fill
-                className="rounded-t-lg object-cover"
-                loading="lazy"
-              />
-            )}
-          </motion.div>
-          <Badge
-            variant="secondary"
-            className="absolute top-2 left-2 mb-2 bg-white/80 text-gray-800"
-          >
-            {product.category}
-          </Badge>
-          <button
-            onClick={toggleFavorite}
-            className={cn(
-              "absolute top-2 right-2 z-10 p-2 rounded-full bg-white/80 backdrop-blur-sm transition-colors duration-300",
-              isFavorite
-                ? "text-red-500 hover:text-red-600"
-                : "text-gray-600 hover:text-gray-800"
-            )}
-            aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
-          >
-            <Heart
-              className="w-4 h-4"
-              fill={isFavorite ? "currentColor" : "none"}
-            />
-          </button>
-
-          {/* Chevron Navigation */}
-          {product.images.length > 1 && (
-            <>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full w-5 h-5 z-10"
-                onClick={handlePrevImage}
-              >
-                <ChevronLeft className="h-4 w-4 text-zinc-700" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full w-5 h-5 z-10"
-                onClick={handleNextImage}
-              >
-                <ChevronRight className="h-4 w-4 text-zinc-700" />
-              </Button>
-            </>
-          )}
-
-          <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-1">
-            {product.images.map((_, index) => (
-              product.images.length > 1 && (
-                <div
-                  key={index}
-                  className={cn(
-                    "w-1.5 h-1.5 rounded-full transition-colors duration-300",
-                    index === currentImageIndex ? "bg-white" : "bg-white/50"
-                  )}
-                />
-              )
-            ))}
-          </div>
-        </div>
+        <ImageSlider items={validUrls} productId={product.id}/>
 
         {/* Product Details */}
         <div className="p-3 sm:p-4">
           <Link href={productUrl}>
-            <h2 className="text-lg sm:text-xl font-semibold mb-2 text-gray-800 h-12 line-clamp-2">
+            <h2 className="text-sm sm:text-lg font-semibold mb-2 text-gray-800 h-12 line-clamp-2">
               {product.name}
             </h2>
           </Link>
@@ -294,6 +223,11 @@ export default function ProductListing({
           {product.inventory > 0 && product.inventory <= 5 && (
             <p className="text-sm text-red-500 font-semibold">
               Only {product.inventory} left in stock!
+            </p>
+          )}
+          {product.inventory > 5 && (
+            <p className="text-sm text-green-600 font-semibold">
+              {product.inventory} in stock
             </p>
           )}
         </div>
