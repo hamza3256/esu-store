@@ -88,7 +88,7 @@ export const Orders: CollectionConfig = {
       required: true,
     },
     {
-      name: "productItems", // Store both product and quantity
+      name: "productItems",
       type: "array",
       fields: [
         {
@@ -103,9 +103,18 @@ export const Orders: CollectionConfig = {
           required: true,
           defaultValue: 1,
         },
+        {
+          name: "priceAtPurchase",
+          label: "Price at Purchase",
+          type: "number",
+          required: true,
+          admin: {
+            readOnly: true, 
+          },
+        },
       ],
       required: true,
-    },
+    },    
     {
       name: "shippingAddress",
       type: "group",
@@ -139,13 +148,24 @@ export const Orders: CollectionConfig = {
     {
       name: "orderNumber",
       type: "text",
-      unique: true, // Ensures the order number is unique
+      unique: true, 
       required: true,
     },
     {
       name: "_emailSent",
       type: "checkbox",
       defaultValue: false
-    }
+    },
+    {
+      name: "paymentType",
+      label: "Payment Type",
+      type: "select",
+      options: [
+        { label: "Card", value: "card" },
+        { label: "Cash on Delivery", value: "cod" },
+      ],
+      required: true,
+      defaultValue: "card",
+    },
   ],
 };

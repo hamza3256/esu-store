@@ -20,6 +20,7 @@ interface PageProps {
 interface OrderProduct {
   product: Product;
   quantity: number;
+  priceAtPurchase: number;
 }
 
 const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
@@ -51,11 +52,12 @@ const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
     return redirect(`/sign-in?origin=order-confirmation?orderId=${order.id}`);
   }
 
-  const isPaid = Boolean(order._isPaid);
+  const isCOD = order.paymentType === 'cod';
+  const isPaidOrCOD = Boolean(order._isPaid) || isCOD;
   const products = order.productItems as OrderProduct[];
 
   const orderTotal = products.reduce(
-    (total, { product, quantity }) => total + (product.discountedPrice ?? product.price) * quantity,
+    (total, { priceAtPurchase, quantity }) => total + (priceAtPurchase) * quantity,
     0
   );
 
@@ -83,7 +85,7 @@ const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
   const orderStatus = order.status || "Processing";
 
   let invoiceDownloadLink: string | null = null;
-  if (isPaid) {
+  if (isPaidOrCOD) {
     try {
       const pdfBytes = await generateInvoice(order.id, `${process.env.NEXT_PUBLIC_SERVER_URL}/esu-transparent.png`); // Adjust the logo path accordingly
 
@@ -120,7 +122,7 @@ const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
               Thank you for shopping
             </h1>
 
-            {isPaid ? (
+            {isPaidOrCOD ? (
               <p className="mt-2 text-base text-gray-600">
                 Your order was successfully processed. We&apos;ve sent your receipt and order details to{" "}
                 <span className="font-medium text-gray-900">
@@ -191,7 +193,7 @@ const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
 
               {/* Product List */}
               <ul className="mt-6 divide-y divide-gray-200 border-t text-sm font-medium text-gray-600">
-                {products.map(({ product, quantity }) => {
+                {order.productItems.map(({ product, quantity, priceAtPurchase }) => {
                   const label = PRODUCT_CATEGORIES.find((c) => c.value === product.category)?.label;
                   
                   const firstImage = product.images.find(({ image } : {image: Media | string}) => {
@@ -222,7 +224,7 @@ const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
                           <p className="text-sm text-gray-500">Quantity: {quantity || 1}</p>
                         </div>
 
-                        {isPaid && invoiceDownloadLink ? (
+                        {isPaidOrCOD && invoiceDownloadLink ? (
                           <a
                             href={invoiceDownloadLink}
                             download={`invoice_${order.orderNumber}.pdf`}
@@ -234,7 +236,7 @@ const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
                       </div>
 
                       <p className="flex-none font-medium text-gray-900">
-                        {formatPrice((product.discountedPrice ?? product.price) * quantity)}
+                        {formatPrice((priceAtPurchase) * quantity)}
                       </p>
                     </li>
                   );
@@ -250,7 +252,7 @@ const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
                 <div className="flex justify-between">
                   <p>Shipping Fee</p>
                   {total >= FREE_SHIPPING_THRESHOLD ? 
-                  (<p className="text-gray-900 text-green-600">FREE</p>) 
+                  (<p className="text-green-600">FREE</p>) 
                   : (<p className="text-gray-900">{formatPrice(SHIPPING_FEE)}</p>)}
                 </div>
                 <div className="flex items-center justify-between border-t border-gray-200 pt-6 text-gray-900">
@@ -260,7 +262,8 @@ const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
               </div>
 
               <PaymentStatus
-                isPaid={isPaid}
+                isPaid={Boolean(order._isPaid)}
+                isCOD={isCOD}
                 orderEmail={order.email || (order.user as User)?.email}
                 orderId={order.id.toString()}
               />

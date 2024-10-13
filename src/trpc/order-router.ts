@@ -243,8 +243,8 @@ export const orderRouter = router({
         });
       }
 
-      // Calculate the total
-      const total = productItems.reduce((acc, item) => {
+      // Calculate the total and gather product details with priceAtPurchase
+      const orderProductItems = productItems.map((item) => {
         const product = filteredProductsHavePrice.find(
           (p) => p.id === item.productId
         );
@@ -254,9 +254,17 @@ export const orderRouter = router({
             message: `Product with ID ${item.productId} not found`,
           });
         }
-        const productPrice = product.discountedPrice ?? product.price;
-        return acc + (productPrice as number) * item.quantity;
-      }, 0);
+        
+        const productPrice = (product.discountedPrice ?? product.price) as number;
+        return {
+          product: item.productId,
+          quantity: item.quantity,
+          priceAtPurchase: productPrice,  // Add priceAtPurchase here
+        };
+      });
+
+      // Calculate the total price
+      const total = orderProductItems.reduce((acc, item) => acc + (item.priceAtPurchase * item.quantity), 0);
 
       // Generate unique order number
       const orderNumber = generateOrderNumber();
@@ -267,16 +275,14 @@ export const orderRouter = router({
         data: {
           _isPaid: false,
           _isPostexOrderCreated: false,
-          productItems: productItems.map((item) => ({
-            product: item.productId,
-            quantity: item.quantity,
-          })),
+          productItems: orderProductItems,
           name,
           email, 
           phone,
           shippingAddress,
           orderNumber,
           total,
+          paymentType: "card"
         },
       });
 

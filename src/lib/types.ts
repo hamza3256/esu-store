@@ -24,6 +24,7 @@ export type Order = {
         product: Product;
         quantity: number;
         id?: string | null;
+        priceAtPurchase: number;
       }[];
     shippingAddress: {
       line1: string;
@@ -34,6 +35,7 @@ export type Order = {
       country: string;
     };
     phone: string;
+    paymentType: 'card' | 'cod';
   };
 
   export interface ProductType {

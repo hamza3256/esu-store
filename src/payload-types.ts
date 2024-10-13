@@ -152,6 +152,7 @@ export interface Order {
   productItems: {
     product: string | Product;
     quantity: number;
+    priceAtPurchase: number;
     id?: string | null;
   }[];
   shippingAddress: {
@@ -166,6 +167,7 @@ export interface Order {
   total: number;
   orderNumber: string;
   _emailSent?: boolean | null;
+  paymentType: 'card' | 'cod';
   updatedAt: string;
   createdAt: string;
 }
