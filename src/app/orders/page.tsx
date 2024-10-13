@@ -17,7 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { motion, AnimatePresence } from "framer-motion"
 import Link from "next/link"
 import { CalendarIcon, SearchIcon, PackageIcon, TruckIcon, CreditCardIcon } from "lucide-react"
-import Image from "next/image"
+// import Image from "next/image"
 import PageLoader from "@/components/PageLoader"
 import { Media, Order, Product } from "@/payload-types"
 
@@ -36,12 +36,6 @@ interface StatusType {
   delivered: string; 
   cancelled: string; 
 }
-
-interface ProductItem {
-  product: string | Product;
-  quantity: number;
-  id?: string | null;
-};
 
 const getThumbnailUrl = (product: Product): string => {
   const imageCheck = product.images.find(({ image } : {image: Media | string}) => {
@@ -200,11 +194,14 @@ export default function OrderViewer() {
                         </div>
                       )}
                     </div>
-                    <div className="mt-6">
+                    {/* <div className="mt-6">
                       <h4 className="text-lg font-semibold mb-2">Order Items:</h4>
                       <ul className="divide-y divide-gray-200">
-                        {order.productItems.map(({item, index} : {item: ProductItem, index: number}) => {
-                          const product = typeof item.product === 'string' ? { name: 'Unknown Product', price: 0, images: [] } : item.product;
+                        {order.productItems.map(({item, index}) => {
+                          const product = typeof item.product === 'object' ? item.product : { name: 'Unknown Product', price: 0, images: [] };
+                          const imageUrl = product?.images?.length
+                            ? getThumbnailUrl(product)
+                            : '/placeholder.svg';  // Fallback for missing image
                           return (
                             <li key={index} className="py-2 flex items-center justify-between">
                               <div className="flex items-center">
@@ -222,7 +219,7 @@ export default function OrderViewer() {
                           );
                         })}
                       </ul>
-                    </div>
+                    </div> */}
                     <div className="mt-4">
                       <h4 className="text-lg font-semibold mb-2">Shipping Address:</h4>
                       <p>
