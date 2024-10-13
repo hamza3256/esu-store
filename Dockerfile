@@ -12,6 +12,7 @@ FROM base AS builder
 WORKDIR /app
 COPY package.json yarn.lock* ./
 RUN yarn install --frozen-lockfile
+RUN yarn add sharp
 
 # Copy the full project, including pages/app directory, public folder, etc.
 COPY . .
