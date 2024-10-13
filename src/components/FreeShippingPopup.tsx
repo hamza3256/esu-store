@@ -6,8 +6,8 @@ import { Progress } from "@/components/ui/progress";
 import { X, ShoppingBag, Truck } from "lucide-react";
 import { useCart } from "@/hooks/use-cart";
 import { formatPrice } from "@/lib/utils";
+import { FREE_SHIPPING_THRESHOLD } from "@/lib/config";
 
-const FREE_SHIPPING_THRESHOLD = 5000;
 const POPUP_DELAY = 5500; 
 
 export default function FreeShippingPopup() {
