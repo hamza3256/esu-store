@@ -6,7 +6,6 @@ import { trpc } from "@/trpc/client";
 import Link from "next/link";
 import ProductListing from "./ProductListing";
 import { useMediaQuery } from "@/hooks/use-media-query";
-import { url } from "inspector";
 
 interface ProductReelProps {
   title: string;
@@ -20,7 +19,7 @@ const FALLBACK_LIMIT = 4;
 const ProductReel = (props: ProductReelProps) => {
   const isTablet = useMediaQuery("(min-width: 768px) and (max-width: 1024px)");
   const isMobile = useMediaQuery("(max-width: 767px)");
-  
+
   const { title, subtitle, href, query } = props;
 
   const { data: queryResults, isLoading } =
@@ -34,11 +33,10 @@ const ProductReel = (props: ProductReelProps) => {
         onError: (error) => {
           console.error('Failed to fetch more products:', error);
         },
-        refetchOnWindowFocus: false, // Prevent unnecessary refetching when user returns to the tab
-        staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+        refetchOnWindowFocus: false,
+        staleTime: 1000 * 60 * 5,
       }
     );
-  
 
   const products = queryResults?.pages.flatMap((page) => page.items);
 
@@ -52,7 +50,8 @@ const ProductReel = (props: ProductReelProps) => {
 
   return (
     <section className="sm:py-4">
-      <div className="container px-4 sm:px-6 lg:px-8">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-full">
+        {/* Title and subtitle */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
           <div className="max-w-2xl">
             {title ? (
@@ -75,8 +74,9 @@ const ProductReel = (props: ProductReelProps) => {
           ) : null}
         </div>
 
-        <div className="relative">
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+        {/* Product grid */}
+        <div className="relative overflow-hidden">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
             {map.map((product, i) => (
               <ProductListing
                 key={`product-${i}`}
