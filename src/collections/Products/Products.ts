@@ -134,21 +134,21 @@ const handleProductChange: BeforeChangeHook<Product> = async ({ operation, data,
 
   } else {
     // If product exists in Stripe, update it
-    stripeProduct = await stripe.products.retrieve(productData.stripeId!);
+    // stripeProduct = await stripe.products.retrieve(productData.stripeId!);
 
-    if (!stripeProduct) {
+    // if (!stripeProduct) {
       // If the product does not exist in Stripe, create it
       stripeProduct = await stripe.products.create({
         name: productData.name,
         images: imageId ? [imageId] : undefined,
       });
-    } else {
-      // Update the existing Stripe product
-      await stripe.products.update(productData.stripeId!, {
-        name: productData.name,
-        images: imageId ? [imageId] : undefined,
-      });
-    }
+    // } else {
+    //   // Update the existing Stripe product
+    //   await stripe.products.update(productData.stripeId!, {
+    //     name: productData.name,
+    //     images: imageId ? [imageId] : undefined,
+    //   });
+    // }
 
     // Create a new price for the updated product price
     stripePrice = await stripe.prices.create({
