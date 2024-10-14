@@ -119,6 +119,9 @@ export default function ProductListing({
         if (image.resourceType === "video") {
           return { type: 'video', url: image?.sizes?.video?.url };
         } else {
+         if (isTablet) {
+            return { type: 'image', url: image?.sizes?.tablet?.url };
+          }
           return { type: 'image', url: image?.sizes?.card?.url };
         }
       }
