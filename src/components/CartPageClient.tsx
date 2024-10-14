@@ -450,7 +450,7 @@ export default function CartPageClient({ user, cities }: CartPageProps) {
                           htmlFor="cod"
                           className={`flex items-center ${(!user || cartTotal() > COD_THRESHOLD) ? 'opacity-50' : ''}`}
                         >
-                          <DollarSign className="w-4 h-4 mr-2" />
+                          Rs{"  "}
                           Cash on Delivery
                           {!user && " (Login required)"}
                           {cartTotal() > COD_THRESHOLD && ` (Not available for orders above ${formatPrice(COD_THRESHOLD)})`}

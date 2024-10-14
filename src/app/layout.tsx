@@ -9,6 +9,7 @@ import { getServerSideUser } from "@/lib/payload-utils";
 import { Toaster as ToasterUI } from "@/components/ui/toaster";
 import FreeShippingPopup from "@/components/FreeShippingPopup";
 import { Toaster } from "@/components/ui/sonner";
+import TopBanner from "@/components/TopBanner";
 
 export const metadata: Metadata = {
   title: "ESÜ Store | Jewelry, Clothing & Accessories",
@@ -60,17 +61,18 @@ export default async function RootLayout({
         <meta property="og:description" content={metadata.openGraph?.description ?? undefined} />
         <meta property="og:url" content={metadata.openGraph?.url?.toString() ?? undefined} />
         <meta property="og:site_name" content={metadata.openGraph?.siteName ?? undefined} />
-        <meta property="og:type" content={"website" ?? undefined} />
-        <meta property="og:image" content={"https://esustore.com/esu-official.jpg" ?? undefined} />
+        <meta property="og:type" content={"website"} />
+        <meta property="og:image" content={"https://esustore.com/esu-official.jpg"} />
       
         <meta name="twitter:card" content={metadata.twitter?.creator ?? undefined} />
         <meta name="twitter:title" content={metadata.twitter?.title?.toString() ?? undefined} />
         <meta name="twitter:description" content={metadata.twitter?.description ?? undefined} />
-        <meta name="twitter:image" content={"https://esustore.com/esu.png" ?? undefined} />
+        <meta name="twitter:image" content={"https://esustore.com/esu.png"} />
       </head>
       <body className={cn("relative h-full font-sans antialiased")}>
         <main className="relative flex flex-col min-h-screen">
           <Providers>
+            <TopBanner />
             <Navbar user={user} />
             <div className="flex-grow flex-1">
               {children}

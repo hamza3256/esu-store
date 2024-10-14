@@ -8,8 +8,6 @@ import { Section } from "@/components/Section"
 import ParallaxSection from "@/components/ParallaxSection"
 import ProductShowcase from "@/components/ProductShowcase"
 import dynamic from 'next/dynamic';
-import { Button } from '@/components/ui/button'
-import Link from 'next/link'
 import { Metadata } from "next";
 
 const SocialBanner = dynamic(() => import('@/components/SocialBanner'), { ssr: false });
