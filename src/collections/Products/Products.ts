@@ -73,14 +73,14 @@ const uploadImageToStripe = async (imageUrl: string): Promise<string> => {
 
 const handleProductChange: BeforeChangeHook<Product> = async ({ operation, data, req }) => {
 
-  const isAdminRequest = req.user?.role === 'admin' || req?.payloadAPI === 'REST'
+  const isAdminRequest = req.user?.role === 'admin' || req?.payloadAPI === 'REST';
 
   // Only run the Stripe sync if the request is from the admin dashboard
   if (!isAdminRequest) {
     // Skip Stripe syncing for non-admin (TRPC, API, etc.) updates
     return data;
   }
-   
+  
   const productData = data as Product;
 
   // Ensure price is passed and a valid Stripe product exists
@@ -89,15 +89,17 @@ const handleProductChange: BeforeChangeHook<Product> = async ({ operation, data,
   let stripeProduct;
   let stripePrice;
 
-  const firstImage = productData.images.find(({ image } : {image: Media | string}) => {
+  // Fetch the first image from the product's Media array
+  const firstImage = productData.images?.find(({ image }: { image: Media | string }) => {
     return typeof image === "object" && (image.resourceType?.startsWith("image") || image.mimeType?.startsWith("image"));
-  })?.image
+  })?.image;
 
-  const imageUrl = (firstImage as Media).sizes?.thumbnail?.url
+  // If there is an image object, extract its Cloudinary URL
+  const imageUrl = firstImage ? (firstImage as Media).sizes?.thumbnail?.url : firstImage?.toString();
 
   let imageId: string | undefined;
 
-  // Upload the first image to Stripe if available
+  // If a valid image URL exists, upload it to Stripe
   if (imageUrl) {
     imageId = await uploadImageToStripe(imageUrl).catch((error) => {
       console.error("Error uploading image to Stripe:", error);
@@ -107,7 +109,7 @@ const handleProductChange: BeforeChangeHook<Product> = async ({ operation, data,
 
   if (operation === 'create') {
     const productPrice = productData.discountedPrice ?? productData.price;
-    
+
     // Create the Stripe product and associate the uploaded image
     stripeProduct = await stripe.products.create({
       name: productData.name,
@@ -128,7 +130,7 @@ const handleProductChange: BeforeChangeHook<Product> = async ({ operation, data,
 
   } else if (operation === 'update') {
     const productPrice = productData.discountedPrice ?? productData.price;
-    
+
     // Update the Stripe product and associate the new image, if applicable
     await stripe.products.update(productData.stripeId!, {
       name: productData.name,
@@ -155,7 +157,6 @@ const handleProductChange: BeforeChangeHook<Product> = async ({ operation, data,
     priceId: stripePrice?.id || productData.priceId,
   };
 };
-
 
 
 // Access control modification to accommodate guest operations
