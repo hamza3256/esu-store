@@ -74,8 +74,10 @@ const uploadImageToStripe = async (imageUrl: string): Promise<string> => {
 const handleProductChange: BeforeChangeHook<Product> = async ({ operation, data, req }) => {
   
   // Check if this request is from the Payload CMS dashboard (admin interface)
-  const isAdminRequest = req.user?.role === 'admin' && req?.payloadAPI === 'local';
+  const isAdminRequest = req.user?.role === 'admin'
 
+  console.log("test: " + (req.user?.role === 'admin'))
+  console.log("actual: " + req?.payloadAPI)
   // Only run the Stripe sync if the request is from the admin dashboard
   if (!isAdminRequest) {
     // Skip Stripe syncing for non-admin (TRPC, API, etc.) updates
