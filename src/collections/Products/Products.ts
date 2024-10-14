@@ -72,29 +72,31 @@ const uploadImageToStripe = async (imageUrl: string): Promise<string> => {
 };
 
 const handleProductChange: BeforeChangeHook<Product> = async ({ operation, data, req }) => {
+  
+  // Check if this request is from the Payload CMS dashboard (admin interface)
+  const isAdminRequest = req.user?.role === 'admin' && req?.payloadAPI === 'local';
 
-   // Check if this request is from the Payload CMS dashboard (admin interface)
-   const isAdminRequest = req.user?.role === 'admin' && req?.payloadAPI === 'local';
+  // Only run the Stripe sync if the request is from the admin dashboard
+  if (!isAdminRequest) {
+    // Skip Stripe syncing for non-admin (TRPC, API, etc.) updates
+    return data;
+  }
 
-   // Only run the Stripe sync if the request is from the admin dashboard
-   if (!isAdminRequest) {
-     // Skip Stripe syncing for non-admin (TRPC, API, etc.) updates
-     return data;
-   }
-   
   const productData = data as Product;
 
-  // Ensure price is passed and a valid Stripe product exists
-  if (!productData.price || (operation === 'update' && !productData.stripeId)) return data;
+  // Ensure price is passed
+  if (!productData.price) {
+    return data; // Skip if no price is provided
+  }
 
   let stripeProduct;
   let stripePrice;
 
   const firstImage = productData.images.find(({ image } : {image: Media | string}) => {
     return typeof image === "object" && (image.resourceType?.startsWith("image") || image.mimeType?.startsWith("image"));
-  })?.image
+  })?.image;
 
-  const imageUrl = (firstImage as Media).sizes?.thumbnail?.url
+  const imageUrl = (firstImage as Media)?.sizes?.thumbnail?.url;
 
   let imageId: string | undefined;
 
@@ -106,10 +108,11 @@ const handleProductChange: BeforeChangeHook<Product> = async ({ operation, data,
     });
   }
 
-  if (operation === 'create') {
-    const productPrice = productData.discountedPrice ?? productData.price;
-    
-    // Create the Stripe product and associate the uploaded image
+  const productPrice = productData.discountedPrice ?? productData.price;
+
+  // If stripeId is missing, perform the 'create' operation
+  if (!productData.stripeId) {
+    // Create a new product in Stripe
     stripeProduct = await stripe.products.create({
       name: productData.name,
       images: imageId ? [imageId] : undefined,
@@ -127,24 +130,33 @@ const handleProductChange: BeforeChangeHook<Product> = async ({ operation, data,
       default_price: stripePrice.id,
     });
 
-  } else if (operation === 'update') {
-    const productPrice = productData.discountedPrice ?? productData.price;
-    
-    // Update the Stripe product and associate the new image, if applicable
-    await stripe.products.update(productData.stripeId!, {
-      name: productData.name,
-      images: imageId ? [imageId] : undefined,
-    });
+  } else {
+    // If product exists in Stripe, update it
+    stripeProduct = await stripe.products.retrieve(productData.stripeId!);
+
+    if (!stripeProduct) {
+      // If the product does not exist in Stripe, create it
+      stripeProduct = await stripe.products.create({
+        name: productData.name,
+        images: imageId ? [imageId] : undefined,
+      });
+    } else {
+      // Update the existing Stripe product
+      await stripe.products.update(productData.stripeId!, {
+        name: productData.name,
+        images: imageId ? [imageId] : undefined,
+      });
+    }
 
     // Create a new price for the updated product price
     stripePrice = await stripe.prices.create({
-      product: productData.stripeId!,
-      currency: defaultCurrency,
+      product: stripeProduct.id,
+      currency: 'PKR',
       unit_amount: Math.round(productPrice * 100),
     });
 
     // Set the newly created price as the default price for the product
-    await stripe.products.update(productData.stripeId!, {
+    await stripe.products.update(stripeProduct.id, {
       default_price: stripePrice.id,
     });
   }
@@ -156,7 +168,6 @@ const handleProductChange: BeforeChangeHook<Product> = async ({ operation, data,
     priceId: stripePrice?.id || productData.priceId,
   };
 };
-
 
 
 // Access control modification to accommodate guest operations
