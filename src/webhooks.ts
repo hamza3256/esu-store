@@ -50,20 +50,19 @@ export const stripeWebhookHandler = async (
 
   const session = event.data.object as Stripe.Checkout.Session;
 
-  if (!session?.metadata?.orderId) {
-    console.error("No userId or orderId in Stripe metadata.");
-    return res.status(400).send({
-      error: "Webhook Error: No userId or orderId in metadata.",
-    });
-  }
-
-  const orderId = session.metadata.orderId;
-  const orderNumber = session.metadata.orderNumber;
-  const userEmail = session.metadata.email;
-
   // 3. Handle `checkout.session.completed` event
   if (event.type === "checkout.session.completed") {
     console.log("Processing checkout.session.completed");
+    
+    const orderId = session.metadata?.orderId;
+    const orderNumber = session.metadata?.orderNumber;
+    const userEmail = session.metadata?.email;
+
+    if (!orderId || !orderNumber || !userEmail) {
+      return res.status(400).send({
+        error: "Webhook Error: No userId or orderId in metadata.",
+      });
+    }
 
     const payload = await getPayloadClient();
 

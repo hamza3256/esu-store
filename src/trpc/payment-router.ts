@@ -266,6 +266,10 @@ export const paymentRouter = router({
       });
     }
 
+    console.log("userId: " + user.id)
+    console.log("orderId: " + order.id)
+    console.log("orderNo: " + orderNumber)
+
     let stripeSession;
     try {
       const isFreeShipping = total >= FREE_SHIPPING_THRESHOLD;
@@ -279,7 +283,7 @@ export const paymentRouter = router({
         metadata: {
           userId: user.id,
           orderId: order.id,
-          orderNumber,
+          orderNumber: orderNumber,
           email: user.email,
           phone: phone,
         },

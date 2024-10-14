@@ -345,9 +345,9 @@ export const orderRouter = router({
           metadata: {
             orderId: order.id,
             userId: customer.id,
-            orderNumber,
+            orderNumber: orderNumber,
             name,
-            email, 
+            email: email, 
             phone, 
           },
           line_items,
