@@ -16,13 +16,21 @@ import { useAuth } from "@/hooks/use-auth";
 const UserAccountNav = ({ user }: { user: User }) => {
   const { signOut } = useAuth();
   const isAdminEmployeeSeller = user.role === 'admin' || user.role === 'employee' || user.role === 'seller'
+  const getInitials = (name: string) => {
+    const nameParts = name.trim().split(" ");
+    if (nameParts.length === 1) {
+      return nameParts[0].substring(0, 2).toUpperCase();
+    } else {
+      return (nameParts[0][0] + nameParts[1][0]).toUpperCase();
+    }
+  }
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild className="overflow-visible">
         <Button variant="ghost" size="sm" className="relative">
           <Avatar>
-            <AvatarImage src="https://github.com/shadcn.png" />
-            <AvatarFallback>CN</AvatarFallback>
+            {/* <AvatarImage src="https://github.com/shadcn.png" /> */}
+            <AvatarFallback className="text-black">{getInitials(user.name!)}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
