@@ -73,7 +73,7 @@ const uploadImageToStripe = async (imageUrl: string): Promise<string> => {
 
 const handleProductChange: BeforeChangeHook<Product> = async ({ operation, data, req }) => {
 
-  const isAdminRequest = req.user?.role === 'admin'
+  const isAdminRequest = req.user?.role === 'admin' || req?.payloadAPI === 'REST'
 
   // Only run the Stripe sync if the request is from the admin dashboard
   if (!isAdminRequest) {
