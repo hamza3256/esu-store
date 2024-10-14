@@ -1,6 +1,7 @@
-import { User } from "@/payload-types";
 import { PrimaryActionEmailHtml } from "../components/emails/PrimaryActionEmail";
 import { Access, CollectionConfig } from "payload/types";
+import { AfterChangeHook } from "payload/dist/collections/config/types";
+import { stripe } from "../lib/stripe";
 
 // Access control function for admins, sellers, and employees
 const adminsSellersEmployees: Access = ({ req: { user } }) => {
