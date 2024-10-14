@@ -1,59 +1,135 @@
-"use client"
+"use client";
 
-import { useState, useCallback } from "react"
-import { Heart, ShoppingCart, Minus, Plus } from "lucide-react"
-import Image from "next/image"
-import Link from "next/link"
-import { Product } from "@/payload-types"
-import { cn, formatPrice } from "@/lib/utils"
-import { useCart } from "@/hooks/use-cart"
-import { Button } from "@/components/ui/button"
-import ImageSlider from "./ImageSlider"
-import { Badge } from "@/components/ui/badge"
+import { useState, useEffect, useCallback, useMemo } from "react";
+import {
+  Minus,
+  Plus,
+  ShoppingCart,
+} from "lucide-react";
+import { toast } from "@/components/ui/use-toast";
+import { Product } from "@/payload-types";
+import { cn, formatPrice } from "@/lib/utils";
+import { useCart } from "@/hooks/use-cart";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useSwipeable } from "react-swipeable";
+import Link from "next/link";
+import ImageSlider from "./ImageSlider";
 
 interface ProductListingProps {
-  product: Product | null
+  product: Product | null;
+  index: number;
+  isMobile: boolean;
+  isTablet: boolean;
 }
 
-export default function ProductListing({ product }: ProductListingProps) {
-  const [isFavorite, setIsFavorite] = useState(false)
-  const [quantity, setQuantity] = useState(1)
-  const { addItem } = useCart()
+export default function ProductListing({
+  product,
+  index,
+  isMobile,
+  isTablet,
+}: ProductListingProps) {
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [quantity, setQuantity] = useState(1);
+  const [isFavorite, setIsFavorite] = useState(false);
+
+  const { addItem } = useCart();
+
+  const handlePrevImage = useCallback(() => {
+    if (!product?.images?.length) return;
+    setCurrentImageIndex((prevIndex) =>
+      prevIndex === 0 ? product.images.length - 1 : prevIndex - 1
+    );
+  }, [product?.images]);
+
+  const handleNextImage = useCallback(() => {
+    if (!product?.images?.length) return;
+    setCurrentImageIndex((prevIndex) =>
+      prevIndex === product.images.length - 1 ? 0 : prevIndex + 1
+    );
+  }, [product?.images]);
+
+  const swipeHandlers = useSwipeable({
+      onSwipedLeft: handleNextImage,
+      onSwipedRight: handlePrevImage,
+      trackMouse: true, 
+    })
+
+  const productUrl = `/product/${product?.id}`;
+
+  const handleQuantityChange = useCallback(
+    (action: "increment" | "decrement") => {
+      setQuantity((prev) => {
+        if (action === "increment") {
+          return Math.min(prev + 1, product?.inventory ?? 1);
+        }
+        return Math.max(prev - 1, 1);
+      });
+    },
+    [product?.inventory]
+  );
 
   const handleAddToCart = useCallback(() => {
-    if (!product) return
-    addItem(product, quantity)
-    setQuantity(1) // Reset quantity after adding to cart
-  }, [addItem, product, quantity])
-
-  const handleQuantityChange = useCallback((action: "increment" | "decrement") => {
-    setQuantity((prev) => {
-      if (action === "increment") {
-        return Math.min(prev + 1, product?.inventory ?? 1)
-      }
-      return Math.max(prev - 1, 1)
-    })
-  }, [product?.inventory])
+    if (!product) return;
+    addItem(product, quantity);
+    toast({
+      title: "Added to cart",
+      description: `${quantity} ${quantity > 1 ? "items" : "item"} added to your cart`,
+      className: "animate-toast-slide-in",
+    });
+  }, [addItem, product, quantity]);
 
   const toggleFavorite = useCallback(() => {
-    setIsFavorite((prev) => !prev)
-  }, [])
+    if (!product) return;
+    setIsFavorite((prev) => !prev);
+    toast({
+      title: isFavorite ? "Removed from favorites" : "Added to favorites",
+      description: `${product.name} has been ${
+        isFavorite ? "removed from" : "added to"
+      } your favorites`,
+    });
+  }, [isFavorite, product?.name]);
 
-  if (!product) {
-    return <ProductPlaceholder />
-  }
+  const displayPrice = product?.discountedPrice ?? product?.price ?? 0;
+  const discount = product?.discountedPrice
+    ? Math.round((1 - product.discountedPrice / product.price) * 100)
+    : 0;
 
-  const validUrls = product.images
+  // Memoize image and video URLs
+  const currentImage = product?.images?.[currentImageIndex]?.image;
+  const imageUrl = useMemo(() => {
+    if (!currentImage) return "";
+    if (typeof currentImage === "string") return currentImage;
+    if (isMobile && currentImage.sizes?.thumbnail?.url) return currentImage.sizes.thumbnail.url;
+    if (isTablet && currentImage.sizes?.tablet?.url) return currentImage.sizes.tablet.url;
+    return currentImage.sizes?.card?.url || currentImage.url || "";
+  }, [currentImage, isMobile, isTablet]);
+
+  const videoUrl = useMemo(() => {
+    if (!currentImage || typeof currentImage === "string") return "";
+    return currentImage.sizes?.video?.url || "";
+  }, [currentImage]);
+
+  const isVideo =
+    typeof currentImage !== "string" && currentImage?.resourceType === "video";
+
+    const validUrls: { type: 'image' | 'video'; url: string }[] = product?.images
     ?.map(({ image }) => {
       if (typeof image === "object" && image?.url) {
-        return { 
-          type: image.resourceType === "video" ? 'video' : 'image', 
-          url: image.resourceType === "video" ? image.sizes?.video?.url : image.sizes?.card?.url 
+        if (image.resourceType === "video") {
+          return { type: 'video', url: image?.sizes?.video?.url };
+        } else {
+          return { type: 'image', url: image?.sizes?.card?.url };
         }
       }
-      return null
+      return null;
     })
-    .filter(Boolean) as { type: 'image' | 'video'; url: string }[]
+    .filter(Boolean) as { type: 'image' | 'video'; url: string }[];
+
+  // Return placeholder if no product is available
+  if (!product) {
+    return <ProductPlaceholder />;
+  }
 
   return (
     <div className="w-full max-w-sm mx-auto bg-white">

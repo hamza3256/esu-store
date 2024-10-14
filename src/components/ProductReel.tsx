@@ -51,7 +51,7 @@ const ProductReel = (props: ProductReelProps) => {
   }
 
   return (
-    <section className="py-8 sm:py-12">
+    <section className="sm:py-4">
       <div className="container px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
           <div className="max-w-2xl">
@@ -81,9 +81,9 @@ const ProductReel = (props: ProductReelProps) => {
               <ProductListing
                 key={`product-${i}`}
                 product={product}
-                // index={i}
-                // isMobile={isMobile}
-                // isTablet={isTablet}
+                index={i}
+                isMobile={isMobile}
+                isTablet={isTablet}
               />
             ))}
           </div>

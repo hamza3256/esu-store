@@ -100,9 +100,9 @@ const ProductShowcase = (props: ProductReelProps) => {
                       <div className="h-full">
                         <ProductListing
                           product={product}
-                          // index={i}
-                          // isMobile={isMobile}
-                          // isTablet={isTablet}
+                          index={i}
+                          isMobile={isMobile}
+                          isTablet={isTablet}
                         />
                       </div>
                     </CarouselItem>
@@ -124,9 +124,9 @@ const ProductShowcase = (props: ProductReelProps) => {
                   <ProductListing
                     key={`product-${i}`}
                     product={product}
-                    // index={i}
-                    // isMobile={isMobile}
-                    // isTablet={isTablet}
+                    index={i}
+                    isMobile={isMobile}
+                    isTablet={isTablet}
                   />
                 )
               ))}

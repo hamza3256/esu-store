@@ -76,7 +76,7 @@ const SearchPage = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
           {data?.items.map((item: any) => (
             <Link key={item.id} href={`/product/${item.id}`}>
-              <ProductListing  product={item}/>
+              <ProductListing isMobile={isMobile} isTablet={isTablet} index={item.id} product={item}/>
             </Link>
           ))}
         </div>
