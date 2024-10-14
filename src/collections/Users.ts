@@ -11,6 +11,35 @@ const adminsSellersEmployees: Access = ({ req: { user } }) => {
   return { id: { equals: user.id } };
 };
 
+const createStripeCustomer: AfterChangeHook = async ({ doc, req }) => {
+  // If the user already has a Stripe customer ID, skip the process
+  if (doc.stripeCustomerId) {
+    return doc;
+  }
+
+  try {
+    // Create a new Stripe customer
+    const customer = await stripe.customers.create({
+      email: doc.email,
+      name: doc.name,
+    });
+
+    // Update the user document with the new Stripe customer ID
+    const updatedUser = await req.payload.update({
+      collection: "users",
+      id: doc.id,
+      data: {
+        stripeCustomerId: customer.id,
+      },
+    });
+
+    return updatedUser;
+  } catch (error) {
+    console.error("Error creating Stripe customer:", error);
+    throw new Error("Failed to create Stripe customer.");
+  }
+};
+
 export const Users: CollectionConfig = {
   slug: "users",
   auth: {
@@ -34,6 +63,9 @@ export const Users: CollectionConfig = {
   admin: {
     hidden: ({ user }) => user.role === "user",
     defaultColumns: ["id", "name", "email"]
+  },
+  hooks: {
+    afterChange: [createStripeCustomer]
   },
   fields: [
     {
