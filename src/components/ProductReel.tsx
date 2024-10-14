@@ -81,9 +81,9 @@ const ProductReel = (props: ProductReelProps) => {
               <ProductListing
                 key={`product-${i}`}
                 product={product}
-                index={i}
-                isMobile={isMobile}
-                isTablet={isTablet}
+                // index={i}
+                // isMobile={isMobile}
+                // isTablet={isTablet}
               />
             ))}
           </div>
