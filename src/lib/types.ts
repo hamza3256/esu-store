@@ -36,6 +36,7 @@ export type Order = {
     };
     phone: string;
     paymentType: 'card' | 'cod';
+    appliedPromoCode?: (string | null) | PromoCode;
   };
 
   export type PromoCode = {

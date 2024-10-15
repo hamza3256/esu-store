@@ -169,6 +169,7 @@ export interface Order {
   orderNumber: string;
   _emailSent?: boolean | null;
   paymentType: 'card' | 'cod';
+  appliedPromoCode?: (string | null) | PromoCode;
   updatedAt: string;
   createdAt: string;
 }
