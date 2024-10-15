@@ -13,14 +13,16 @@ export function VideoBackground() {
   })
   const videoRef = useRef<HTMLVideoElement>(null)
 
+  // Video URLs for both desktop and mobile
   const desktopHlsUrl = `https://res.cloudinary.com/dn20h4mis/video/upload/sp_auto/v1728242042/desktop-optimised.m3u8`
   const mobileHlsUrl = `https://res.cloudinary.com/dn20h4mis/video/upload/sp_auto/v1728242171/mobile-optimised.m3u8`
-  const desktopOptimisedUrl = `https://res.cloudinary.com/dn20h4mis/video/upload/f_webm,vc_vp9,q_auto/v1728242042/desktop-optimised.mp4`
-  const mobileOptimisedUrl = `https://res.cloudinary.com/dn20h4mis/video/upload/f_webm,vc_vp9,q_auto/v1728242171/mobile-optimised.mp4`
+  const desktopOptimisedUrl = `https://res.cloudinary.com/dn20h4mis/video/upload/f_mp4,vc_h264,q_auto/v1728242042/desktop-optimised.mp4`
+  const mobileOptimisedUrl = `https://res.cloudinary.com/dn20h4mis/video/upload/f_mp4,vc_h264,q_auto/v1728242171/mobile-optimised.mp4`
 
   const desktopFallbackImageUrl = "https://res.cloudinary.com/dn20h4mis/image/upload/q_auto,f_webp,fl_awebp/v1728227615/background.png"
   const mobileFallbackImageUrl = "https://res.cloudinary.com/dn20h4mis/image/upload/q_auto,f_webp/v1728227919/order-confirmation.jpg"
 
+  // State to manage the fallback image based on the device
   const [fallbackImageUrl, setFallbackImageUrl] = useState(desktopFallbackImageUrl)
 
   useEffect(() => {
@@ -38,6 +40,7 @@ export function VideoBackground() {
 
     const loadVideo = async () => {
       try {
+        // Check if HLS is supported by the browser
         if (Hls.isSupported()) {
           hls = new Hls({
             maxBufferLength: 30,
@@ -60,11 +63,13 @@ export function VideoBackground() {
             }
           })
         } else if (videoElement.canPlayType('application/vnd.apple.mpegurl')) {
+          // Native HLS support (Safari/iOS)
           videoElement.src = hlsUrl
           videoElement.addEventListener('loadedmetadata', () => {
             videoElement.play().catch(console.error)
           })
         } else {
+          // Fallback to MP4
           fallbackToMP4()
         }
       } catch (error) {
@@ -123,8 +128,8 @@ export function VideoBackground() {
         poster={fallbackImageUrl}
         aria-hidden="true"
       >
-        <source src={desktopOptimisedUrl} type="video/webm" />
-        <source src={desktopOptimisedUrl.replace('f_webm,vc_vp9', 'f_mp4')} type="video/mp4" />
+        <source src={desktopOptimisedUrl} type="video/mp4" />
+        <source src={desktopOptimisedUrl.replace('f_mp4', 'f_webm')} type="video/webm" />
       </video>
     </div>
   )
