@@ -9,6 +9,7 @@ import { TRPCError } from "@trpc/server";
 import { User } from "@/payload-types";
 import { PayloadRequest } from "payload/types";
 import { Resend } from "resend";
+import { cartRouter } from "./cart-router";
 
 const submittedEmails = new Set<string>(); // Use a real DB in production
 
@@ -21,6 +22,7 @@ export const appRouter = router({
   auth: authRouter,
   payment: paymentRouter,
   order: orderRouter,
+  cart: cartRouter,
 
   getInfiniteProducts: publicProcedure
     .input(
