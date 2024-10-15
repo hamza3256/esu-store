@@ -58,7 +58,15 @@ export default function CartPageClient({ user, cities }: CartPageProps) {
       })
     },
     onError: (error) => {
-      setPromoCodeError(error.message)
+      if (error.message === "UNAUTHORIZED") {
+        toast({
+          title: 'Please Login',
+          description: `To use a promo code, you need to be logged in.`,
+          variant: 'default',
+        })
+      } else {
+        setPromoCodeError(error.message)
+      }
     },
   })
 

@@ -37,6 +37,8 @@ interface OrderNotificationProps {
     country: string;
   };
   trackingNumber?: string;
+  promoCode?: string; 
+  discountPercentage?: number
 }
 
 export const OrderNotification = ({
@@ -50,11 +52,22 @@ export const OrderNotification = ({
   total,
   shippingAddress,
   trackingNumber,
+  promoCode, // Adding promoCode to the props
+  discountPercentage, // Adding discountPercentage to the props
 }: OrderNotificationProps) => {
+
+  // Calculate the original subtotal
   const subtotal = products.reduce(
     (acc, { product, quantity }) => acc + product.price * quantity,
     0
   );
+
+  // Apply discount if promo code is used
+  const discount = discountPercentage ? (subtotal * discountPercentage) / 100 : 0;
+  const discountedTotal = subtotal - discount;
+
+  // Calculate total including shipping fee
+  const finalTotal = discountedTotal >= FREE_SHIPPING_THRESHOLD ? discountedTotal : discountedTotal + shippingFee;
 
   const trackingLink = trackingNumber
     ? `https://www.trackingmore.com/track/en/${trackingNumber}?express=postex`
@@ -71,8 +84,7 @@ export const OrderNotification = ({
           <Section>
             <Column>
               <Img
-                src={`https://esustore.com/bear_email_sent.png`}
-                width="100"
+                src={`https://esustore.com/esu-transparent.png`}
                 height="100"
                 alt="ESU BEAR"
               />
@@ -192,10 +204,24 @@ export const OrderNotification = ({
 
             <Column style={productPriceWrapper} align="right">
               <Text style={productPrice}>
-                {total >= FREE_SHIPPING_THRESHOLD ? "Free" : formatPrice(shippingFee)}
+                {discountedTotal >= FREE_SHIPPING_THRESHOLD ? "Free" : formatPrice(shippingFee)}
               </Text>
             </Column>
           </Section>
+
+          {/* Promo Code Section */}
+          {promoCode && (
+            <Section>
+              <Column style={{ width: "64px" }}></Column>
+              <Column style={{ paddingLeft: "40px", paddingTop: 20 }}>
+                <Text style={productTitle}>Promo Code ({promoCode})</Text>
+              </Column>
+
+              <Column style={productPriceWrapper} align="right">
+                <Text style={productPrice}>- {formatPrice(discount)}</Text>
+              </Column>
+            </Section>
+          )}
 
           {/* Total Section */}
           <Hr style={productPriceLine} />
@@ -205,7 +231,7 @@ export const OrderNotification = ({
             </Column>
             <Column style={productPriceVerticalLine}></Column>
             <Column style={productPriceLargeWrapper}>
-              <Text style={productPriceLarge}>{formatPrice(total)}</Text>
+              <Text style={productPriceLarge}>{formatPrice(finalTotal)}</Text>
             </Column>
           </Section>
           <Hr style={productPriceLineBottom} />

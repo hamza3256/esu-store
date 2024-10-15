@@ -85,6 +85,7 @@ export const stripeWebhookHandler = async (
   
       // Check if a promo code was applied to the order
       const appliedPromoCode = order.appliedPromoCode as PromoCode;
+      let promo;
       if (appliedPromoCode) {
         try {
           // Fetch the promo code details
@@ -97,7 +98,7 @@ export const stripeWebhookHandler = async (
             },
           });
   
-          const promo = promoCodes[0];
+          promo = promoCodes[0] as PromoCode;
           if (promo) {
             const currentUses = promo.currentUses as number
             // Update the currentUses of the promo code
@@ -243,6 +244,9 @@ export const stripeWebhookHandler = async (
             shippingFee: SHIPPING_FEE,
             trackingNumber: order.trackingInfo?.trackingNumber || undefined,
             trackingOrderDate: order.trackingInfo?.orderDate || undefined,
+            totalPrice: order.total,
+            promoCode: promo?.code,
+            discountPercentage: promo?.discountPercentage
           }),
         });
   
@@ -259,11 +263,13 @@ export const stripeWebhookHandler = async (
           total: order.total, // Pass the total order amount
           shippingAddress: order.shippingAddress,
           trackingNumber: order.trackingInfo?.trackingNumber ?? "", // Pass tracking info if available
+          promoCode: promo?.code,
+          discountPercentage: promo?.discountPercentage
         });
   
         await resend.emails.send({
           from: "ESÜ STORE <info@esustore.com>",
-          to: ["gems@esustore.com", "orders@esustore.com"],
+          to: ["esugemsgallery@gmail.com", "esuorders@gmail.com"],
           subject: `New Order Notification - Order #${order.orderNumber}`,
           html: notificationHtml,
         });

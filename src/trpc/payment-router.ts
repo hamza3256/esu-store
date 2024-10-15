@@ -667,6 +667,8 @@ export const paymentRouter = router({
             trackingNumber: order.trackingInfo?.trackingNumber || undefined,
             trackingOrderDate: order.trackingInfo?.orderDate || undefined,
             totalPrice: total,
+            promoCode: promo?.code,
+            discountPercentage: promo?.discountPercentage
           }),
         });
 
@@ -683,6 +685,8 @@ export const paymentRouter = router({
           total: order.total,
           shippingAddress: order.shippingAddress,
           trackingNumber: order.trackingInfo?.trackingNumber ?? "",
+          promoCode: promo?.code,
+          discountPercentage: promo?.discountPercentage
         });
 
         await resend.emails.send({

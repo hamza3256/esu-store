@@ -29,6 +29,8 @@ interface ReceiptEmailProps {
   trackingNumber?: string;
   trackingOrderDate?: string;
   totalPrice?: number;
+  promoCode?: string;  // Add promoCode as optional
+  discountPercentage?: number;  // Add discountPercentage as optional
 }
 
 export const ReceiptEmail = ({
@@ -37,15 +39,26 @@ export const ReceiptEmail = ({
   orderId,
   products,
   orderNumber,
-  shippingFee = SHIPPING_FEE, 
+  shippingFee = SHIPPING_FEE,
   trackingNumber,
   trackingOrderDate,
-  totalPrice
+  totalPrice,
+  promoCode,
+  discountPercentage = 0,  // Default to 0 if no discount
 }: ReceiptEmailProps) => {
-  const total = (totalPrice ?? products.reduce(
+  
+  // Calculate the subtotal
+  const subtotal = totalPrice ?? products.reduce(
     (acc, { product, quantity }) => acc + product.price * quantity,
     0
-  )) + shippingFee;
+  );
+
+  // Calculate the discount based on promo code
+  const discount = (discountPercentage / 100) * subtotal;
+  const discountedTotal = subtotal - discount;
+
+  // Final total including shipping fee
+  const total = discountedTotal + shippingFee;
 
   // Tracking link generation
   const trackingLink = trackingNumber
@@ -62,8 +75,7 @@ export const ReceiptEmail = ({
           <Section>
             <Column>
               <Img
-                src={`https://esustore.com/bear_email_sent.png`}
-                width="100"
+                src={`https://esustore.com/esu-transparent.png`}
                 height="100"
                 alt="ESU BEAR"
               />
@@ -79,13 +91,7 @@ export const ReceiptEmail = ({
             <Row style={informationTableRow}>
               <Column style={informationTableColumn}>
                 <Text style={informationTableLabel}>EMAIL</Text>
-                <Link
-                  style={{
-                    ...informationTableValue,
-                  }}
-                >
-                  {email}
-                </Link>
+                <Link style={informationTableValue}>{email}</Link>
               </Column>
 
               <Column style={informationTableColumn}>
@@ -97,13 +103,7 @@ export const ReceiptEmail = ({
 
               <Column style={informationTableColumn}>
                 <Text style={informationTableLabel}>ORDER NUMBER</Text>
-                <Link
-                  style={{
-                    ...informationTableValue,
-                  }}
-                >
-                  {orderNumber}
-                </Link>
+                <Text style={informationTableValue}>{orderNumber}</Text>
               </Column>
             </Row>
 
@@ -134,17 +134,14 @@ export const ReceiptEmail = ({
           </Section>
 
           {products.map(({ product, quantity }) => {
-            // Find the first valid image URL
             const image = product.images.find(({ image }) => {
               return typeof image === "object" && image.mimeType?.startsWith("image/");
             })?.image as Media;
 
-
             return (
               <Section key={product.id}>
                 <Column style={{ width: "64px" }}>
-                  {/* Only render image if URL is present */}
-                  {image.url && (
+                  {image?.url && (
                     <Img
                       src={image.sizes?.thumbnail?.url ?? image.url}
                       width="64"
@@ -156,13 +153,13 @@ export const ReceiptEmail = ({
                 </Column>
                 <Column style={{ paddingLeft: "22px" }}>
                   <Text style={productTitle}>{product.name}</Text>
-                  {product.description ? (
+                  {product.description && (
                     <Text style={productDescription}>
                       {product.description.length > 50
                         ? product.description.slice(0, 50) + "..."
                         : product.description}
                     </Text>
-                  ) : null}
+                  )}
                   <Link
                     href={`${process.env.NEXT_PUBLIC_SERVER_URL}/order-confirmation?orderId=${orderId}`}
                     style={productLink}
@@ -179,6 +176,20 @@ export const ReceiptEmail = ({
               </Section>
             );
           })}
+
+          {/* Promo Code Section */}
+          {promoCode && (
+            <Section>
+              <Column style={{ width: "64px" }}></Column>
+              <Column style={{ paddingLeft: "40px", paddingTop: 20 }}>
+                <Text style={productTitle}>Promo Code ({promoCode})</Text>
+              </Column>
+
+              <Column style={productPriceWrapper} align="right">
+                <Text style={productPrice}>- {formatPrice(discount)}</Text>
+              </Column>
+            </Section>
+          )}
 
           {/* Shipping Fee */}
           <Section>
@@ -209,9 +220,7 @@ export const ReceiptEmail = ({
 
           {/* Footer */}
           <Text style={footerLinksWrapper}>
-            <Link href={`${process.env.NEXT_PUBLIC_SERVER_URL}/about`}>
-              Company
-            </Link>{" "}
+            <Link href={`${process.env.NEXT_PUBLIC_SERVER_URL}/about`}>Company</Link>{" "}
             •{" "}
             <Link href={`${process.env.NEXT_PUBLIC_SERVER_URL}/help-center`}>
               Help Center
