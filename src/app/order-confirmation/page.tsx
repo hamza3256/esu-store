@@ -60,8 +60,8 @@ const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
     0
   );
 
-  const appliedCode = order.appliedPromoCode as PromoCode
-  const discount = appliedCode.discountPercentage || 0;
+  const appliedPromoCode = order.appliedPromoCode as PromoCode | null;
+  const discount = appliedPromoCode ? appliedPromoCode.discountPercentage : 0;
   const discountedTotal = orderTotal - (orderTotal * discount) / 100;
   const total = discountedTotal >= FREE_SHIPPING_THRESHOLD ? discountedTotal : discountedTotal + SHIPPING_FEE;
 
@@ -254,7 +254,7 @@ const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
 
                 {discount > 0 && (
                   <div className="flex justify-between">
-                    <p>Promo Code ({appliedCode.code})</p>
+                    <p>Promo Code ({appliedPromoCode?.code})</p>
                     <p className="text-gray-900">- {formatPrice((orderTotal * discount) / 100)}</p>
                   </div>
                 )}
