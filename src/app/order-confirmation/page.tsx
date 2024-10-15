@@ -7,7 +7,7 @@ import { PRODUCT_CATEGORIES } from "@/config";
 import { formatPrice } from "@/lib/utils";
 import Link from "next/link";
 import PaymentStatus from "@/components/PaymentStatus";
-import { Order } from "@/lib/types";
+import { Order, PromoCode } from "@/lib/types";
 import { getPayloadClient } from "@/get-payload";
 import { generateInvoice } from "@/lib/invoice";
 import { FREE_SHIPPING_THRESHOLD, SHIPPING_FEE } from "@/lib/config";
@@ -45,23 +45,25 @@ const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
   const [order] = orders as Order[];
   if (!order) return notFound();
 
-  // const orderUserId = typeof order.user === "string" ? order.user : (order.user as User)?.id;
-  
-  // If no logged-in user, validate the guest email
+  // Validate guest email or redirect
   if (!user && (!guestEmail || guestEmail !== order.email)) {
     return redirect(`/sign-in?origin=order-confirmation?orderId=${order.id}`);
   }
 
-  const isCOD = order.paymentType === 'cod';
+  const isCOD = order.paymentType === "cod";
   const isPaidOrCOD = Boolean(order._isPaid) || isCOD;
   const products = order.productItems as OrderProduct[];
 
+  // Calculate the original order total
   const orderTotal = products.reduce(
-    (total, { priceAtPurchase, quantity }) => total + (priceAtPurchase) * quantity,
+    (total, { priceAtPurchase, quantity }) => total + priceAtPurchase * quantity,
     0
   );
 
-  const total = orderTotal >= FREE_SHIPPING_THRESHOLD ? orderTotal : orderTotal + SHIPPING_FEE;
+  const appliedCode = order.appliedPromoCode as PromoCode
+  const discount = appliedCode.discountPercentage || 0;
+  const discountedTotal = orderTotal - (orderTotal * discount) / 100;
+  const total = discountedTotal >= FREE_SHIPPING_THRESHOLD ? discountedTotal : discountedTotal + SHIPPING_FEE;
 
   // Structured Address Display
   const shippingAddress = order.shippingAddress || {
@@ -84,11 +86,11 @@ const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
 
   const orderStatus = order.status || "Processing";
 
+  // Generate the invoice if order is paid or COD
   let invoiceDownloadLink: string | null = null;
   if (isPaidOrCOD) {
     try {
-      const pdfBytes = await generateInvoice(order.id, `${process.env.NEXT_PUBLIC_SERVER_URL}/esu-transparent.png`); // Adjust the logo path accordingly
-
+      const pdfBytes = await generateInvoice(order.id, `${process.env.NEXT_PUBLIC_SERVER_URL}/esu-transparent.png`);
       invoiceDownloadLink = `data:application/pdf;base64,${Buffer.from(pdfBytes).toString("base64")}`;
     } catch (error) {
       console.error("Error generating invoice:", error);
@@ -195,12 +197,12 @@ const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
               <ul className="mt-6 divide-y divide-gray-200 border-t text-sm font-medium text-gray-600">
                 {order.productItems.map(({ product, quantity, priceAtPurchase }) => {
                   const label = PRODUCT_CATEGORIES.find((c) => c.value === product.category)?.label;
-                  
-                  const firstImage = product.images.find(({ image } : {image: Media | string}) => {
+
+                  const firstImage = product.images.find(({ image }: { image: Media | string }) => {
                     return typeof image === "object" && (image.resourceType?.startsWith("image") || image.mimeType?.startsWith("image"));
-                  })?.image
-                
-                  const imageUrl = (firstImage as Media).sizes?.thumbnail?.url
+                  })?.image;
+
+                  const imageUrl = (firstImage as Media).sizes?.thumbnail?.url;
 
                   return (
                     <li key={product.id} className="flex space-x-6 py-6">
@@ -236,7 +238,7 @@ const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
                       </div>
 
                       <p className="flex-none font-medium text-gray-900">
-                        {formatPrice((priceAtPurchase) * quantity)}
+                        {formatPrice(priceAtPurchase * quantity)}
                       </p>
                     </li>
                   );
@@ -249,12 +251,23 @@ const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
                   <p>Subtotal</p>
                   <p className="text-gray-900">{formatPrice(orderTotal)}</p>
                 </div>
+
+                {discount > 0 && (
+                  <div className="flex justify-between">
+                    <p>Promo Code ({appliedCode.code})</p>
+                    <p className="text-gray-900">- {formatPrice((orderTotal * discount) / 100)}</p>
+                  </div>
+                )}
+
                 <div className="flex justify-between">
                   <p>Shipping Fee</p>
-                  {total >= FREE_SHIPPING_THRESHOLD ? 
-                  (<p className="text-green-600">FREE</p>) 
-                  : (<p className="text-gray-900">{formatPrice(SHIPPING_FEE)}</p>)}
+                  {discountedTotal >= FREE_SHIPPING_THRESHOLD ? (
+                    <p className="text-green-600">FREE</p>
+                  ) : (
+                    <p className="text-gray-900">{formatPrice(SHIPPING_FEE)}</p>
+                  )}
                 </div>
+
                 <div className="flex items-center justify-between border-t border-gray-200 pt-6 text-gray-900">
                   <p className="text-base">Total</p>
                   <p className="text-base">{formatPrice(total)}</p>
