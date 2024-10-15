@@ -91,8 +91,6 @@ const Page = ({ params }: PageProps) => {
     }
   };
 
-  console.log(validUrls)
-
   return (
     <TooltipProvider>
       <MaxWidthWrapper className="bg-white">
@@ -189,7 +187,7 @@ const Page = ({ params }: PageProps) => {
             <div className="mt-8 lg:col-start-2 lg:row-span-2 lg:mt-0 lg:self-center">
               <div className="aspect-square rounded-lg overflow-hidden shadow-md">
                 {/* ImageSlider component should handle both images and videos */}
-                <ImageSlider items={validUrls} productId={productId} />
+                <ImageSlider items={validUrls} productId={productId} isMain={true} />
               </div>
             </div>
 

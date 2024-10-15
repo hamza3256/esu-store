@@ -13,10 +13,11 @@ import Link from "next/link"
 
 interface ImageSliderProps {
   items: { type: 'image' | 'video'; url: string }[]
-  productId: string
+  productId: string;
+  isMain?: boolean;
 }
 
-export default function ImageSlider({ items, productId }: ImageSliderProps) {
+export default function ImageSlider({ items, productId, isMain}: ImageSliderProps) {
   const [swiper, setSwiper] = useState<null | SwiperType>(null)
   const [activeIndex, setActiveIndex] = useState(0)
   const [sliderConfig, setSlideConfig] = useState({
@@ -42,7 +43,7 @@ export default function ImageSlider({ items, productId }: ImageSliderProps) {
   const handleNext = useCallback(() => swiper?.slideNext(), [swiper])
 
   return (
-    <div className="group relative bg-zinc-100 aspect-[3/4] overflow-hidden rounded-xl">
+    <div className={cn("group relative bg-zinc-100 overflow-hidden rounded-xl", (isMain ? "aspect-square" : "aspect-[3/4]"))}>
       {/* Chevron Navigation */}
       <div className="absolute z-10 inset-0 opacity-0 group-hover:opacity-100 transition">
         <button
@@ -93,13 +94,23 @@ export default function ImageSlider({ items, productId }: ImageSliderProps) {
                 />
               ) : (
                 <video
-                  src={item.url}
                   className="object-cover object-center w-full h-full"
                   autoPlay
                   loop
                   muted
                   playsInline
-                />
+                  preload="auto"
+                >
+                  <source src={item.url} type="video/mp4" />
+                  <source
+                    src={item.url.replace(".mp4", ".webm")}
+                    type="video/webm"
+                  />
+                  <source
+                    src={item.url.replace(".mp4", ".ogg")}
+                    type="video/ogg"
+                  />
+                </video>
               )}
             </Link>
           </SwiperSlide>
