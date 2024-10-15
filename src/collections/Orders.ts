@@ -167,5 +167,16 @@ export const Orders: CollectionConfig = {
       required: true,
       defaultValue: "card",
     },
+    {
+      name: "appliedPromoCode",
+      label: "Applied Promo Code",
+      type: "relationship",
+      required: false,
+      relationTo: "promo-codes",
+      hasMany: false,
+      admin: {
+        description: "Promo code applied to this order, if any.",
+      },
+    },
   ],
 };
