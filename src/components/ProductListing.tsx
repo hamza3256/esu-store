@@ -79,39 +79,39 @@ export default function ProductListing({
     });
   }, [addItem, product, quantity]);
 
-  const toggleFavorite = useCallback(() => {
-    if (!product) return;
-    setIsFavorite((prev) => !prev);
-    toast({
-      title: isFavorite ? "Removed from favorites" : "Added to favorites",
-      description: `${product.name} has been ${
-        isFavorite ? "removed from" : "added to"
-      } your favorites`,
-    });
-  }, [isFavorite, product?.name]);
+  // const toggleFavorite = useCallback(() => {
+  //   if (!product) return;
+  //   setIsFavorite((prev) => !prev);
+  //   toast({
+  //     title: isFavorite ? "Removed from favorites" : "Added to favorites",
+  //     description: `${product.name} has been ${
+  //       isFavorite ? "removed from" : "added to"
+  //     } your favorites`,
+  //   });
+  // }, [isFavorite, product?.name]);
 
-  const displayPrice = product?.discountedPrice ?? product?.price ?? 0;
-  const discount = product?.discountedPrice
-    ? Math.round((1 - product.discountedPrice / product.price) * 100)
-    : 0;
+  // const displayPrice = product?.discountedPrice ?? product?.price ?? 0;
+  // const discount = product?.discountedPrice
+  //   ? Math.round((1 - product.discountedPrice / product.price) * 100)
+  //   : 0;
 
-  // Memoize image and video URLs
-  const currentImage = product?.images?.[currentImageIndex]?.image;
-  const imageUrl = useMemo(() => {
-    if (!currentImage) return "";
-    if (typeof currentImage === "string") return currentImage;
-    if (isMobile && currentImage.sizes?.thumbnail?.url) return currentImage.sizes.thumbnail.url;
-    if (isTablet && currentImage.sizes?.tablet?.url) return currentImage.sizes.tablet.url;
-    return currentImage.sizes?.card?.url || currentImage.url || "";
-  }, [currentImage, isMobile, isTablet]);
+  // // Memoize image and video URLs
+  // const currentImage = product?.images?.[currentImageIndex]?.image;
+  // const imageUrl = useMemo(() => {
+  //   if (!currentImage) return "";
+  //   if (typeof currentImage === "string") return currentImage;
+  //   if (isMobile && currentImage.sizes?.thumbnail?.url) return currentImage.sizes.thumbnail.url;
+  //   if (isTablet && currentImage.sizes?.tablet?.url) return currentImage.sizes.tablet.url;
+  //   return currentImage.sizes?.card?.url || currentImage.url || "";
+  // }, [currentImage, isMobile, isTablet]);
 
-  const videoUrl = useMemo(() => {
-    if (!currentImage || typeof currentImage === "string") return "";
-    return currentImage.sizes?.video?.url || "";
-  }, [currentImage]);
+  // const videoUrl = useMemo(() => {
+  //   if (!currentImage || typeof currentImage === "string") return "";
+  //   return currentImage.sizes?.video?.url || "";
+  // }, [currentImage]);
 
-  const isVideo =
-    typeof currentImage !== "string" && currentImage?.resourceType === "video";
+  // const isVideo =
+  //   typeof currentImage !== "string" && currentImage?.resourceType === "video";
 
     const validUrls: { type: 'image' | 'video'; url: string }[] = product?.images
     ?.map(({ image }) => {
@@ -119,9 +119,6 @@ export default function ProductListing({
         if (image.resourceType === "video") {
           return { type: 'video', url: image?.sizes?.video?.url };
         } else {
-         if (isTablet) {
-            return { type: 'image', url: image?.sizes?.tablet?.url };
-          }
           return { type: 'image', url: image?.sizes?.card?.url };
         }
       }
