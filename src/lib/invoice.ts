@@ -1,7 +1,6 @@
 import { PDFDocument, rgb, StandardFonts, PDFFont, PDFPage } from "pdf-lib";
 import { getPayloadClient } from "@/get-payload";
-import { Order } from "@/lib/types";
-import { User } from "@/payload-types";
+import { Order, PromoCode } from "@/lib/types";
 import { FREE_SHIPPING_THRESHOLD, SHIPPING_FEE } from "./config";
 
 interface ShippingAddressType {
@@ -71,7 +70,7 @@ export const generateInvoice = async (orderId: string, logoUrl?: string): Promis
   const pdfDoc = await PDFDocument.create();
   const page = pdfDoc.addPage([612, 792]); // US Letter size
   const { width, height } = page.getSize();
-  
+
   // Fonts
   const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
@@ -151,8 +150,15 @@ export const generateInvoice = async (orderId: string, logoUrl?: string): Promis
   drawText(page, "Tracking Number:", width - 210, height - 310, helveticaBold, 10, primaryColor);
   drawText(page, order.trackingInfo?.trackingNumber ?? "N/A", width - 120, height - 310, helvetica, 10, secondaryColor);
 
+  // Promo Code
+  if (order.appliedPromoCode) {
+    drawText(page, "Promo Code:", width - 210, height - 330, helveticaBold, 10, primaryColor);
+    const promoCode = order.appliedPromoCode as PromoCode;
+    drawText(page, `${promoCode.code} (${promoCode.discountPercentage}% OFF)`, width - 120, height - 330, helvetica, 10, secondaryColor);
+  }
+
   // Table Headers
-  const tableTop = height - 350;
+  const tableTop = height - 370;
   const tableHeaders = ["Item", "SKU", "Quantity", "Unit Price (Rs)", "Total (Rs)"];
   const columnWidths = [170, 100, 80, 90, 100];
   
@@ -202,15 +208,26 @@ export const generateInvoice = async (orderId: string, logoUrl?: string): Promis
     (acc, item) => acc + item.quantity * (item.product.discountedPrice ?? item.product.price), 
     0
   );
-  const shipping = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE; // Flat rate shipping
-  const total = subtotal + shipping;
+
+  const discountPercentage = order.appliedPromoCode ? (order.appliedPromoCode as PromoCode).discountPercentage : 0;
+  const discountAmount = subtotal * (discountPercentage / 100);
+  const discountedSubtotal = subtotal - discountAmount;
+
+  const shipping = discountedSubtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE;
+  const total = discountedSubtotal + shipping;
 
   yPos -= 20;
   drawLine(page, 50, yPos, width - 50, yPos, 1, secondaryColor);
-  
+
   yPos -= 20;
   drawText(page, "Subtotal:", 400, yPos, helveticaBold, 10, primaryColor);
   drawText(page, `Rs ${subtotal.toFixed(2)}`, 510, yPos, helvetica, 10, secondaryColor);
+
+  if (discountPercentage > 0) {
+    yPos -= 20;
+    drawText(page, "Discount:", 400, yPos, helveticaBold, 10, primaryColor);
+    drawText(page, `- Rs ${discountAmount.toFixed(2)}`, 510, yPos, helvetica, 10, secondaryColor);
+  }
 
   const shippingText = shipping === 0 ? "Free" : `Rs ${shipping.toFixed(2)}`;
   yPos -= 20;
