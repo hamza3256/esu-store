@@ -10,6 +10,7 @@ import { Media } from "./collections/Media";
 import { ProductFiles } from "./collections/ProductFile";
 import { Orders } from "./collections/Orders";
 import { Configuration as WebpackConfig } from 'webpack';
+import { PromoCodes } from "./collections/PromoCodes";
 
 dotenv.config({
   path: path.resolve(__dirname, "../.env"),
@@ -28,7 +29,7 @@ export default buildConfig({
     'https://esustore.com'
   ],
   serverURL: process.env.NEXT_PUBLIC_SERVER_URL || "",
-  collections: [Users, Products, Media, ProductFiles, Orders],
+  collections: [Users, Products, Media, ProductFiles, Orders, PromoCodes],
   routes: {
     admin: "/sell",
   },
