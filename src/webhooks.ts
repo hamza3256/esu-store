@@ -6,7 +6,7 @@ import { getPayloadClient } from "./get-payload";
 import { Product, User } from "./payload-types";
 import { ReceiptEmailHtml } from "./components/emails/ReceiptEmail";
 import { createPostexOrder } from "./lib/postex";
-import { Order } from "./lib/types";
+import { Order, PromoCode } from "./lib/types";
 import { SHIPPING_FEE } from "./lib/config";
 import { OrderNotificationHtml } from "./components/emails/OrderNotification";
 import { resend } from "./lib/resend";
@@ -53,37 +53,20 @@ export const stripeWebhookHandler = async (
   // 3. Handle `checkout.session.completed` event
   if (event.type === "checkout.session.completed") {
     console.log("Processing checkout.session.completed");
-    
+  
     const orderId = session.metadata?.orderId;
     const orderNumber = session.metadata?.orderNumber;
     const userEmail = session.metadata?.email;
-
+  
     if (!orderId || !orderNumber || !userEmail) {
       return res.status(400).send({
-        error: "Webhook Error: No userId or orderId in metadata.",
+        error: "Webhook Error: No orderId or email in metadata.",
       });
     }
-
+  
     const payload = await getPayloadClient();
-
+  
     try {
-      // // Fetch the user by ID
-      // const { docs: users } = await payload.find({
-      //   collection: "users",
-      //   where: {
-      //     id: {
-      //       equals: session.metadata.userId,
-      //     },
-      //   },
-      // });
-
-      // const [user] = users;
-      // if (!user) {
-      //   console.error(`User not found for ID: ${session.metadata.userId}`);
-      //   return res.status(404).json({ error: "User not found." });
-      // }
-
-      // Fetch the order by ID
       const { docs: orders } = await payload.find({
         collection: "orders",
         depth: 2,
@@ -93,14 +76,45 @@ export const stripeWebhookHandler = async (
           },
         },
       });
-
+  
       const [order] = orders as Order[];
       if (!order) {
         console.error(`Order not found for ID: ${orderId}`);
         return res.status(404).json({ error: "Order not found." });
       }
-
-
+  
+      // Check if a promo code was applied to the order
+      const appliedPromoCode = order.appliedPromoCode as PromoCode;
+      if (appliedPromoCode) {
+        try {
+          // Fetch the promo code details
+          const { docs: promoCodes } = await payload.find({
+            collection: "promo-codes",
+            where: {
+              id: {
+                equals: appliedPromoCode?.id,
+              },
+            },
+          });
+  
+          const promo = promoCodes[0];
+          if (promo) {
+            const currentUses = promo.currentUses as number
+            // Update the currentUses of the promo code
+            await payload.update({
+              collection: "promo-codes",
+              id: promo.id,
+              data: {
+                currentUses: (currentUses || 0) + 1,
+              },
+            });
+          }
+        } catch (promoError) {
+          console.error("Error updating promo code usage:", promoError);
+          return res.status(500).json({ error: "Failed to update promo code usage." });
+        }
+      }
+  
       // Check if PostEx order is already created
       if (!order._isPostexOrderCreated) {
         try {
@@ -112,17 +126,17 @@ export const stripeWebhookHandler = async (
             (count, item) => count + item.quantity,
             0
           );
-
+  
           const orderDetail = order.productItems
             .map((item) => `${item.quantity}x ${item.product.name} (${item.product.category})`)
             .join(", ");
-
-          const customerName = order.name ?? order.email
-
+  
+          const customerName = order.name ?? order.email;
+  
           // Prepare PostEx order data
           const postexOrderData = {
             cityName: orderShippingAddress.city,
-            customerName: customerName,
+            customerName,
             customerPhone: order.phone,
             deliveryAddress,
             invoiceDivison: 0,
@@ -133,10 +147,10 @@ export const stripeWebhookHandler = async (
             orderType: "Normal",
             pickupAddressCode: "001",
           };
-
+  
           // Create order in PostEx
           const postexResponse = await createPostexOrder(postexOrderData);
-
+  
           // Update order with PostEx tracking info
           await payload.update({
             collection: "orders",
@@ -158,12 +172,12 @@ export const stripeWebhookHandler = async (
           });
         }
       }
-
+  
       // Ensure email hasn't been sent already
       if (order._emailSent) {
         return res.status(200).json({ message: "Email already sent." });
       }
-
+  
       // 4. Update the order as paid
       await payload.update({
         collection: "orders",
@@ -171,26 +185,28 @@ export const stripeWebhookHandler = async (
         data: {
           _isPaid: true,
           _isPostexOrderCreated: true,
-          status: "processing"
+          status: "processing",
         },
       });
-
+  
       // Prepare product items for receipt email
       const orderProductItems = order.productItems as ProductItem[];
-      const productItems = orderProductItems.map((item: any) => {
-        if (typeof item.product === "string") {
-          return {
-            product: { id: item.product },
-            quantity: item.quantity,
-          };
-        } else {
-          return {
-            product: item.product,
-            quantity: item.quantity,
-          };
-        }
-      }).filter((item: { product: null }) => item.product !== null);
-
+      const productItems = orderProductItems
+        .map((item: any) => {
+          if (typeof item.product === "string") {
+            return {
+              product: { id: item.product },
+              quantity: item.quantity,
+            };
+          } else {
+            return {
+              product: item.product,
+              quantity: item.quantity,
+            };
+          }
+        })
+        .filter((item: { product: null }) => item.product !== null);
+  
       // 5. Send receipt email
       try {
         await resend.emails.send({
@@ -205,12 +221,12 @@ export const stripeWebhookHandler = async (
             orderNumber,
             shippingFee: SHIPPING_FEE,
             trackingNumber: order.trackingInfo?.trackingNumber || undefined,
-            trackingOrderDate: order.trackingInfo?.orderDate || undefined
+            trackingOrderDate: order.trackingInfo?.orderDate || undefined,
           }),
         });
-
+  
         console.log("Receipt email sent successfully.");
-
+  
         const notificationHtml = OrderNotificationHtml({
           customerEmail: order.email,
           customerName: order.name ?? order.email,
@@ -223,14 +239,14 @@ export const stripeWebhookHandler = async (
           shippingAddress: order.shippingAddress,
           trackingNumber: order.trackingInfo?.trackingNumber ?? "", // Pass tracking info if available
         });
-    
+  
         await resend.emails.send({
           from: "ESÜ STORE <info@esustore.com>",
           to: ["gems@esustore.com", "orders@esustore.com"],
           subject: `New Order Notification - Order #${order.orderNumber}`,
           html: notificationHtml,
         });
-
+  
         return res.status(200).json({ message: "Order updated, PostEx created, and email sent." });
       } catch (emailError) {
         console.error("Email sending failed:", emailError);
@@ -241,9 +257,9 @@ export const stripeWebhookHandler = async (
       return res.status(500).json({ error: "Failed to process webhook." });
     }
   }
-
+  
   // Respond with 200 OK if event type isn't relevant
-  return res.status(200).send();
+  return res.status(200).send();  
 };
 
 // Step 10: Define the updateOrder function

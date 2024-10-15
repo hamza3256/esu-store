@@ -6,6 +6,7 @@ import Stripe from "stripe";
 import { stripe } from "../lib/stripe";
 import { PDFDocument } from "pdf-lib";
 import { FREE_SHIPPING_THRESHOLD, SHIPPING_FEE } from "../lib/config";
+import { PromoCode } from "@/lib/types";
 
 const shippingAddressSchema = z.object({
   line1: z.string(),
@@ -205,12 +206,13 @@ export const orderRouter = router({
         ),
         shippingAddress: shippingAddressSchema,
         name: z.string(),
-        email: z.string().email(), 
-        phone: z.string(), 
+        email: z.string().email(),
+        phone: z.string(),
+        promoCode: z.string().optional(),  // Add promoCode input
       })
     )
     .mutation(async ({ input }) => {
-      const { productItems, shippingAddress, email, phone, name } = input;
+      const { productItems, shippingAddress, email, phone, name, promoCode } = input;
 
       if (productItems.length === 0) {
         throw new TRPCError({
@@ -244,6 +246,7 @@ export const orderRouter = router({
       }
 
       // Calculate the total and gather product details with priceAtPurchase
+      let orderTotal = 0;
       const orderProductItems = productItems.map((item) => {
         const product = filteredProductsHavePrice.find(
           (p) => p.id === item.productId
@@ -254,8 +257,10 @@ export const orderRouter = router({
             message: `Product with ID ${item.productId} not found`,
           });
         }
-        
+
         const productPrice = (product.discountedPrice ?? product.price) as number;
+        orderTotal += productPrice * item.quantity;
+
         return {
           product: item.productId,
           quantity: item.quantity,
@@ -263,8 +268,67 @@ export const orderRouter = router({
         };
       });
 
-      // Calculate the total price
-      const total = orderProductItems.reduce((acc, item) => acc + (item.priceAtPurchase * item.quantity), 0);
+      // Validate and apply promo code if provided
+      let discountPercentage = 0;
+      let promo;
+      let stripeCouponId: string | null = null;
+
+      if (promoCode) {
+        const now = new Date().toISOString();
+        const { docs: promoCodes } = await payload.find({
+          collection: "promo-codes",
+          where: {
+            code: {
+              equals: promoCode,
+            },
+            validFrom: {
+              less_than_equal: now,
+            },
+            validUntil: {
+              greater_than_equal: now,
+            },
+          },
+          limit: 1,
+        });
+
+        if (!promoCodes || promoCodes.length === 0) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Invalid or expired promo code.",
+          });
+        }
+
+        promo = promoCodes[0] as PromoCode;
+        const currentUses = promo.currentUses ?? 0; // Ensure currentUses is initialized
+        if (currentUses >= promo.maxUses) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "This promo code has reached its usage limit.",
+          });
+        }
+
+        discountPercentage = promo.discountPercentage;
+
+        try {
+          // Create a Stripe coupon with the applied promo code discount
+          const coupon = await stripe.coupons.create({
+            percent_off: promo.discountPercentage, // Use the discount percentage from the promo code
+            duration: 'once', // This means the coupon applies only once
+          });
+
+          stripeCouponId = coupon.id;
+        } catch (error) {
+          console.error('Error creating Stripe coupon:', error);
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to create Stripe coupon.",
+          });
+        }
+      }
+
+      // Apply the discount to the order total if applicable
+      const discount = (discountPercentage / 100) * orderTotal;
+      const total = Math.round(orderTotal - discount);
 
       // Generate unique order number
       const orderNumber = generateOrderNumber();
@@ -277,12 +341,13 @@ export const orderRouter = router({
           _isPostexOrderCreated: false,
           productItems: orderProductItems,
           name,
-          email, 
+          email,
           phone,
           shippingAddress,
           orderNumber,
           total,
-          paymentType: "card"
+          paymentType: "card",
+          appliedPromoCode: promo ? promo.id : undefined, // Save applied promo code ID if valid
         },
       });
 
@@ -347,8 +412,8 @@ export const orderRouter = router({
             userId: customer.id,
             orderNumber: orderNumber,
             name,
-            email: email, 
-            phone, 
+            email: email,
+            phone,
           },
           line_items,
           shipping_address_collection: {
@@ -382,7 +447,7 @@ export const orderRouter = router({
                   shipping_rate_data: {
                     type: "fixed_amount",
                     fixed_amount: {
-                      amount: SHIPPING_FEE * 100, 
+                      amount: SHIPPING_FEE * 100,
                       currency: "pkr",
                     },
                     display_name: "Standard Shipping",
@@ -399,6 +464,7 @@ export const orderRouter = router({
                   },
                 },
               ],
+          discounts: stripeCouponId ? [{ coupon: stripeCouponId }] : undefined,
         });
       } catch (error) {
         // Enhanced error logging for debugging
@@ -416,32 +482,7 @@ export const orderRouter = router({
         });
       }
 
-      // // Step 3: Create the order in Postex
-      // try {
-      //   const postexOrderData = {
-      //     order_number: order.orderNumber,
-      //     customer_name: email,
-      //     customer_address: `${shippingAddress.line1}, ${shippingAddress.city}, ${shippingAddress.country}`,
-      //     customer_phone: phone,
-      //     items: productItems.map((item) => ({
-      //       name: filteredProductsHavePrice.find((p) => p.id === item.productId)?.name || 'Unknown Product',
-      //       quantity: item.quantity,
-      //     })),
-      //     total_amount: total,
-      //   };
-
-      //   // Create the order in Postex
-      //   const postexResponse = await createPostexOrder(postexOrderData);
-      //   console.log("Postex order created:", postexResponse);
-      // } catch (error) {
-      //   console.error("Error while creating order in Postex:", error);
-      //   throw new TRPCError({
-      //     code: "INTERNAL_SERVER_ERROR",
-      //     message: "Failed to create order in Postex.",
-      //   });
-      // }
-
-      // Step 4: Return the Stripe session URL for the client to redirect
+      // Step 3: Return the Stripe session URL for the client to redirect
       return { url: stripeSession.url };
     }),
 

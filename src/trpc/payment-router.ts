@@ -437,16 +437,6 @@ export const paymentRouter = router({
             inventory: updatedInventory,
           },
         });
-        
-        if (promo) {
-          await payload.update({
-            collection: "promo-codes",
-            id: promo.id,
-            data: {
-              currentUses: (promo.currentUses || 0) + 1,
-            },
-          });
-        }
       }
 
       // Step 4: Return the Stripe session URL for the client to redirect
