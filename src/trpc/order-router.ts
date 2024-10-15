@@ -261,6 +261,14 @@ export const orderRouter = router({
         const productPrice = (product.discountedPrice ?? product.price) as number;
         orderTotal += productPrice * item.quantity;
 
+        // Check if product has enough inventory
+        if ((product.inventory as number) < item.quantity) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Insufficient inventory for product: ${product.name}`,
+          });
+        }
+
         return {
           product: item.productId,
           quantity: item.quantity,
@@ -333,6 +341,8 @@ export const orderRouter = router({
       // Generate unique order number
       const orderNumber = generateOrderNumber();
 
+      const paymentType: "card" | "cod" = "card";
+
       // Step 1: Create the order without associating with a user (guest checkout)
       const order = await payload.create({
         collection: "orders",
@@ -346,8 +356,8 @@ export const orderRouter = router({
           shippingAddress,
           orderNumber,
           total,
-          paymentType: "card",
-          appliedPromoCode: promo ? promo.id : undefined, // Save applied promo code ID if valid
+          paymentType: paymentType,
+          appliedPromoCode: promo ? promo.id : null
         },
       });
 

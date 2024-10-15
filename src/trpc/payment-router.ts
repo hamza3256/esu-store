@@ -174,12 +174,21 @@ export const paymentRouter = router({
         const productPrice = (product.discountedPrice ?? product.price) as number;
         orderTotal += productPrice * item.quantity;
 
+        // Check if product has enough inventory
+        if ((product.inventory as number) < item.quantity) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Insufficient inventory for product: ${product.name}`,
+          });
+        }
+
         return {
           product: item.productId,
           quantity: item.quantity,
           priceAtPurchase: productPrice, // Add priceAtPurchase here
         };
       });
+
 
       // Validate and apply promo code if provided
       let discountPercentage = 0;
@@ -202,8 +211,6 @@ export const paymentRouter = router({
           },
           limit: 1,
         });
-
-        console.log("promoCodes: " + promoCodes )
 
         if (!promoCodes || promoCodes.length === 0) {
           throw new TRPCError({
@@ -403,47 +410,10 @@ export const paymentRouter = router({
         });
       }
 
-      // Step 3: Deduct product inventory after Stripe session creation succeeds
-      for (const item of productItems) {
-        const product = filteredProductsHavePrice.find(
-          (p) => p.id === item.productId
-        );
-
-        if (!product || !product.id) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: `Product ID is missing for product: ${product?.name}`,
-          });
-        }
-
-        // Check if product has enough inventory
-        if ((product.inventory as number) < item.quantity) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: `Insufficient inventory for product: ${product.name}`,
-          });
-        }
-
-        const updatedInventory = Math.max(
-          (product.inventory as number) - item.quantity,
-          0
-        );
-
-        // Deduct the quantity from the product's inventory
-        await payload.update({
-          collection: "products",
-          id: product.id,
-          data: {
-            inventory: updatedInventory,
-          },
-        });
-      }
-
       // Step 4: Return the Stripe session URL for the client to redirect
       return { url: stripeSession.url };
     }),
 
-    // Inside your trpc mutation file
     createCODOrder: privateProcedure
     .input(
       z.object({
@@ -462,28 +432,29 @@ export const paymentRouter = router({
           postalCode: z.string().optional(),
           country: z.string(),
         }),
+        promoCode: z.string().optional(), // Optional promo code input
       })
     )
     .mutation(async ({ ctx, input }) => {
       const { user } = ctx;
-      const { productItems, shippingAddress, phone } = input;
-  
+      const { productItems, shippingAddress, phone, promoCode } = input;
+
       if (!user || !user.id) {
         throw new TRPCError({
           code: "UNAUTHORIZED",
           message: "User not authenticated",
         });
       }
-  
+
       if (productItems.length === 0) {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "No products in the order",
         });
       }
-  
+
       const payload = await getPayloadClient();
-  
+
       // Fetch products to ensure they exist and have enough inventory
       const { docs: products } = await payload.find({
         collection: "products",
@@ -493,20 +464,20 @@ export const paymentRouter = router({
           },
         },
       });
-  
-      // Ensure products exist and have prices
+
       const filteredProductsHavePrice = products.filter((product) =>
         Boolean(product.priceId)
       );
-  
+
       if (filteredProductsHavePrice.length !== productItems.length) {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "Some products do not have prices or were not found",
         });
       }
-  
+
       // Calculate the total and gather product details with priceAtPurchase
+      let orderTotal = 0;
       const orderProductItems = productItems.map((item) => {
         const product = filteredProductsHavePrice.find(
           (p) => p.id === item.productId
@@ -517,21 +488,73 @@ export const paymentRouter = router({
             message: `Product with ID ${item.productId} not found`,
           });
         }
-        
+
         const productPrice = (product.discountedPrice ?? product.price) as number;
+        orderTotal += productPrice * item.quantity;
+
+        // Check if product has enough inventory
+        if ((product.inventory as number) < item.quantity) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Insufficient inventory for product: ${product.name}`,
+          });
+        }
+
         return {
           product: item.productId,
           quantity: item.quantity,
-          priceAtPurchase: productPrice,  // Add priceAtPurchase here
+          priceAtPurchase: productPrice,
         };
       });
 
-      // Calculate the total price
-      const total = orderProductItems.reduce((acc, item) => acc + (item.priceAtPurchase * item.quantity), 0);
-  
+      // Validate and apply promo code if provided
+      let discountPercentage = 0;
+      let promo;
+      if (promoCode) {
+        const now = new Date().toISOString();
+        const { docs: promoCodes } = await payload.find({
+          collection: "promo-codes",
+          where: {
+            code: {
+              equals: promoCode,
+            },
+            validFrom: {
+              less_than_equal: now,
+            },
+            validUntil: {
+              greater_than_equal: now,
+            },
+          },
+          limit: 1,
+        });
+
+        if (!promoCodes || promoCodes.length === 0) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Invalid or expired promo code.",
+          });
+        }
+
+        promo = promoCodes[0] as PromoCode;
+
+        const currentUses = promo.currentUses ?? 0;
+        if (!promo || currentUses >= promo.maxUses) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "This promo code has reached its usage limit.",
+          });
+        }
+
+        discountPercentage = promo.discountPercentage;
+      }
+
+      // Apply the discount to the order total if applicable
+      const discount = (discountPercentage / 100) * orderTotal;
+      const total = Math.round(orderTotal - discount);
+
       // Generate unique order number
       const orderNumber = generateOrderNumber();
-  
+
       // Step 1: Create the order but don't deduct inventory yet
       const order = await payload.create({
         collection: "orders",
@@ -547,86 +570,88 @@ export const paymentRouter = router({
           orderNumber,
           total,
           paymentType: "cod",
-          status: "processing"
+          status: "processing",
+          appliedPromoCode: promo ? promo.id : null
         },
       }) as Order;
 
       try {
-          const orderShippingAddress = order.shippingAddress as ShippingAddressType;
-          const deliveryAddress = orderShippingAddress.line1.concat(
-            orderShippingAddress.line2 ? ", ".concat(orderShippingAddress.line2) : ""
-          );
-          const itemTotal = order.productItems.reduce(
-            (count, item) => count + item.quantity,
-            0
-          );
+        const orderShippingAddress = order.shippingAddress as ShippingAddressType;
+        const deliveryAddress = orderShippingAddress.line1.concat(
+          orderShippingAddress.line2 ? ", ".concat(orderShippingAddress.line2) : ""
+        );
+        const itemTotal = order.productItems.reduce(
+          (count, item) => count + item.quantity,
+          0
+        );
 
-          const orderDetail = order.productItems
-            .map((item) => `${item.quantity}x ${item.product.name} (${item.product.category})`)
-            .join(", ");
+        const orderDetail = order.productItems
+          .map((item) => `${item.quantity}x ${item.product.name} (${item.product.category})`)
+          .join(", ");
 
-          const customerName = order.name ?? order.email
+        const customerName = order.name ?? order.email;
 
-          // Prepare PostEx order data
-          const postexOrderData = {
-            cityName: orderShippingAddress.city,
-            customerName: customerName,
-            customerPhone: order.phone,
-            deliveryAddress,
-            invoiceDivison: 0,
-            invoicePayment: order.total.toString(),
-            items: itemTotal,
-            orderDetail,
-            orderRefNumber: order.orderNumber,
-            orderType: "Normal",
-            pickupAddressCode: "001",
-          };
+        // Prepare PostEx order data
+        const postexOrderData = {
+          cityName: orderShippingAddress.city,
+          customerName: customerName,
+          customerPhone: order.phone,
+          deliveryAddress,
+          invoiceDivison: 0,
+          invoicePayment: order.total.toString(),
+          items: itemTotal,
+          orderDetail,
+          orderRefNumber: order.orderNumber,
+          orderType: "Normal",
+          pickupAddressCode: "001",
+        };
 
-          console.log("postex order data: " + postexOrderData)
+        console.log("PostEx order data:", postexOrderData);
 
-          // Create order in PostEx
-          const postexResponse = await createPostexOrder(postexOrderData);
+        // Create order in PostEx
+        const postexResponse = await createPostexOrder(postexOrderData);
 
-          // Update order with PostEx tracking info
-          await payload.update({
-            collection: "orders",
-            id: order.id,
-            data: {
-              _isPostexOrderCreated: true,
-              trackingInfo: {
-                trackingNumber: postexResponse.dist.trackingNumber,
-                orderStatus: postexResponse.dist.orderStatus,
-                orderDate: postexResponse.dist.orderDate,
-              },
+        // Update order with PostEx tracking info
+        await payload.update({
+          collection: "orders",
+          id: order.id,
+          data: {
+            _isPostexOrderCreated: true,
+            trackingInfo: {
+              trackingNumber: postexResponse.dist.trackingNumber,
+              orderStatus: postexResponse.dist.orderStatus,
+              orderDate: postexResponse.dist.orderDate,
             },
-          });
+          },
+        });
 
-          console.log("PostEx order created:", postexResponse);
-        } catch (error) {
-          console.error("Error while creating order in PostEx:", error);
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: "Failed to create Postex order.",
-          });
-        }
-
+        console.log("PostEx order created:", postexResponse);
+      } catch (error) {
+        console.error("Error while creating order in PostEx:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to create PostEx order.",
+        });
+      }
 
       try {
-      const orderProductItems = order.productItems as ProductItem[];
+        const orderProductItems = order.productItems as ProductItem[];
 
-        const products = orderProductItems.map((item: any) => {
-          if (typeof item.product === "string") {
-            return {
-              product: { id: item.product },
-              quantity: item.quantity,
-            };
-          } else {
-            return {
-              product: item.product,
-              quantity: item.quantity,
-            };
-          }
-        }).filter((item: { product: null }) => item.product !== null);
+        const products = orderProductItems
+          .map((item: any) => {
+            if (typeof item.product === "string") {
+              return {
+                product: { id: item.product },
+                quantity: item.quantity,
+              };
+            } else {
+              return {
+                product: item.product,
+                quantity: item.quantity,
+              };
+            }
+          })
+          .filter((item: { product: null }) => item.product !== null);
 
         await resend.emails.send({
           from: "ESÜ TEAM <info@esustore.com>",
@@ -641,7 +666,7 @@ export const paymentRouter = router({
             shippingFee: SHIPPING_FEE,
             trackingNumber: order.trackingInfo?.trackingNumber || undefined,
             trackingOrderDate: order.trackingInfo?.orderDate || undefined,
-            totalPrice: total
+            totalPrice: total,
           }),
         });
 
@@ -654,13 +679,12 @@ export const paymentRouter = router({
           orderId: order.id,
           products: products,
           orderNumber: order.orderNumber,
-          shippingFee: SHIPPING_FEE, 
-          total: order.total, 
+          shippingFee: SHIPPING_FEE,
+          total: order.total,
           shippingAddress: order.shippingAddress,
-          trackingNumber: order.trackingInfo?.trackingNumber ?? "", 
-          
+          trackingNumber: order.trackingInfo?.trackingNumber ?? "",
         });
-    
+
         await resend.emails.send({
           from: "ESÜ STORE <info@esustore.com>",
           to: ["orders@esustore.com"],
@@ -675,18 +699,19 @@ export const paymentRouter = router({
         });
       }
 
+      // Step 4: Deduct product inventory
       for (const item of productItems) {
         const product = filteredProductsHavePrice.find(
           (p) => p.id === item.productId
         );
-  
+
         if (!product || !product.id) {
           throw new TRPCError({
             code: "BAD_REQUEST",
             message: `Product ID is missing for product: ${product?.name}`,
           });
         }
-  
+
         // Check if product has enough inventory
         if ((product.inventory as number) < item.quantity) {
           throw new TRPCError({
@@ -694,7 +719,7 @@ export const paymentRouter = router({
             message: `Insufficient inventory for product: ${product.name}`,
           });
         }
-  
+
         const updatedInventory = Math.max(
           (product.inventory as number) - item.quantity,
           0
@@ -708,8 +733,18 @@ export const paymentRouter = router({
             inventory: updatedInventory,
           },
         });
+        
+
+        if (promo) {
+          await payload.update({
+            collection: "promo-codes",
+            id: promo.id,
+            data: {
+              currentUses: (promo.currentUses || 0) + 1,
+            },
+          });
+        }
       }
-  
       return { order };
     }),
 

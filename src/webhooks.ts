@@ -178,7 +178,6 @@ export const stripeWebhookHandler = async (
         return res.status(200).json({ message: "Email already sent." });
       }
   
-      // 4. Update the order as paid
       await payload.update({
         collection: "orders",
         id: orderId,
@@ -206,6 +205,28 @@ export const stripeWebhookHandler = async (
           }
         })
         .filter((item: { product: null }) => item.product !== null);
+
+        for (const item of productItems) {
+          const product = item.product;
+  
+          if (!product || !product.id) {
+            return res.status(500).json({ error: "Failed to update promo code usage." });
+          }
+  
+          const updatedInventory = Math.max(
+            (product.inventory as number) - item.quantity,
+            0
+          );
+    
+          // Deduct the quantity from the product's inventory
+          await payload.update({
+            collection: "products",
+            id: product.id,
+            data: {
+              inventory: updatedInventory,
+            },
+          });
+        }
   
       // 5. Send receipt email
       try {
