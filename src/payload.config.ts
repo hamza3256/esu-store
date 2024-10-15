@@ -53,7 +53,7 @@ export default buildConfig({
     meta: {
       titleSuffix: "- esü",
       favicon: "/favicon.ico",
-      ogImage: "/thumbnail.jpg",
+      ogImage: "/esu-official.jpg",
     },
   },
   rateLimit: {
