@@ -18,6 +18,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { toast } from '@/components/ui/use-toast'
 import ShippingAddressForm from '@/components/ShippingAddressForm'
 import { formatRupees } from '@/lib/utils'
+import { Progress } from '@/components/ui/progress'
 
 interface CartPageProps {
   user: User | null
@@ -44,11 +45,13 @@ export default function CartPageClient({ user, cities }: CartPageProps) {
   const [isMounted, setIsMounted] = useState<boolean>(false)
   const [promoCode, setPromoCode] = useState<string>('')
   const [promoCodeError, setPromoCodeError] = useState<string | null>(null)
-  const [discount, setDiscount] = useState<number>(0);
+  const [discount, setDiscount] = useState<number>(0)
+  const [formProgress, setFormProgress] = useState(0)
+  const [isPhoneValid, setIsPhoneValid] = useState<boolean | null>(null)
 
   const { mutate: applyPromoCodeMutation, isLoading: isApplyingPromoCode } = trpc.cart.applyPromoCode.useMutation({
     onSuccess: (data) => {
-      setDiscount(data.discount);
+      setDiscount(data.discount)
       applyPromoCode(data.discount)
       setPromoCodeError(null)
       toast({
@@ -137,6 +140,28 @@ export default function CartPageClient({ user, cities }: CartPageProps) {
     }
   }, [cartTotal, paymentMethod])
 
+  const isFormComplete = () => {
+    const requiredFields = ['line1', 'city', 'country']
+    return (
+      requiredFields.every((field) => !!shippingAddress[field as keyof typeof shippingAddress]) &&
+      (!isGuest || (!!guestEmail && !!guestName)) &&
+      !!phone &&
+      isPhoneValid
+    )
+  }
+
+  useEffect(() => {
+    const totalSteps = 4 // Total number of required form sections
+    let completedSteps = 0
+
+    if (items.length > 0) completedSteps++
+    if (userTypeSelected) completedSteps++
+    if (isFormComplete()) completedSteps++
+    if (paymentMethod) completedSteps++
+
+    setFormProgress((completedSteps / totalSteps) * 100)
+  }, [items, userTypeSelected, isFormComplete, paymentMethod])
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     setShippingAddress((prevState) => ({
@@ -156,7 +181,9 @@ export default function CartPageClient({ user, cities }: CartPageProps) {
 
   const validatePhoneNumber = (phone: string): boolean => {
     const phoneRegex = /^03\d{9}$/
-    return phoneRegex.test(phone)
+    const isValid = phoneRegex.test(phone)
+    setIsPhoneValid(isValid)
+    return isValid
   }
 
   const handleApplyPromoCode = () => {
@@ -168,14 +195,14 @@ export default function CartPageClient({ user, cities }: CartPageProps) {
   }
 
   const removePromoCode = () => {
-    setPromoCode('');
-    setDiscount(0);
+    setPromoCode('')
+    setDiscount(0)
     toast({
       title: 'Promo Code Removed',
       description: 'The applied promo code has been removed.',
       variant: 'default',
-    });
-  };
+    })
+  }
 
   const handleCheckout = () => {
     if (!isFormComplete()) {
@@ -231,25 +258,16 @@ export default function CartPageClient({ user, cities }: CartPageProps) {
     router.push(`/sign-in?origin=cart`)
   }
 
-  const isFormComplete = () => {
-    const requiredFields = ['line1', 'city', 'country']
-    return (
-      requiredFields.every((field) => !!shippingAddress[field as keyof typeof shippingAddress]) &&
-      (!isGuest || (!!guestEmail && !!guestName)) &&
-      !!phone
-    )
-  }
-
   const calculateCartTotal = useMemo(() => {
     const subtotal = items.reduce((total, { product, quantity }) => {
-      const price = product.discountedPrice ?? product.price;
-      return total + price * quantity;
-    }, 0);
+      const price = product.discountedPrice ?? product.price
+      return total + price * quantity
+    }, 0)
   
-    const discountedTotal = discount > 0 ? subtotal * (1 - discount / 100) : subtotal;
+    const discountedTotal = discount > 0 ? subtotal * (1 - discount / 100) : subtotal
   
-    return discountedTotal;
-  }, [items, discount]);  
+    return discountedTotal
+  }, [items, discount])  
 
   const orderTotal = calculateCartTotal
   const shippingFee = orderTotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE
@@ -360,10 +378,10 @@ export default function CartPageClient({ user, cities }: CartPageProps) {
       </div>
   
       {discount > 0 && (
-        <div className="flex items-center justify-between text-green-600">
+        <div className="flex items-center  justify-between text-green-600">
           <p className="text-sm">Discount ({discount}%)</p>
           <p className="text-sm font-medium">
-            - {formatRupees((items.reduce((total, { product, quantity }) => total + (product.discountedPrice ?? product.price) * quantity, 0)) * (discount / 100))}
+            - &nbsp;{formatRupees((items.reduce((total, { product, quantity }) => total + (product.discountedPrice ?? product.price) * quantity, 0)) * (discount / 100))}
           </p>
         </div>
       )}
@@ -385,7 +403,7 @@ export default function CartPageClient({ user, cities }: CartPageProps) {
         </div>
       </div>
     </div>
-  );
+  )
 
   const renderPromoCodeSection = () => (
     <div className="mt-6">
@@ -410,7 +428,7 @@ export default function CartPageClient({ user, cities }: CartPageProps) {
       </div>
       {promoCodeError && <p className="text-red-500 text-sm mt-1">{promoCodeError}</p>}
     </div>
-  );
+  )
 
   const renderCheckoutOptions = () => (
     <div className="mt-6">
@@ -468,13 +486,37 @@ export default function CartPageClient({ user, cities }: CartPageProps) {
       )}
       <div className="mt-4">
         <Label htmlFor="phone">Phone Number</Label>
-        <Input
-          id="phone"
-          placeholder="03XXXXXXXXX"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          required
-        />
+        <div className="relative">
+          <Input
+            id="phone"
+            placeholder="03XXXXXXXXX"
+            value={phone}
+            onChange={(e) => {
+              setPhone(e.target.value)
+              validatePhoneNumber(e.target.value)
+            }}
+            required
+            className={`pr-10 ${
+              isPhoneValid === true
+                ? 'border-green-500 focus:ring-green-500'
+                : isPhoneValid === false
+                ? 'border-red-500 focus:ring-red-500'
+                : ''
+            }`}
+          />
+          {isPhoneValid !== null && (
+            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+              {isPhoneValid ? (
+                <Check className="h-5 w-5 text-green-500" />
+              ) : (
+                <X className="h-5 w-5 text-red-500" />
+              )}
+            </div>
+          )}
+        </div>
+        {isPhoneValid === false && (
+          <p className="mt-1 text-sm text-red-500">Please enter a valid phone number (e.g., 03XXXXXXXXX)</p>
+        )}
       </div>
       <div className="mt-4">
         <ShippingAddressForm
@@ -519,10 +561,19 @@ export default function CartPageClient({ user, cities }: CartPageProps) {
     </div>
   )
 
+  const renderProgressBar = () => (
+    <div className="mb-6">
+      <Progress value={formProgress} className="w-full" />
+      <p className="text-sm text-gray-600 mt-2">Form completion: {formProgress.toFixed(0)}%</p>
+    </div>
+  )
+
   return (
     <div className="bg-gray-50 min-h-screen">
       <div className="mx-auto max-w-2xl px-4 pb-24 pt-16 sm:px-6 lg:max-w-7xl lg:px-8">
         <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl mb-8">Shopping Cart</h1>
+
+        {renderProgressBar()}
 
         <div className="lg:grid lg:grid-cols-12 lg:items-start lg:gap-x-12 xl:gap-x-16">
           {/* Cart Items */}
