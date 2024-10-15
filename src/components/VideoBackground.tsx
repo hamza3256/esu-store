@@ -17,7 +17,11 @@ export function VideoBackground() {
   const mobileHlsUrl = `https://res.cloudinary.com/dn20h4mis/video/upload/sp_auto/v1728242171/mobile-optimised.m3u8`
   const desktopOptimisedUrl = `https://res.cloudinary.com/dn20h4mis/video/upload/f_webm,vc_vp9,q_auto/v1728242042/desktop-optimised.mp4`
   const mobileOptimisedUrl = `https://res.cloudinary.com/dn20h4mis/video/upload/f_webm,vc_vp9,q_auto/v1728242171/mobile-optimised.mp4`
-  const fallbackImageUrl = "https://res.cloudinary.com/dn20h4mis/image/upload/q_auto,f_webp,fl_awebp/v1728227615/background.png"
+
+  const desktopFallbackImageUrl = "https://res.cloudinary.com/dn20h4mis/image/upload/q_auto,f_webp,fl_awebp/v1728227615/background.png"
+  const mobileFallbackImageUrl = "https://res.cloudinary.com/dn20h4mis/image/upload/q_auto,f_webp/v1728227919/order-confirmation.jpg"
+
+  const [fallbackImageUrl, setFallbackImageUrl] = useState(desktopFallbackImageUrl)
 
   useEffect(() => {
     const videoElement = videoRef.current
@@ -26,6 +30,9 @@ export function VideoBackground() {
     const isMobile = window.innerWidth < 768
     const hlsUrl = isMobile ? mobileHlsUrl : desktopHlsUrl
     const optimisedUrl = isMobile ? mobileOptimisedUrl : desktopOptimisedUrl
+
+    // Set fallback image based on the device type
+    setFallbackImageUrl(isMobile ? mobileFallbackImageUrl : desktopFallbackImageUrl)
 
     let hls: Hls | null = null
 
