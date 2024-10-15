@@ -1,10 +1,10 @@
 import React from 'react';
 import Image from 'next/image';
 
-const BearLogo = () => {
+const Logo = () => {
   return (
     <Image
-    src="/bear_email_sent.png" // the path from the public folder
+    src="/esu-transparent.png" // the path from the public folder
     alt="Hug Bear Logo"
     width={200}  // Adjust the width and height as per your need
     height={200}
@@ -12,4 +12,4 @@ const BearLogo = () => {
   );
 };
 
-export default BearLogo;
+export default Logo;
