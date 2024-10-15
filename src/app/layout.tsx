@@ -55,6 +55,9 @@ export default async function RootLayout({
   return (
     <html lang="en" className="h-full">
       <head>
+        <link rel="preload" href="/fonts/Inter/Inter-Regular.woff2" as="font" type="font/woff2" />
+        <link rel="preload" href="/fonts/Inter/Inter-Bold.woff2" as="font" type="font/woff2" />
+        
         <link rel="icon" href="https://esustore.com/favicon.ico" type="image/x-icon" />
         <meta name="description" content={metadata.description ?? undefined} />
         <meta property="og:title" content={metadata.openGraph?.title?.toString() ?? undefined} />
