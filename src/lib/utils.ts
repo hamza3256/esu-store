@@ -6,6 +6,15 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+export const formatRupees = (amount: number) => {
+  return new Intl.NumberFormat('ur-PK', {
+    style: 'currency',
+    currency: 'PKR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount).replace('PKR', '₨');
+};
+
 export function formatPrice(
   price: number | string,
   options: {
@@ -40,7 +49,7 @@ export function formatPrice(
   }).format(safePrice);
 
   // Replace the currency code with the custom symbol if necessary (for PKR)
-  return formattedPrice.replace("PKR", "Rs");
+  return formattedPrice.replace("PKR", "₨");
 }
 
 export const formatDate = (dateString: string): string => {

@@ -6,11 +6,10 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useCart } from '@/hooks/use-cart'
 import { trpc } from '@/trpc/client'
-import { formatPrice } from '@/lib/utils'
 import { PRODUCT_CATEGORIES } from '@/config'
 import { SHIPPING_FEE, FREE_SHIPPING_THRESHOLD, COD_THRESHOLD } from '@/lib/config'
 import { User, Media } from '@/payload-types'
-import { Check, Loader2, Minus, Plus, X, CreditCard, DollarSign } from 'lucide-react'
+import { Check, Loader2, Minus, Plus, X, CreditCard } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -18,6 +17,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from '@/components/ui/use-toast'
 import ShippingAddressForm from '@/components/ShippingAddressForm'
+import { formatRupees } from '@/lib/utils'
 
 interface CartPageProps {
   user: User | null
@@ -65,7 +65,9 @@ export default function CartPageClient({ user, cities }: CartPageProps) {
   const { mutate: createCheckoutSession, isLoading: isCheckoutLoading } = trpc.payment.createSession.useMutation({
     onSuccess: ({ url }) => {
       if (url) {
-        clearCart()
+        if (url.includes("order-confirmation")) {
+          clearCart()
+        }
         router.push(url)
       }
     },
@@ -82,7 +84,9 @@ export default function CartPageClient({ user, cities }: CartPageProps) {
   const { mutate: createPublicSession, isLoading: isGuestCheckoutLoading } = trpc.order.createPublicSession.useMutation({
     onSuccess: ({ url }) => {
       if (url) {
-        clearCart()
+        if (url.includes("order-confirmation")) {
+          clearCart()
+        }
         router.push(url)
       }
     },
@@ -98,8 +102,8 @@ export default function CartPageClient({ user, cities }: CartPageProps) {
 
   const { mutate: createCODOrder, isLoading: isCODLoading } = trpc.payment.createCODOrder.useMutation({
     onSuccess: ({ order }) => {
-      clearCart()
       router.push(`${process.env.NEXT_PUBLIC_SERVER_URL}/order-confirmation?orderId=${order.id}`)
+      clearCart()
     },
     onError: (error) => {
       toast({
@@ -119,7 +123,7 @@ export default function CartPageClient({ user, cities }: CartPageProps) {
       setPaymentMethod('online')
       toast({
         title: 'Payment Method Changed',
-        description: `Cash on Delivery is not available for orders above ${formatPrice(COD_THRESHOLD)}. Your payment method has been changed to online payment.`,
+        description: `Cash on Delivery is not available for orders above ${formatRupees(COD_THRESHOLD)}. Your payment method has been changed to online payment.`,
         variant: 'default',
       })
     }
@@ -155,6 +159,16 @@ export default function CartPageClient({ user, cities }: CartPageProps) {
     applyPromoCodeMutation({ promoCode })
   }
 
+  const removePromoCode = () => {
+    setPromoCode('');
+    setDiscount(0);
+    toast({
+      title: 'Promo Code Removed',
+      description: 'The applied promo code has been removed.',
+      variant: 'default',
+    });
+  };
+
   const handleCheckout = () => {
     if (!isFormComplete()) {
       toast({
@@ -184,11 +198,12 @@ export default function CartPageClient({ user, cities }: CartPageProps) {
         productItems,
         shippingAddress,
         phone,
+        promoCode
       })
     } else if (isGuest) {
-      createPublicSession({ productItems, shippingAddress, email: guestEmail, name: guestName, phone })
+      createPublicSession({ productItems, shippingAddress, email: guestEmail, name: guestName, phone, promoCode })
     } else if (user?.id) {
-      createCheckoutSession({ productItems, shippingAddress, phone })
+      createCheckoutSession({ productItems, shippingAddress, phone, promoCode })
     } else {
       console.error('User not found. Cannot proceed with checkout.')
       toast({
@@ -223,11 +238,10 @@ export default function CartPageClient({ user, cities }: CartPageProps) {
       return total + price * quantity;
     }, 0);
   
-    // Apply discount to subtotal
     const discountedTotal = discount > 0 ? subtotal * (1 - discount / 100) : subtotal;
   
     return discountedTotal;
-  }, [items, discount]);
+  }, [items, discount]);  
 
   const orderTotal = calculateCartTotal
   const shippingFee = orderTotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE
@@ -267,14 +281,14 @@ export default function CartPageClient({ user, cities }: CartPageProps) {
                   </div>
                   <p className="mt-1 text-sm font-medium text-gray-900">
                     {product.discountedPrice ? (
-                      <>
+                      <span className="flex items-center">
                         <span className="line-through text-gray-500 mr-2">
-                          {formatPrice(product.price)}
+                          {formatRupees(product.price)}
                         </span>
-                        <span>{formatPrice(product.discountedPrice)}</span>
-                      </>
+                        <span className="text-red-600">{formatRupees(product.discountedPrice)}</span>
+                      </span>
                     ) : (
-                      <span>{formatPrice(product.price)}</span>
+                      <span>{formatRupees(product.price)}</span>
                     )}
                   </p>
                 </div>
@@ -333,7 +347,7 @@ export default function CartPageClient({ user, cities }: CartPageProps) {
       <div className="flex items-center justify-between">
         <p className="text-sm text-gray-600">Subtotal</p>
         <p className="text-sm font-medium text-gray-900">
-          {isMounted ? formatPrice(calculateCartTotal) : <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+          {isMounted ? formatRupees(calculateCartTotal) : <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
         </p>
       </div>
   
@@ -341,7 +355,7 @@ export default function CartPageClient({ user, cities }: CartPageProps) {
         <div className="flex items-center justify-between text-green-600">
           <p className="text-sm">Discount ({discount}%)</p>
           <p className="text-sm font-medium">
-            - {formatPrice((items.reduce((total, { product, quantity }) => total + (product.discountedPrice ?? product.price) * quantity, 0)) * (discount / 100))}
+            - {formatRupees((items.reduce((total, { product, quantity }) => total + (product.discountedPrice ?? product.price) * quantity, 0)) * (discount / 100))}
           </p>
         </div>
       )}
@@ -349,19 +363,21 @@ export default function CartPageClient({ user, cities }: CartPageProps) {
       <div className="flex items-center justify-between">
         <p className="text-sm text-gray-600">Shipping</p>
         <p className={`text-sm font-medium ${calculateCartTotal >= FREE_SHIPPING_THRESHOLD ? "text-green-600" : "text-gray-900"}`}>
-          {isMounted ? (calculateCartTotal >= FREE_SHIPPING_THRESHOLD ? "FREE" : formatPrice(SHIPPING_FEE)) : <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+          {isMounted ? 
+            (calculateCartTotal >= FREE_SHIPPING_THRESHOLD ? "FREE" : formatRupees(SHIPPING_FEE)) :
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          }
         </p>
       </div>
   
       <div className="flex items-center justify-between border-t border-gray-200 pt-4">
         <div className="text-base font-medium text-gray-900">Order Total</div>
-        <div className="text-base font-medium text-gray-900">
-          {isMounted ? formatPrice(calculateCartTotal + shippingFee) : <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+        <div className="text-lg font-semibold text-gray-900">
+          {isMounted ? formatRupees(calculateCartTotal + shippingFee) : <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
         </div>
       </div>
     </div>
   );
-  
 
   const renderPromoCodeSection = () => (
     <div className="mt-6">
@@ -372,14 +388,21 @@ export default function CartPageClient({ user, cities }: CartPageProps) {
           onChange={(e) => setPromoCode(e.target.value)}
           placeholder="Enter promo code"
           className="flex-grow"
+          disabled={!!discount}
         />
-        <Button onClick={handleApplyPromoCode} disabled={isApplyingPromoCode}>
-          {isApplyingPromoCode ? <Loader2 className="h-4  w-4 animate-spin" /> : 'Apply'}
-        </Button>
+        {discount > 0 ? (
+          <Button onClick={removePromoCode}>
+            Remove
+          </Button>
+        ) : (
+          <Button onClick={handleApplyPromoCode} disabled={isApplyingPromoCode}>
+            {isApplyingPromoCode ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Apply'}
+          </Button>
+        )}
       </div>
       {promoCodeError && <p className="text-red-500 text-sm mt-1">{promoCodeError}</p>}
     </div>
-  )
+  );
 
   const renderCheckoutOptions = () => (
     <div className="mt-6">
@@ -478,10 +501,10 @@ export default function CartPageClient({ user, cities }: CartPageProps) {
             htmlFor="cod"
             className={`flex items-center ${(!user || cartTotal() > COD_THRESHOLD) ? 'opacity-50' : ''}`}
           >
-            <DollarSign className="w-4 h-4 mr-2" />
+            <span className="mr-2 text-lg font-semibold">₨</span>
             Cash on Delivery
             {!user && " (Login required)"}
-            {cartTotal() > COD_THRESHOLD && ` (Not available for orders above ${formatPrice(COD_THRESHOLD)})`}
+            {cartTotal() > COD_THRESHOLD && ` (Not available for orders above ${formatRupees(COD_THRESHOLD)})`}
           </Label>
         </div>
       </RadioGroup>
