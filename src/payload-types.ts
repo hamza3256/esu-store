@@ -13,6 +13,7 @@ export interface Config {
     media: Media;
     product_files: ProductFile;
     orders: Order;
+    'promo-codes': PromoCode;
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
   };
@@ -168,6 +169,22 @@ export interface Order {
   orderNumber: string;
   _emailSent?: boolean | null;
   paymentType: 'card' | 'cod';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "promo-codes".
+ */
+export interface PromoCode {
+  id: string;
+  code: string;
+  description?: string | null;
+  discountPercentage: number;
+  validFrom: string;
+  validUntil: string;
+  maxUses: number;
+  currentUses?: number | null;
   updatedAt: string;
   createdAt: string;
 }

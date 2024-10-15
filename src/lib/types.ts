@@ -38,6 +38,19 @@ export type Order = {
     paymentType: 'card' | 'cod';
   };
 
+  export type PromoCode = {
+    id: string;
+    code: string;
+    description?: string | null;
+    discountPercentage: number;
+    validFrom: string;
+    validUntil: string;
+    maxUses: number;
+    currentUses?: number | null;
+    updatedAt: string;
+    createdAt: string;
+  }
+
   export interface ProductType {
     id: string;
     user?: (string | null) | User;
