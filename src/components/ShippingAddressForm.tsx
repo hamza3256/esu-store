@@ -28,7 +28,7 @@ const ShippingAddressForm: React.FC<{
         {/* Address Line 1 */}
         <div className="sm:col-span-2">
           <label htmlFor="line1" className="block text-sm font-medium text-gray-700">
-            Address Line 1
+            Address
           </label>
           <div className="mt-1">
             <Input
@@ -43,7 +43,7 @@ const ShippingAddressForm: React.FC<{
           </div>
         </div>
 
-        {/* Address Line 2 */}
+        {/* Address Line 2
         <div className="sm:col-span-2">
           <label htmlFor="line2" className="block text-sm font-medium text-gray-700">
             Address Line 2 (optional)
@@ -58,7 +58,7 @@ const ShippingAddressForm: React.FC<{
               className="block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
             />
           </div>
-        </div>
+        </div> */}
 
         {/* City */}
         <div className="sm:col-span-2">
@@ -93,7 +93,7 @@ const ShippingAddressForm: React.FC<{
           </div>
         </div>
 
-        {/* Postal Code */}
+        {/* Postal Code
         <div className="sm:col-span-1">
           <label htmlFor="postalCode" className="block text-sm font-medium text-gray-700">
             Postal Code (optional)
@@ -108,7 +108,7 @@ const ShippingAddressForm: React.FC<{
               className="block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
             />
           </div>
-        </div>
+        </div> */}
 
         {/* Country */}
         <div className="sm:col-span-2">
