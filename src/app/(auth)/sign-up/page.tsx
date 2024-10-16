@@ -67,7 +67,7 @@ const Page = () => {
       {redirecting ? (
         <PageLoader />
       ) : (
-        <div className="container relative flex flex-col items-center justify-center min-h-screen px-4 lg:px-0">
+        <div className="container relative flex flex-col items-center justify-center px-4 lg:px-0">
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
