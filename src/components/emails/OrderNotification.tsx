@@ -84,7 +84,7 @@ export const OrderNotification = ({
           <Section>
             <Column>
               <Img
-                src={`https://esustore.com/esu-transparent.png`}
+                src={`https://esu.london/esu-transparent.png`}
                 height="100"
                 alt="ESU BEAR"
               />

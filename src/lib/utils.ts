@@ -97,7 +97,7 @@ export function constructMetadata({
       creator: "@MuhammadHamza",
     },
     icons,
-    metadataBase: new URL("https://esustore.com"),
+    metadataBase: new URL("https://esu.london"),
     ...(noIndex && {
       robots: {
         index: false,

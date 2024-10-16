@@ -18,17 +18,17 @@ export const metadata: Metadata = {
   openGraph: {
     title: "ESÜ Store | Jewellery, Clothing & Accessories",
     description: "Discover premium jewellery, clothing, and accessories at ESÜ Store. Shop our exclusive collection and elevate your style today.",
-    url: "https://esustore.com",
+    url: "https://esu.london",
     siteName: "ESÜ Store",
     images: [
       {
-        url: "https://esustore.com/esu.png",
+        url: "https://esu.london/esu.png",
         width: 1200,
         height: 630,
         alt: "ESÜ Store - Jewellery, Clothing, and Accessories",
       },
       {
-        url: "https://esustore.com/esu-official.jpg",
+        url: "https://esu.london/esu-official.jpg",
         width: 1080,
         height: 1080,
         alt: "ESÜ Store - Jewellery, Clothing, and Accessories (Instagram optimized)",
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "ESÜ Store | Jewellery, Clothing & Accessories",
     description: "Discover premium jewellery, clothing, and accessories at ESÜ Store. Shop our high-quality collection today.",
-    images: ["https://esustore.com/esu.png"],
+    images: ["https://esu.london/esu.png"],
   },
 };
 

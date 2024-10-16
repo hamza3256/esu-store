@@ -19,17 +19,17 @@ export const metadata: Metadata = {
     title: "ESÜ Store | Jewellery, Clothing & Accessories",
     description:
       "Discover premium Jewellery, clothing, and accessories at ESU Store. Shop our handpicked, high-quality products and elevate your style today.",
-    url: "https://esustore.com",
+    url: "https://esu.london",
     siteName: "ESÜ Store",
     images: [
       {
-        url: "https://esustore.com/esu.png", // Ensure this is at least 1080x1080 for Instagram compatibility
+        url: "https://esu.london/esu.png", // Ensure this is at least 1080x1080 for Instagram compatibility
         width: 1200,
         height: 630,
         alt: "ESÜ Store - Jewellery, Clothing, and Accessories",
       },
       {
-        url: "https://esustore.com/esu-official.jpg", // Additional square image for better Instagram preview
+        url: "https://esu.london/esu-official.jpg", // Additional square image for better Instagram preview
         width: 1080,
         height: 1080,
         alt: "ESÜ Store - Jewellery, Clothing, and Accessories (Instagram optimized)",
@@ -43,7 +43,7 @@ export const metadata: Metadata = {
     title: "ESÜ Store | Jewellery, Clothing & Accessories",
     description:
       "Discover premium Jewellery, clothing, and accessories at ESÜ Store. Shop our handpicked, high-quality products and elevate your style today.",
-    images: ["https://esustore.com/esu.png"],
+    images: ["https://esu.london/esu.png"],
   },
 };
 
@@ -76,7 +76,7 @@ export default async function RootLayout({
         />
         <link
           rel="icon"
-          href="https://esustore.com/favicon.ico"
+          href="https://esu.london/favicon.ico"
           type="image/x-icon"
         />
         <meta name="description" content={metadata.description ?? undefined} />
@@ -100,7 +100,7 @@ export default async function RootLayout({
         <meta
           property="og:image"
           content={
-            "https://esustore.com/esu-official.jpg"
+            "https://esu.london/esu-official.jpg"
           }
         />
         <meta
@@ -136,7 +136,7 @@ export default async function RootLayout({
         />
         <meta
           name="twitter:image"
-          content={"https://esustore.com/esu.png"}
+          content={"https://esu.london/esu.png"}
         />
       </head>
       <body className={cn("relative h-full font-sans antialiased")}>
