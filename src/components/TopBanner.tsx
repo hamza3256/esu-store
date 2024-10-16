@@ -1,11 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
+import { formatRupees } from '@/lib/utils'
+import { FREE_SHIPPING_THRESHOLD } from '@/lib/config'
 
 const bannerMessages = [
-  "Free delivery on orders over Rs 10,000",
+  `Free delivery on orders over ${formatRupees(FREE_SHIPPING_THRESHOLD)}`,
   "Pink October Sale: Up to 30% off selected items",
   "New arrivals every week",
   "Delivering all over Pakistan"
