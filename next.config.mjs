@@ -4,7 +4,7 @@ import path from "path";
 
 const productionHostname = process.env.NEXT_PUBLIC_SERVER_URL
   ? new URL(process.env.NEXT_PUBLIC_SERVER_URL).hostname
-  : "esustore.com";
+  : "esu.london";
 
 const protocol = process.env.NEXT_PUBLIC_SERVER_URL?.startsWith('https') ? 'https' : 'http';
 
