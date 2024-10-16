@@ -49,6 +49,8 @@ export default function CartPageClient({ user, cities }: CartPageProps) {
   const [formProgress, setFormProgress] = useState(0)
   const [isPhoneValid, setIsPhoneValid] = useState<boolean | null>(null)
 
+  const [subtotalDisplay, setSubtotalDisplay] = useState(0)
+
   const { mutate: applyPromoCodeMutation, isLoading: isApplyingPromoCode } = trpc.cart.applyPromoCode.useMutation({
     onSuccess: (data) => {
       setDiscount(data.discount)
@@ -263,7 +265,9 @@ export default function CartPageClient({ user, cities }: CartPageProps) {
       const price = product.discountedPrice ?? product.price
       return total + price * quantity
     }, 0)
-  
+    
+    setSubtotalDisplay(subtotal);
+
     const discountedTotal = discount > 0 ? subtotal * (1 - discount / 100) : subtotal
   
     return discountedTotal
@@ -373,7 +377,7 @@ export default function CartPageClient({ user, cities }: CartPageProps) {
       <div className="flex items-center justify-between">
         <p className="text-sm text-gray-600">Subtotal</p>
         <p className="text-sm font-medium text-gray-900">
-          {isMounted ? formatRupees(calculateCartTotal) : <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+          {isMounted ? formatRupees(subtotalDisplay) : <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
         </p>
       </div>
   
