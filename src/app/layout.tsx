@@ -23,13 +23,13 @@ export const metadata: Metadata = {
     siteName: "ESÜ Store",
     images: [
       {
-        url: "https://esu.london/esu.png", // Ensure this is at least 1080x1080 for Instagram compatibility
+        url: "https://esu.london/esu.png",
         width: 1200,
         height: 630,
         alt: "ESÜ Store - Jewellery, Clothing, and Accessories",
       },
       {
-        url: "https://esu.london/esu-official.jpg", // Additional square image for better Instagram preview
+        url: "https://esu.london/esu-official.jpg", 
         width: 1080,
         height: 1080,
         alt: "ESÜ Store - Jewellery, Clothing, and Accessories (Instagram optimized)",
