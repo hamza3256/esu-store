@@ -71,11 +71,6 @@ export const Users: CollectionConfig = {
       name: "role",
       defaultValue: "user",
       required: true,
-      admin: {
-        condition: ({ req }) => {
-          return req?.user?.role === "admin";
-        },
-      },
       type: "select",
       options: [
         {

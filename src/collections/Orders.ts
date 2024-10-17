@@ -16,7 +16,7 @@ export const Orders: CollectionConfig = {
     description: "A summary of all your orders on ESU Store.",
   },
   access: {
-    read: ({ req }) => req.user?.role === "admin" || !!req.user, // Allow admin and authenticated users to access orders
+    read: ({ req }) => req.user?.role === "admin" || req.user?.role === "seller" || !!req.user, // Allow admin and authenticated users to access orders
     update: ({ req }) => req.user?.role === "admin", // Only admin can update
     delete: ({ req }) => req.user?.role === "admin", // Only admin can delete
     create: () => true, // Allow creation without a logged-in user
@@ -26,7 +26,7 @@ export const Orders: CollectionConfig = {
       name: "_isPaid",
       type: "checkbox",
       access: {
-        read: ({ req }) => req.user.role === "admin",
+        read: ({ req }) => req.user.role === "admin" || req.user.role === "seller",
         create: () => false,
         update: () => false,
       },
@@ -39,7 +39,7 @@ export const Orders: CollectionConfig = {
       name: "_isPostexOrderCreated",
       type: "checkbox",
       access: {
-        read: ({ req }) => req.user.role === "admin",
+        read: ({ req }) => req.user.role === "admin" || req.user.role === "seller",
         create: () => false,
         update: () => false,
       },

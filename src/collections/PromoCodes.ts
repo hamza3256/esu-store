@@ -7,9 +7,9 @@ export const PromoCodes: CollectionConfig = {
   },
   access: {
     read: () => true, // Allow all users to read promo codes
-    create: ({ req }) => req.user.role === 'admin', // Only admin can create
-    update: ({ req }) => req.user.role === 'admin', // Only admin can update
-    delete: ({ req }) => req.user.role === 'admin', // Only admin can delete
+    create: ({ req }) => req.user.role === "admin" || req.user.role === "seller", // Only admin can create
+    update: ({ req }) => req.user.role === "admin" || req.user.role === "seller", // Only admin can update
+    delete: ({ req }) => req.user.role === "admin" || req.user.role === "seller", // Only admin can delete
   },
   fields: [
     {
