@@ -22,7 +22,7 @@ interface ProductReelProps {
   query: TQueryValidator;
 }
 
-const FALLBACK_LIMIT = 6;
+const FALLBACK_LIMIT = 4;
 const INTERVAL = 5000; 
 
 const ProductShowcase = (props: ProductReelProps) => {
@@ -33,7 +33,8 @@ const ProductShowcase = (props: ProductReelProps) => {
 
   const [api, setApi] = useState<any>(null);
   const [current, setCurrent] = useState(0);
-  const [count, setCount] = useState(0);
+  // const [count, setCount] = useState(0);
+  const count = FALLBACK_LIMIT;
   const [progress, setProgress] = useState(0);
   const [autoPlay, setAutoPlay] = useState(true);
   const carouselRef = useRef<HTMLDivElement | null>(null);
@@ -45,8 +46,14 @@ const ProductShowcase = (props: ProductReelProps) => {
     },
     {
       getNextPageParam: (lastPage) => lastPage.nextPage,
+      staleTime: 60000, // Cache the data for 60 seconds
+      cacheTime: 600000, // Keep cached data for 5 minutes
+      refetchOnWindowFocus: false, // Avoid refetching when the window regains focus
+      refetchOnReconnect: false, // Disable refetching on network reconnection
+      retry: 2, // Retry the request up to 2 times in case of failure
     }
   );
+  
 
   const products = queryResults?.pages.flatMap((page) => page.items);
 
@@ -62,7 +69,7 @@ const ProductShowcase = (props: ProductReelProps) => {
   useEffect(() => {
     if (!api) return;
 
-    setCount(api.scrollSnapList().length);
+    // setCount(api.scrollSnapList().length);
     setCurrent(0); // Ensure current is set to the first slide.
 
     api.on("select", () => {
@@ -71,23 +78,22 @@ const ProductShowcase = (props: ProductReelProps) => {
     });
   }, [api]);
 
-  // Auto-scroll logic, loops back to the first slide when reaching the end
   useEffect(() => {
-    if (!autoPlay) return;
-
+    if (!autoPlay || !api) return;
+  
     const timer = setInterval(() => {
       if (current === count - 1) {
-        api?.scrollTo(0); // Scroll back to the first slide.
+        api.scrollTo(0); 
       } else {
-        api?.scrollNext(); // Move to the next slide.
+        api.scrollNext();
       }
-      setProgress(0); // Reset progress on every slide change.
+      setProgress(0); 
     }, INTERVAL);
-
+  
     return () => clearInterval(timer);
   }, [api, current, count, autoPlay]);
+  
 
-  // Progress bar logic
   useEffect(() => {
     const progressTimer = setInterval(() => {
       if (autoPlay) {
@@ -96,10 +102,11 @@ const ProductShowcase = (props: ProductReelProps) => {
           return newProgress >= 100 ? 100 : newProgress;
         });
       }
-    }, 100); // Increment progress more frequently.
-
+    }, 100); 
+  
     return () => clearInterval(progressTimer);
   }, [autoPlay]);
+  
 
   // Pause autoplay when the carousel is not in view
   useEffect(() => {
