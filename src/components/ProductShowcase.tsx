@@ -13,9 +13,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-import { Pointer } from "lucide-react";
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Progress } from "./ui/progress";
 
 interface ProductReelProps {
   title: string;
