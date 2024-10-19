@@ -86,7 +86,7 @@ function HeroSection() {
               Welcome to <span className="font-bold font-outfit">esü</span>. Discover timeless pieces, handcrafted with care, delivered to your doorstep across Pakistan.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 mt-6">
-              <ButtonLink href="/products" label="Shop Now" variant="default" />
+              <ButtonLink href="/products" label="Shop Now" variant="default" size="lg"/>
             </div>
           </div>
         </MaxWidthWrapper>
