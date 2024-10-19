@@ -63,7 +63,7 @@ const Page = ({ params }: PageProps) => {
       if (image.resourceType === "video") {
         return { type: 'video', url: image?.sizes?.video?.url };
       } else {
-        return { type: 'image', url: image?.sizes?.card?.url };
+        return { type: 'image', url: image?.sizes?.tablet?.url };
       }
     }
     return null;
@@ -298,7 +298,7 @@ const Page = ({ params }: PageProps) => {
             </TabsContent>
             <TabsContent value="reviews" className="mt-4">
               <p className="text-gray-600 text-sm sm:text-base">
-                No reviews.
+                Publishing reviews soon.
               </p>
             </TabsContent>
           </Tabs>
