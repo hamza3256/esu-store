@@ -62,7 +62,7 @@ export default async function RootLayout({
   return (
     <html lang="en" className="h-full">
       <head>
-      <script
+        <script
           dangerouslySetInnerHTML={{
             __html: `
               !function(f,b,e,v,n,t,s)
@@ -77,6 +77,7 @@ export default async function RootLayout({
               fbq('track', 'PageView');
             `,
           }}
+          async
         />
         <noscript>
           <img
@@ -86,11 +87,7 @@ export default async function RootLayout({
             src="https://www.facebook.com/tr?id=1304672607214046&ev=PageView&noscript=1"
           />
         </noscript>
-        <link
-          rel="icon"
-          href="https://esu.london/favicon.ico"
-          type="image/x-icon"
-        />
+        <link rel="icon" href="https://esu.london/favicon.ico" type="image/x-icon" />
         <meta name="description" content={metadata.description ?? undefined} />
         <meta
           property="og:title"
@@ -105,52 +102,18 @@ export default async function RootLayout({
           content={metadata.openGraph?.url?.toString() ?? undefined}
         />
         <meta
-          property="og:site_name"
-          content={metadata.openGraph?.siteName ?? undefined}
-        />
-        <meta property="og:type" content={"website"} />
-        <meta
           property="og:image"
-          content={
-            "https://esu.london/esu-official.jpg"
-          }
+          content="https://esu.london/esu-official.jpg"
         />
-        <meta
-          property="og:image:width"
-          content={
-            "1080"
-          }
-        />
-        <meta
-          property="og:image:height"
-          content={
-            "1080"
-          }
-        />
-        <meta
-          property="og:image:alt"
-          content={
-            "ESU Store - Jewellery, Clothing, and Accessories"
-          }
-        />
-
-        <meta
-          name="twitter:card"
-          content={"summary_large_image"}
-        />
-        <meta
-          name="twitter:title"
-          content={metadata.twitter?.title?.toString() ?? undefined}
-        />
-        <meta
-          name="twitter:description"
-          content={metadata.twitter?.description ?? undefined}
-        />
-        <meta
-          name="twitter:image"
-          content={"https://esu.london/esu.png"}
-        />
+        <meta property="og:image:width" content="1080" />
+        <meta property="og:image:height" content="1080" />
+        <meta property="og:image:alt" content="ESÜ Store - Jewellery, Clothing, and Accessories" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={metadata.twitter?.title?.toString() ?? undefined} />
+        <meta name="twitter:description" content={metadata.twitter?.description ?? undefined} />
+        <meta name="twitter:image" content="https://esu.london/esu.png" />
       </head>
+
       <body className={cn("relative h-full font-sans antialiased")}>
         <main className="relative flex flex-col min-h-screen">
           <Providers>
