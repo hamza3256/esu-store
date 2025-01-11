@@ -690,8 +690,8 @@ export const paymentRouter = router({
         });
 
         await resend.emails.send({
-          from: "ESÜ STORE <info@esustore.com>",
-          to: ["orders@esustore.com"],
+          from: "ESÜ STORE <info@esu.london>",
+          to: ["orders@esu.london"],
           subject: `New Order Notification - Order #${order.orderNumber}`,
           html: notificationHtml,
         });
