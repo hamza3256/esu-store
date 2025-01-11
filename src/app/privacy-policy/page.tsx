@@ -1,5 +1,3 @@
-"use client";
-
 export default function PrivacyPolicyPage() {
   return (
     <div className="py-12 px-4 max-w-4xl mx-auto text-gray-700">
