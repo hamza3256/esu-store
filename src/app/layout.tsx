@@ -10,6 +10,7 @@ import { Toaster as ToasterUI } from "@/components/ui/toaster";
 import FreeShippingPopup from "@/components/FreeShippingPopup";
 import { Toaster } from "@/components/ui/sonner";
 import TopBanner from "@/components/TopBanner";
+import ChatbotWidget from "@/components/ChatbotWidget";
 
 export const metadata: Metadata = {
   title: "ESÜ Store | Jewellery, Clothing & Accessories",
@@ -62,6 +63,7 @@ export default async function RootLayout({
   return (
     <html lang="en" className="h-full">
       <head>
+        {/* Facebook Pixel */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -79,6 +81,15 @@ export default async function RootLayout({
           }}
           async
         />
+        
+        {/* Plausible Analytics */}
+        <script
+          defer
+          data-domain="esu.london"
+          src="https://plausible.io/js/script.js"
+        />
+
+        {/* Rest of your head content */}
         <noscript>
           <img
             height="1"
@@ -128,6 +139,7 @@ export default async function RootLayout({
         </main>
         <ToasterUI />
         <Toaster theme="light" position="top-center" richColors />
+        <ChatbotWidget />
       </body>
     </html>
   );
