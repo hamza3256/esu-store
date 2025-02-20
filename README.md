@@ -5,59 +5,63 @@ Welcome to the **ESÜ Store** repository! This is a modern, high-performance, fu
 ## 🚀 Features
 Here are the key features of the ESÜ Store application:
 
-- [x] **User Authentication**: Secure login and registration for users with session management.
-- [x] **Product Listings**: Showcase a range of products, including images, descriptions, prices, and categories.
-- [x] **Dynamic Search**: Users can search for products by name, category, and other filters.
-- [x] **Shopping Cart**: Users can add items to the cart, modify quantities, and view the total.
-- [x] **Checkout Process**: Supports checkout with options for cash on delivery (COD) or card payments via Stripe.
-- [x] **Promo Codes**: Apply promotional codes for discounts at checkout.
-- [x] **Order Tracking**: Customers can track their order statuses (Pending, Processing, Shipped, Delivered).
-- [x] **Payment Integration**: Secure payments through Stripe for credit card transactions.
-- [x] **Admin Panel**: Manage products, orders, and customers via a custom-built admin interface.
-- [x] **Responsive Design**: Fully optimized for desktop, tablet, and mobile views.
-- [x] **SEO Friendly**: Includes metadata, OpenGraph tags, and Twitter card support for social media sharing.
-- [x] **Facebook Pixel Integration**: Tracks page views and conversions for Facebook ads.
+- [x] **User Authentication**: Secure login and registration with session management
+- [x] **Product Management**: Full CRUD operations for products with rich media support
+- [x] **Dynamic Search**: Advanced product search and filtering capabilities
+- [x] **Shopping Cart**: Real-time cart management with Zustand state management
+- [x] **Secure Payments**: Stripe integration for secure payment processing
+- [x] **Order Management**: Complete order lifecycle tracking
+- [x] **Admin Dashboard**: Comprehensive admin interface using Payload CMS
+- [x] **Email Notifications**: Automated emails via Resend API
+- [x] **Image Optimization**: Cloudinary integration for media management
+- [x] **Responsive Design**: Mobile-first approach using Tailwind CSS
+- [x] **SEO Optimization**: Built-in SEO features with next-sitemap
+- [x] **Real-time Updates**: Live notifications using Sonner
+- [x] **Type Safety**: End-to-end type safety with tRPC and TypeScript
 
-## 🛠️ Technologies Used
+## 🛠️ Tech Stack
 
-### **Next.js 14**
-Next.js powers the frontend of the application, offering server-side rendering (SSR), static site generation (SSG), and an app directory-based routing system for scalability and performance.
+### Frontend
+- **Next.js 14**: App Router, Server Components, API Routes
+- **TypeScript**: Type-safe development
+- **TailwindCSS**: Utility-first CSS framework
+- **Shadcn/ui**: Accessible component system
+- **Zustand**: State management
+- **React Hook Form**: Form handling with Zod validation
+- **Embla Carousel**: Modern carousel/slider
+- **Framer Motion**: Animations
+- **SWR**: Data fetching
+- **Sonner**: Toast notifications
 
-### **TypeScript**
-TypeScript enhances the development experience with type checking, helping reduce errors and improve code quality.
+### Backend
+- **Payload CMS**: Headless CMS and Admin dashboard
+- **MongoDB**: Database (via @payloadcms/db-mongodb)
+- **tRPC**: End-to-end typesafe API
+- **Express**: Server framework
+- **Stripe**: Payment processing
+- **Resend**: Email service
+- **Cloudinary**: Media management
 
-### **tRPC**
-We leverage tRPC to create typesafe APIs with minimal boilerplate, simplifying the integration between the client and server.
-
-### **Stripe**
-Stripe is integrated for handling secure online payments, both for credit card transactions and for managing subscriptions and invoices.
-
-### **TailwindCSS**
-TailwindCSS is used to rapidly design modern, responsive UIs. It helps maintain a consistent design language across the app without writing custom CSS.
-
-### **Shadcn**
-Shadcn provides a set of pre-built, accessible components for the user interface. It ensures components are fully customizable while maintaining accessibility best practices.
-
-### **Cloudinary**
-Cloudinary is used for image hosting and optimization. All product images are served via Cloudinary, ensuring fast loading times and image transformations (resizing, compression, etc.).
-
-### **Sonner**
-Sonner is used for managing toasts and notifications, ensuring a smooth UX experience by providing user feedback during actions such as form submissions, checkout processes, and error handling.
-
-### **Lucide Icons**
-Lucide is used for iconography, adding clear, scalable vector icons to the UI for a modern and clean look.
-
-### **Resend API**
-Emails such as order confirmations and invoices are sent using Resend API, ensuring reliable and trackable email delivery.
+### DevOps
+- **Docker**: Containerization
+- **Docker Compose**: Multi-container orchestration
+- **Nodemon**: Development server
+- **ESLint**: Code linting
+- **TypeScript**: Static type checking
 
 ## 💻 Getting Started
 
 ### Prerequisites
-- Node.js (>= 16.x)
-- npm or Yarn
+- Node.js (>= 18.x)
+- Yarn package manager
+- MongoDB instance
+- Stripe account
+- Cloudinary account
+- Resend API account
 
 ### Installation
-1. Clone this repository:
+
+1. Clone the repository:
    ```bash
    git clone https://github.com/yourusername/esu-store.git
    cd esu-store
@@ -65,56 +69,111 @@ Emails such as order confirmations and invoices are sent using Resend API, ensur
 
 2. Install dependencies:
    ```bash
-   npm install
+   yarn install
    ```
 
-3. Create a `.env.local` file and add the required environment variables:
-   ```
-   NEXT_PUBLIC_SERVER_URL=https://your-server-url
-   STRIPE_SECRET_KEY=your-stripe-secret-key
-   CLOUDINARY_API_KEY=your-cloudinary-api-key
-   NEXT_PUBLIC_FB_PIXEL_ID=your-facebook-pixel-id
+3. Set up environment variables in `.env`:
+   ```env
+   # App
+   NEXT_PUBLIC_SERVER_URL=http://localhost:3000
+   
+   # Database
+   MONGODB_URL=your_mongodb_url
+   
+   # Stripe
+   STRIPE_SECRET_KEY=your_stripe_secret_key
+   STRIPE_WEBHOOK_SECRET=your_stripe_webhook_secret
+   
+   # Cloudinary
+   CLOUDINARY_CLOUD_NAME=your_cloud_name
+   CLOUDINARY_API_KEY=your_api_key
+   CLOUDINARY_API_SECRET=your_api_secret
+   
+   # Resend
+   RESEND_API_KEY=your_resend_api_key
    ```
 
-4. Run the development server:
+4. Start the development server:
    ```bash
-   npm run dev
+   yarn dev
    ```
 
-5. Visit [http://localhost:3000](http://localhost:3000) in your browser.
+5. Generate Payload types (when collections change):
+   ```bash
+   yarn generate:types
+   ```
 
-### Stripe Setup
-To integrate Stripe for payments:
-1. Sign up for a Stripe account.
-2. Add your Stripe secret key to the `.env.local` file.
-3. Ensure you have webhooks set up in your Stripe dashboard to handle payment events.
+### Production Build
 
-### Facebook Pixel Setup
-To track page views and conversions with Facebook Pixel:
-1. Set up a Facebook Pixel in your Facebook Ads Manager.
-2. Add the `NEXT_PUBLIC_FB_PIXEL_ID` to your `.env.local`.
+1. Build the application:
+   ```bash
+   yarn build
+   ```
 
-## 📂 Folder Structure
+2. Start production server:
+   ```bash
+   yarn start
+   ```
+
+### Docker Deployment
+
+1. Build and run with Docker Compose:
+   ```bash
+   docker-compose up --build
+   ```
+
+## 📂 Project Structure
 
 ```
 /src
   /app                 - Next.js app router pages
-  /components          - Reusable UI components
-  /lib                 - Utility functions and configuration
-  /pages               - Traditional Next.js pages (if any)
-  /public              - Static files (images, icons, etc.)
-  /styles              - Global and component-specific styles
-  /trpc                - tRPC API routes and server-side logic
-  /utils               - Utility functions like formatters, helpers, etc.
+  /collections         - Payload CMS collections
+  /components         - React components
+  /config             - Configuration files
+  /hooks              - Custom React hooks
+  /lib                - Utility functions
+  /product_files      - Product-related files
+  /trpc               - tRPC router and procedures
+  middleware.ts       - Next.js middleware
+  payload.config.ts   - Payload CMS configuration
+  server.ts           - Express server setup
 ```
 
-## ⚙️ Deployment
+## 🔧 Available Scripts
 
-This application can be deployed on any platform that supports Node.js (e.g., Vercel, Netlify, or any custom server). Vercel is highly recommended for its native support for Next.js.
+- `yarn dev`: Start development server
+- `yarn build`: Build for production
+- `yarn start`: Start production server
+- `yarn generate:types`: Generate Payload types
+- `yarn lint`: Run ESLint
+- `yarn postbuild`: Generate sitemap
 
-## 📧 Contact
-For support or inquiries, please contact us at [info@esustore.com](mailto:info@esustore.com).
+## 📦 Key Dependencies
+
+- Next.js 14.1.3
+- React 18.x
+- Payload CMS 2.11.2
+- TypeScript 5.x
+- Tailwind CSS 3.3.0
+- Stripe 14.23.0
+- tRPC 10.45.2
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## 📝 License
+
+This project is proprietary software. All rights reserved.
+
+## 📧 Support
+
+For support or inquiries, please contact us at [info@esustore.com](mailto:info@esustore.com)
 
 ---
 
-Feel free to explore, raise issues, or contribute! 
+Built with ❤️ using Next.js, Payload CMS, and TypeScript 
