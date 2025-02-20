@@ -2,6 +2,10 @@
 
 Welcome to the **ESÜ Store** repository! This is a modern, high-performance, full-stack e-commerce platform built using the latest web development technologies. It provides a seamless shopping experience with a focus on premium jewelry, clothing, and accessories.
 
+## 👨‍💻 Author
+
+**Muhammad Hamza**
+
 ## 🚀 Features
 Here are the key features of the ESÜ Store application:
 
@@ -174,6 +178,3 @@ This project is proprietary software. All rights reserved.
 
 For support or inquiries, please contact us at [info@esustore.com](mailto:info@esustore.com)
 
----
-
-Built with ❤️ using Next.js, Payload CMS, and TypeScript 
