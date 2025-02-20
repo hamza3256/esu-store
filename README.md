@@ -1,6 +1,6 @@
-# ESÜ Store - E-commerce Platform
+# ESÜ Store - A Comprehensive E-commerce Platform
 
-Welcome to the **ESÜ Store** repository! This is a modern, high-performance, full-stack e-commerce platform built using the latest web development technologies. It provides a seamless shopping experience with a focus on premium jewelry, clothing, and accessories.
+Welcome to the **ESÜ Store**! This is a modern, high-performance, full-stack e-commerce platform built using the latest web development technologies. It provides a seamless shopping experience with a focus on premium jewellery, clothing, and accessories.
 
 ## 👨‍💻 Author
 
@@ -67,7 +67,7 @@ Here are the key features of the ESÜ Store application:
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/esu-store.git
+   git clone https://github.com/hamza3256/esu-store.git
    cd esu-store
    ```
 
