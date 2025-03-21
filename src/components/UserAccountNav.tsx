@@ -16,6 +16,8 @@ import { useAuth } from "@/hooks/use-auth";
 const UserAccountNav = ({ user }: { user: User }) => {
   const { signOut } = useAuth();
   const isAdminEmployeeSeller = user.role === 'admin' || user.role === 'employee' || user.role === 'seller'
+  const isAdmin = user.role === 'admin'
+  
   const getInitials = (name: string) => {
     const nameParts = name.trim().split(" ");
     if (nameParts.length === 1) {
@@ -54,6 +56,11 @@ const UserAccountNav = ({ user }: { user: User }) => {
           </DropdownMenuItem>
         )}
 
+        {isAdmin && (
+          <DropdownMenuItem asChild>
+            <Link href="/test">Performance Tests</Link>
+          </DropdownMenuItem>
+        )}
       
         <DropdownMenuItem className="cursor-pointer" onClick={signOut}>
           Log out
