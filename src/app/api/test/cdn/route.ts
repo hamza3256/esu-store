@@ -140,10 +140,15 @@ export async function GET() {
         }
       },
       regions: results.map(region => ({
-        ...region,
+        region: region.region,
         metrics: {
           ...region.metrics,
-          'Status': region.metrics.successRate === '100.0%' ? 'Operational' : 'Degraded'
+          'Status': region.metrics.successRate === '100.0%' ? 'Operational' : 'Degraded',
+          'Locations': region.locations.map(loc => ({
+            name: loc.name,
+            latency: loc.latency,
+            status: loc.status
+          }))
         }
       }))
     });

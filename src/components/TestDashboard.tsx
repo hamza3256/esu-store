@@ -15,7 +15,7 @@ type TestCategory = {
 
 type TestConfig = {
   name: string;
-  test: () => Promise<{ details: string } | void>;
+  test: () => Promise<{ details: string; metrics?: { [key: string]: string | number } } | void>;
 };
 
 type TestResult = {
@@ -411,64 +411,76 @@ export const TestDashboard = () => {
     }
   ];
 
-  const runTests = async () => {
+  const runTests = async (categoryName?: string) => {
     setIsRunning(true);
     setProgress(0);
     
-    const initialResults = testCategories.flatMap(category => 
-      category.tests.map(test => ({
-        name: test.name,
-        duration: 0,
-        success: false,
-        status: 'idle' as const,
-      }))
-    );
-    setResults(initialResults);
+    // Filter tests based on category if specified
+    const testsToRun = categoryName 
+      ? testCategories.find(cat => cat.name === categoryName)?.tests || []
+      : testCategories.flatMap(category => category.tests);
+    
+    const initialResults = testsToRun.map(test => ({
+      name: test.name,
+      duration: 0,
+      success: false,
+      status: 'idle' as const,
+    }));
+    setResults(prev => {
+      // If running specific category, only update those results
+      if (categoryName) {
+        return prev.map(result => 
+          testsToRun.some(test => test.name === result.name)
+            ? { ...result, status: 'idle', success: false, duration: 0 }
+            : result
+        );
+      }
+      return initialResults;
+    });
 
-    const totalTests = initialResults.length;
+    const totalTests = testsToRun.length;
     let completedTests = 0;
 
-    for (const category of testCategories) {
-      for (const { name, test } of category.tests) {
+    for (const test of testsToRun) {
+      setResults(prev => prev.map(result => 
+        result.name === test.name 
+          ? { ...result, status: 'running' }
+          : result
+      ));
+
+      try {
+        const startTime = performance.now();
+        const testResult = await test.test();
+        const duration = performance.now() - startTime;
+
         setResults(prev => prev.map(result => 
-          result.name === name 
-            ? { ...result, status: 'running' }
+          result.name === test.name 
+            ? { 
+                ...result, 
+                duration, 
+                success: true, 
+                status: 'complete',
+                details: testResult?.details,
+                metrics: testResult?.metrics
+              }
             : result
         ));
-
-        try {
-          const startTime = performance.now();
-          const testResult = await test();
-          const duration = performance.now() - startTime;
-
-          setResults(prev => prev.map(result => 
-            result.name === name 
-              ? { 
-                  ...result, 
-                  duration, 
-                  success: true, 
-                  status: 'complete',
-                  details: testResult?.details 
-                }
-              : result
-          ));
-        } catch (error) {
-          setResults(prev => prev.map(result => 
-            result.name === name 
-              ? { 
-                  ...result, 
-                  success: false, 
-                  status: 'complete',
-                  error: error instanceof Error ? error.message : 'Unknown error'
-                }
-              : result
-          ));
-        }
-
-        completedTests++;
-        setProgress((completedTests / totalTests) * 100);
-        await new Promise(resolve => setTimeout(resolve, 500));
+      } catch (error) {
+        setResults(prev => prev.map(result => 
+          result.name === test.name 
+            ? { 
+                ...result, 
+                success: false, 
+                status: 'complete',
+                error: error instanceof Error ? error.message : 'Unknown error'
+              }
+            : result
+        ));
       }
+
+      completedTests++;
+      setProgress((completedTests / totalTests) * 100);
+      await new Promise(resolve => setTimeout(resolve, 500));
     }
 
     setIsRunning(false);
@@ -493,7 +505,7 @@ export const TestDashboard = () => {
             <p className="text-sm text-gray-500">Monitor and diagnose system components</p>
           </div>
           <Button 
-            onClick={runTests} 
+            onClick={() => runTests()} 
             disabled={isRunning}
             className="bg-blue-600 hover:bg-blue-700 text-white min-w-[140px]"
             size="lg"
@@ -536,8 +548,21 @@ export const TestDashboard = () => {
           .map((category, categoryIndex) => (
           <Card key={categoryIndex} className="overflow-hidden">
             <div className="border-b p-4">
-              <h3 className="text-lg font-semibold">{category.name}</h3>
-              <p className="text-sm text-gray-500 mt-1">{category.description}</p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold">{category.name}</h3>
+                  <p className="text-sm text-gray-500 mt-1">{category.description}</p>
+                </div>
+                <Button
+                  onClick={() => runTests(category.name)}
+                  disabled={isRunning}
+                  variant="outline"
+                  size="sm"
+                  className="ml-4"
+                >
+                  Run {category.name}
+                </Button>
+              </div>
             </div>
             <div className="divide-y">
               {category.tests.map((testConfig, testIndex) => {
