@@ -210,9 +210,10 @@ export const TestDashboard = () => {
       
       const { stripe } = await response.json();
       return {
-        details: `Connected: ${stripe.connected ? 'Yes' : 'No'}, Type: ${stripe.accountType}`,
+        details: `Connected: ${stripe.connected ? 'Yes' : 'No'}, Type: ${stripe.accountType}, Mode: ${stripe.mode}`,
         metrics: {
           'Account Type': stripe.accountType,
+          'Mode': stripe.mode,
           'Currency': stripe.currency.toUpperCase(),
           'Payouts': stripe.payoutsEnabled ? 'Enabled' : 'Disabled',
           'Setup Complete': stripe.detailsSubmitted ? 'Yes' : 'No',
@@ -290,14 +291,15 @@ export const TestDashboard = () => {
         throw new Error(`Media test failed: ${data.message}`);
       }
       
-      const { images } = await response.json();
+      const data = await response.json();
       return {
-        details: `Tested: ${images.tested}, Failed: ${images.failed}`,
+        details: `Total files: ${data.media.totalFiles}, Recent uploads: ${data.media.recentUploads}`,
         metrics: {
-          'Images Tested': images.tested,
-          'Failed': images.failed,
-          'Avg. Load Time': `${images.avgLoadTime}ms`,
-          'Total Size': `${images.totalSize}KB`,
+          'Total Files': data.media.totalFiles,
+          'Recent Uploads': data.media.recentUploads,
+          'Average File Size': `${data.media.averageFileSize}KB`,
+          'Storage Usage': `${data.media.storageUsage}MB`,
+          'Bandwidth Usage': `${data.media.bandwidthUsage}MB`,
           'Response Time': (endTime - startTime).toFixed(2) + 'ms'
         }
       };
@@ -352,13 +354,16 @@ export const TestDashboard = () => {
         throw new Error(`Media test failed: ${data.message}`);
       }
       
-      const { media } = await response.json();
+      const data = await response.json();
       return {
-        details: `Total files: ${media.totalFiles}, Cloudinary: ${media.cloudinary.connected ? 'Connected' : 'Disconnected'}`,
+        details: `Total files: ${data.media.totalFiles}, Cloudinary: ${data.cloudinary.connected ? 'Connected' : 'Disconnected'}`,
         metrics: {
-          'Total Files': media.totalFiles,
-          'Latency': media.latency + 'ms',
-          'Cloudinary': media.cloudinary.connected ? 'Connected' : 'Disconnected',
+          'Total Files': data.media.totalFiles,
+          'Recent Uploads': data.media.recentUploads,
+          'Cloudinary Status': data.cloudinary.connected ? 'Connected' : 'Disconnected',
+          'Configuration': Object.entries(data.cloudinary.details)
+            .map(([key, value]) => `${key}: ${value ? 'Configured' : 'Missing'}`)
+            .join(', '),
           'Response Time': (endTime - startTime).toFixed(2) + 'ms'
         }
       };
