@@ -10,9 +10,10 @@ import { Pagination, Navigation } from "swiper/modules"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
+import { mediaCache } from "@/lib/redis"
 
 interface ImageSliderProps {
-  items: { type: 'image' | 'video'; url: string }[]
+  items: { type: 'image' | 'video'; url: string; cloudinaryId?: string }[]
   productId: string;
   isMain?: boolean;
 }
@@ -20,10 +21,39 @@ interface ImageSliderProps {
 export default function ImageSlider({ items, productId, isMain}: ImageSliderProps) {
   const [swiper, setSwiper] = useState<null | SwiperType>(null)
   const [activeIndex, setActiveIndex] = useState(0)
+  const [cachedItems, setCachedItems] = useState(items)
   const [sliderConfig, setSlideConfig] = useState({
     isBeginning: true,
     isEnd: activeIndex === (items.length ?? 0) - 1,
   })
+
+  useEffect(() => {
+    const loadCachedUrls = async () => {
+      try {
+        // Try to get cached media for the product
+        const cachedMedia = await mediaCache.getProductMedia(productId);
+        
+        if (cachedMedia) {
+          setCachedItems(cachedMedia);
+          return;
+        }
+
+        // If no cache, cache the current items
+        const mediaToCache = items.map(item => ({
+          type: item.type,
+          url: item.url,
+          size: item.type === 'video' ? 'video' : 'card'
+        }));
+
+        await mediaCache.setProductMedia(productId, mediaToCache);
+      } catch (error) {
+        console.error('Error loading cached URLs:', error);
+        setCachedItems(items);
+      }
+    };
+
+    loadCachedUrls();
+  }, [items, productId]);
 
   useEffect(() => {
     if (!swiper) return
@@ -31,10 +61,10 @@ export default function ImageSlider({ items, productId, isMain}: ImageSliderProp
       setActiveIndex(activeIndex)
       setSlideConfig({
         isBeginning: activeIndex === 0,
-        isEnd: activeIndex === (items.length ?? 0) - 1,
+        isEnd: activeIndex === (cachedItems.length ?? 0) - 1,
       })
     })
-  }, [swiper, items.length])
+  }, [swiper, cachedItems.length])
 
   const activeStyles = "active:scale-[0.97] grid opacity-100 hover:scale-105 absolute top-1/2 -translate-y-1/2 aspect-square h-8 w-8 z-50 place-items-center rounded-full bg-white shadow-md"
   const inactiveStyles = "hidden text-gray-400"
@@ -80,7 +110,7 @@ export default function ImageSlider({ items, productId, isMain}: ImageSliderProp
         modules={[Pagination, Navigation]}
         className="h-full w-full"
       >
-        {items.map((item, i) => (
+        {cachedItems.map((item, i) => (
           <SwiperSlide key={i} className="-z-10 relative h-full w-full">
             <Link href={`/product/${productId}`} className="block h-full w-full" passHref>
               {item.type === 'image' ? (

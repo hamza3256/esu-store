@@ -1,6 +1,7 @@
 import { User } from "@/payload-types";
 import { Access, CollectionConfig } from "payload/types";
 import cloudinary from "../lib/cloudinary";
+import { mediaCache } from "../lib/redis";
 
 // Access function to check if the user is an admin or has access to images
 const isAdminOrHasAccessToImages =
@@ -70,26 +71,23 @@ export const Media: CollectionConfig = {
     beforeChange: [
       async ({ req, data, operation }) => {
         try {
-          const file = req.files?.file; // Get the file from the request
+          const file = req.files?.file;
 
           if (file && (operation === 'create' || operation === 'update')) {
             console.log('Uploading file:', file.name, 'Size:', file.size || file.data?.length);
 
-            // Upload the file to Cloudinary
             const result = await uploadToCloudinary(file);
 
             if (result && result.secure_url && result.public_id) {
               console.log("Cloudinary secure URL:", result.secure_url);
               console.log("Cloudinary public ID:", result.public_id);
 
-              // Attach the Cloudinary URL and public ID to the data
               data.url = result.secure_url;
               data.cloudinaryId = result.public_id;
-              data.resourceType = result.resource_type; // Store resource type (image or video)
+              data.resourceType = result.resource_type;
 
               if (result.resource_type === "image") {
-                // Generate Cloudinary URLs for different image sizes (thumbnail, card, tablet)
-                data.sizes = {
+                const sizes = {
                   thumbnail: {
                     width: 400,
                     height: 300,
@@ -112,17 +110,30 @@ export const Media: CollectionConfig = {
                     url: generateCloudinaryUrl(result.public_id, { width: 1024 }, "image"),
                   },
                 };
+
+                data.sizes = sizes;
+
+                // Cache each size URL
+                await Promise.all(
+                  Object.entries(sizes).map(([size, data]) =>
+                    mediaCache.setMediaUrl(result.public_id, data.url, size)
+                  )
+                );
               } else if (result.resource_type === "video") {
-                // Handle video-specific data (store video URL, size, and format)
-                data.sizes = {
-                  video: {
-                    width: result.width,
-                    height: result.height,
-                    mimeType: result.resource_type,
-                    filesize: result.bytes,
-                    url: generateCloudinaryUrl(result.public_id, {}, "video"),
-                  },
+                const videoData = {
+                  width: result.width,
+                  height: result.height,
+                  mimeType: result.resource_type,
+                  filesize: result.bytes,
+                  url: generateCloudinaryUrl(result.public_id, {}, "video"),
                 };
+
+                data.sizes = {
+                  video: videoData,
+                };
+
+                // Cache video URL
+                await mediaCache.setMediaUrl(result.public_id, videoData.url, 'video');
               }
             } else {
               throw new Error("Cloudinary upload failed: missing required result fields.");
@@ -139,14 +150,17 @@ export const Media: CollectionConfig = {
     afterDelete: [
       async ({ doc }) => {
         try {
-          // Remove the file from Cloudinary based on the public_id
           if (doc.cloudinaryId) {
+            // Delete from Cloudinary
             await cloudinary.uploader.destroy(doc.cloudinaryId, {
-              resource_type: doc.resourceType || 'image', // Ensure the correct resource type is deleted
+              resource_type: doc.resourceType || 'image',
             });
+
+            // Invalidate Redis cache
+            await mediaCache.invalidateMedia(doc.cloudinaryId);
           }
         } catch (error) {
-          console.error("Error deleting from Cloudinary:", error);
+          console.error("Error deleting media:", error);
         }
       },
     ],
