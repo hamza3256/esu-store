@@ -40,47 +40,48 @@ export const TestDashboard = () => {
   const testDatabaseConnection = async () => {
     try {
       const startTime = performance.now();
-      const response = await fetch('/api/db/health');
+      const response = await fetch('/api/test/system');
       const endTime = performance.now();
       
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(`Database connection failed: ${data.message || 'Connection timeout'}`);
+        throw new Error(`System health check failed: ${data.message}`);
       }
       
-      const { latency, connections, queries } = await response.json();
+      const { database, cache, server } = await response.json();
       return {
-        details: `Active connections: ${connections}, Query latency: ${latency}ms`,
+        details: `Database: ${database.latency}ms, Cache: ${cache.latency}ms, Server: ${server.latency}ms`,
         metrics: {
-          connections,
-          latency,
-          'Queries/sec': queries,
-          'Response time': (endTime - startTime).toFixed(2) + 'ms'
+          'DB Latency': database.latency + 'ms',
+          'Cache Latency': cache.latency + 'ms',
+          'Server Latency': server.latency + 'ms',
+          'Memory Usage': server.memory + '%',
+          'CPU Load': server.cpu + '%',
+          'Uptime': server.uptime + 's',
+          'Response Time': (endTime - startTime).toFixed(2) + 'ms'
         }
       };
     } catch (error) {
-      throw new Error(`Database health check failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(`System health check failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
   const testCachePerformance = async () => {
     try {
       const startTime = performance.now();
-      const response = await fetch('/api/cache/stats');
+      const response = await fetch('/api/test/system');
       const endTime = performance.now();
       
       if (!response.ok) {
-        throw new Error('Cache service unavailable');
+        throw new Error('System health check failed');
       }
       
-      const { hitRate, missRate, size, keys } = await response.json();
+      const { cache } = await response.json();
       return {
-        details: `Hit rate: ${hitRate}%, Miss rate: ${missRate}%, Cache size: ${size}MB`,
+        details: `Cache latency: ${cache.latency}ms, Keys: ${cache.keys}`,
         metrics: {
-          'Hit Rate': hitRate + '%',
-          'Miss Rate': missRate + '%',
-          'Cache Size': size + 'MB',
-          'Total Keys': keys,
+          'Latency': cache.latency + 'ms',
+          'Total Keys': cache.keys,
           'Response Time': (endTime - startTime).toFixed(2) + 'ms'
         }
       };
@@ -92,24 +93,23 @@ export const TestDashboard = () => {
   const testServerResponse = async () => {
     try {
       const startTime = performance.now();
-      const response = await fetch('/api/health');
+      const response = await fetch('/api/test/system');
       const endTime = performance.now();
-      const latency = endTime - startTime;
       
       if (!response.ok) {
         const data = await response.json();
         throw new Error(`Health check failed: ${data.message}`);
       }
 
-      const { memory, cpu, uptime, requests } = await response.json();
+      const { server } = await response.json();
       return {
-        details: `Memory: ${memory}%, CPU: ${cpu}%, Uptime: ${uptime}`,
+        details: `Memory: ${server.memory}%, CPU: ${server.cpu}%, Uptime: ${server.uptime}s`,
         metrics: {
-          'Memory Usage': memory + '%',
-          'CPU Load': cpu + '%',
-          'Uptime': uptime,
-          'Requests/min': requests,
-          'Latency': latency.toFixed(2) + 'ms'
+          'Memory Usage': server.memory + '%',
+          'CPU Load': server.cpu + '%',
+          'Uptime': server.uptime + 's',
+          'Latency': server.latency + 'ms',
+          'Response Time': (endTime - startTime).toFixed(2) + 'ms'
         }
       };
     } catch (error) {
@@ -120,22 +120,21 @@ export const TestDashboard = () => {
   const testProductsAPI = async () => {
     try {
       const startTime = performance.now();
-      const response = await fetch('/api/products?limit=1');
+      const response = await fetch('/api/test/api');
       const endTime = performance.now();
       
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(`Products API failed: ${data.message}`);
+        throw new Error(`API test failed: ${data.message}`);
       }
       
-      const { total, cached, indexSize, lastUpdated } = await response.json();
+      const { products } = await response.json();
       return {
-        details: `Total products: ${total}, Index size: ${indexSize}MB`,
+        details: `Total products: ${products.total}, Latency: ${products.latency}ms`,
         metrics: {
-          'Total Products': total,
-          'Cache Status': cached ? 'Hit' : 'Miss',
-          'Index Size': indexSize + 'MB',
-          'Last Updated': lastUpdated,
+          'Total Products': products.total,
+          'Latency': products.latency + 'ms',
+          'Cache Status': products.cached ? 'Hit' : 'Miss',
           'Response Time': (endTime - startTime).toFixed(2) + 'ms'
         }
       };
@@ -146,14 +145,24 @@ export const TestDashboard = () => {
 
   const testUsersAPI = async () => {
     try {
-      const response = await fetch('/api/users/me');
+      const startTime = performance.now();
+      const response = await fetch('/api/test/api');
+      const endTime = performance.now();
+      
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(`Users API failed: ${data.message}`);
+        throw new Error(`API test failed: ${data.message}`);
       }
-      const { authMethod, session } = await response.json();
+      
+      const { users } = await response.json();
       return {
-        details: `Auth method: ${authMethod}, Session valid: ${session ? 'Yes' : 'No'}`
+        details: `Total users: ${users.total}, Latency: ${users.latency}ms`,
+        metrics: {
+          'Total Users': users.total,
+          'Latency': users.latency + 'ms',
+          'Auth Status': users.authenticated ? 'Active' : 'Inactive',
+          'Response Time': (endTime - startTime).toFixed(2) + 'ms'
+        }
       };
     } catch (error) {
       throw new Error(`Users API test failed: ${error instanceof Error ? error.message : 'Authentication failed'}`);
@@ -163,25 +172,24 @@ export const TestDashboard = () => {
   const testOrdersAPI = async () => {
     try {
       const startTime = performance.now();
-      const response = await fetch('/api/orders/stats');
+      const response = await fetch('/api/test/api');
       const endTime = performance.now();
       
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(`Orders API failed: ${data.message}`);
+        throw new Error(`API test failed: ${data.message}`);
       }
-      const { total, processing, recentOrders, avgOrderValue, lastOrder, paymentTypes } = await response.json();
+      
+      const { orders } = await response.json();
       return {
-        details: `Total orders: ${total}, Processing: ${processing}`,
+        details: `Total orders: ${orders.total}, Recent: ${orders.recent}`,
         metrics: {
-          'Total Orders': total,
-          'Processing': processing,
-          'Recent Orders': recentOrders,
-          'Avg. Value': `£${avgOrderValue}`,
-          'Last Order': lastOrder ? new Date(lastOrder).toLocaleString() : 'None',
-          'Response Time': `${(endTime - startTime).toFixed(0)}ms`,
-          'COD Orders': paymentTypes.cod,
-          'Card Orders': paymentTypes.card,
+          'Total Orders': orders.total,
+          'Recent Orders': orders.recent,
+          'Avg. Value': `£${orders.avgValue}`,
+          'Last Order': orders.lastOrder ? new Date(orders.lastOrder).toLocaleString() : 'None',
+          'Latency': orders.latency + 'ms',
+          'Response Time': (endTime - startTime).toFixed(2) + 'ms'
         }
       };
     } catch (error) {
@@ -191,20 +199,25 @@ export const TestDashboard = () => {
 
   const testStripeIntegration = async () => {
     try {
-      const response = await fetch('/api/payments/stripe/test');
+      const startTime = performance.now();
+      const response = await fetch('/api/test/payments');
+      const endTime = performance.now();
+      
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(`Stripe test failed: ${data.message}`);
+        throw new Error(`Payment test failed: ${data.message}`);
       }
-      const { connected, mode, currency, accountType, capabilities, payoutsEnabled, detailsSubmitted } = await response.json();
+      
+      const { stripe } = await response.json();
       return {
-        details: `Connection: ${connected ? 'Active' : 'Inactive'}, Mode: ${mode}`,
+        details: `Connected: ${stripe.connected ? 'Yes' : 'No'}, Type: ${stripe.accountType}`,
         metrics: {
-          'Account Type': accountType,
-          'Currency': currency.toUpperCase(),
-          'Payouts': payoutsEnabled ? 'Enabled' : 'Disabled',
-          'Setup Complete': detailsSubmitted ? 'Yes' : 'No',
-          'Environment': mode,
+          'Account Type': stripe.accountType,
+          'Currency': stripe.currency.toUpperCase(),
+          'Payouts': stripe.payoutsEnabled ? 'Enabled' : 'Disabled',
+          'Setup Complete': stripe.detailsSubmitted ? 'Yes' : 'No',
+          'Latency': stripe.latency + 'ms',
+          'Response Time': (endTime - startTime).toFixed(2) + 'ms'
         }
       };
     } catch (error) {
@@ -214,20 +227,24 @@ export const TestDashboard = () => {
 
   const testPaymentWebhook = async () => {
     try {
-      const response = await fetch('/api/webhooks/test');
+      const startTime = performance.now();
+      const response = await fetch('/api/test/payments');
+      const endTime = performance.now();
+      
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(`Webhook test failed: ${data.message}`);
+        throw new Error(`Payment test failed: ${data.message}`);
       }
-      const { status, lastReceived, url, enabledEvents, apiVersion } = await response.json();
+      
+      const { webhook } = await response.json();
       return {
-        details: `Status: ${status}, API Version: ${apiVersion}`,
+        details: `Configured: ${webhook.configured ? 'Yes' : 'No'}, Events: ${webhook.events.length}`,
         metrics: {
-          'Endpoint URL': url,
-          'Last Event': lastReceived ? new Date(lastReceived).toLocaleString() : 'None',
-          'Status': status,
-          'Events': enabledEvents.length,
-          'API Version': apiVersion,
+          'Configured': webhook.configured ? 'Yes' : 'No',
+          'Endpoint': webhook.endpoint || 'Not set',
+          'Events': webhook.events.length,
+          'Latency': webhook.latency + 'ms',
+          'Response Time': (endTime - startTime).toFixed(2) + 'ms'
         }
       };
     } catch (error) {
@@ -237,20 +254,24 @@ export const TestDashboard = () => {
 
   const testRefundProcess = async () => {
     try {
-      const response = await fetch('/api/payments/refund/test');
+      const startTime = performance.now();
+      const response = await fetch('/api/test/payments');
+      const endTime = performance.now();
+      
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(`Refund test failed: ${data.message}`);
+        throw new Error(`Payment test failed: ${data.message}`);
       }
-      const { success, avgProcessingTime, recentRefunds, successfulRefunds, chargesEnabled, defaultCurrency } = await response.json();
+      
+      const { refunds } = await response.json();
       return {
-        details: `Status: ${success ? 'Available' : 'Unavailable'}, Processing: ${avgProcessingTime}ms`,
+        details: `Recent: ${refunds.recent}, Successful: ${refunds.successful}`,
         metrics: {
-          'Recent Refunds': recentRefunds,
-          'Successful': successfulRefunds,
-          'Avg. Processing': `${avgProcessingTime}ms`,
-          'Charges Enabled': chargesEnabled ? 'Yes' : 'No',
-          'Currency': defaultCurrency.toUpperCase(),
+          'Recent Refunds': refunds.recent,
+          'Successful': refunds.successful,
+          'Avg. Processing': `${refunds.avgProcessingTime}ms`,
+          'Latency': refunds.latency + 'ms',
+          'Response Time': (endTime - startTime).toFixed(2) + 'ms'
         }
       };
     } catch (error) {
@@ -260,42 +281,24 @@ export const TestDashboard = () => {
 
   const testImageLoading = async () => {
     try {
-      const testImages = [
-        '/esu-official.jpg',
-        '/favicon.ico',
-        'https://res.cloudinary.com/dn20h4mis/image/upload/q_auto,f_auto/v1728227919/order-confirmation.jpg'
-      ];
-      
       const startTime = performance.now();
-      const results = await Promise.all(testImages.map(async (src) => {
-        const imgStartTime = performance.now();
-        const response = await fetch(src);
-        const imgEndTime = performance.now();
-        return { 
-          src, 
-          time: imgEndTime - imgStartTime, 
-          success: response.ok,
-          size: response.headers.get('content-length')
-        };
-      }));
+      const response = await fetch('/api/test/media');
       const endTime = performance.now();
-
-      const failedImages = results.filter(r => !r.success);
-      if (failedImages.length > 0) {
-        throw new Error(`${failedImages.length} images failed to load: ${failedImages.map(f => f.src).join(', ')}`);
+      
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(`Media test failed: ${data.message}`);
       }
-
-      const avgTime = results.reduce((acc, curr) => acc + curr.time, 0) / results.length;
-      const totalSize = results.reduce((acc, curr) => acc + (parseInt(curr.size || '0') || 0), 0);
-
+      
+      const { images } = await response.json();
       return {
-        details: `Avg. load time: ${avgTime.toFixed(2)}ms, Total size: ${(totalSize / 1024).toFixed(1)}KB`,
+        details: `Tested: ${images.tested}, Failed: ${images.failed}`,
         metrics: {
-          'Average Time': `${avgTime.toFixed(1)}ms`,
-          'Total Size': `${(totalSize / 1024).toFixed(1)}KB`,
-          'Images Tested': results.length,
-          'Success Rate': '100%',
-          'Response Time': `${(endTime - startTime).toFixed(1)}ms`
+          'Images Tested': images.tested,
+          'Failed': images.failed,
+          'Avg. Load Time': `${images.avgLoadTime}ms`,
+          'Total Size': `${images.totalSize}KB`,
+          'Response Time': (endTime - startTime).toFixed(2) + 'ms'
         }
       };
     } catch (error) {
@@ -305,14 +308,33 @@ export const TestDashboard = () => {
 
   const testCDNPerformance = async () => {
     try {
-      const response = await fetch('/api/cdn/status');
+      const startTime = performance.now();
+      const response = await fetch('/api/test/cdn');
+      const endTime = performance.now();
+      
       if (!response.ok) {
         const data = await response.json();
         throw new Error(`CDN test failed: ${data.message}`);
       }
-      const { uptime, latency, region } = await response.json();
+      
+      const { global, regions } = await response.json();
+      
+      // Format region details for display
+      const regionDetails = regions.map((region: { region: string; metrics: { successRate: string; avgLatency: number } }) => 
+        `${region.region}: ${region.metrics.successRate} success, ${region.metrics.avgLatency}ms avg`
+      ).join(', ');
+
       return {
-        details: `Uptime: ${uptime}%, Latency: ${latency}ms, Region: ${region}`
+        details: `Global: ${global.successRate} success rate, ${global.avgLatency}ms avg latency`,
+        metrics: {
+          'Global Success Rate': global.successRate,
+          'Global Avg Latency': global.avgLatency + 'ms',
+          'Total Locations': global.totalLocations,
+          'North America': regions.find((r: { region: string; metrics: { avgLatency: number } }) => r.region === 'North America')?.metrics.avgLatency + 'ms',
+          'Europe': regions.find((r: { region: string; metrics: { avgLatency: number } }) => r.region === 'Europe')?.metrics.avgLatency + 'ms',
+          'Asia': regions.find((r: { region: string; metrics: { avgLatency: number } }) => r.region === 'Asia')?.metrics.avgLatency + 'ms',
+          'Response Time': (endTime - startTime).toFixed(2) + 'ms'
+        }
       };
     } catch (error) {
       throw new Error(`CDN performance test failed: ${error instanceof Error ? error.message : 'Service unavailable'}`);
@@ -322,30 +344,22 @@ export const TestDashboard = () => {
   const testMediaUpload = async () => {
     try {
       const startTime = performance.now();
-      const response = await fetch('/api/media/test-upload');
+      const response = await fetch('/api/test/media');
       const endTime = performance.now();
       
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(`Upload test failed: ${data.message}`);
+        throw new Error(`Media test failed: ${data.message}`);
       }
-      const { 
-        speed, maxSize, totalFiles, recentUploads, avgFileSize,
-        cloudinaryStatus, bandwidth, storage, creditsUsed, creditsLimit,
-        supportedTypes 
-      } = await response.json();
       
+      const { media } = await response.json();
       return {
-        details: `Upload speed: ${speed}MB/s, Max size: ${maxSize}MB`,
+        details: `Total files: ${media.totalFiles}, Cloudinary: ${media.cloudinary.connected ? 'Connected' : 'Disconnected'}`,
         metrics: {
-          'Total Files': totalFiles,
-          'Recent Uploads': recentUploads,
-          'Avg. File Size': `${avgFileSize}KB`,
-          'Storage Used': `${storage}MB`,
-          'Bandwidth': `${bandwidth}MB`,
-          'Credits': `${creditsUsed}/${creditsLimit}`,
-          'Status': cloudinaryStatus ? 'Connected' : 'Disconnected',
-          'Response Time': `${(endTime - startTime).toFixed(0)}ms`
+          'Total Files': media.totalFiles,
+          'Latency': media.latency + 'ms',
+          'Cloudinary': media.cloudinary.connected ? 'Connected' : 'Disconnected',
+          'Response Time': (endTime - startTime).toFixed(2) + 'ms'
         }
       };
     } catch (error) {

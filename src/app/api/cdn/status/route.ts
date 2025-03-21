@@ -11,7 +11,7 @@ export async function GET() {
     // Simulate CDN cache stats
     const cacheHitRate = 95 + (Math.random() * 5); // 95-100%
     const bandwidth = Math.floor(Math.random() * 500) + 500; // 500-1000 Mbps
-    const edgeLocations = ['London', 'Frankfurt', 'Paris', 'Amsterdam', 'Karachi'];
+    const edgeLocations = ['London', 'Frankfurt', 'Paris', 'Amsterdam'];
     
     return NextResponse.json({
       uptime: uptime.toFixed(2),
