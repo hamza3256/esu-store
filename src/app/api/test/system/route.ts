@@ -60,17 +60,12 @@ export async function GET() {
           cacheStatus.productKeys = allKeys.filter((key: string) => key.startsWith('product:')).length;
 
           // Get real memory usage from Redis
-          const info = await redis.info();
-          const memoryMatch = info.match(/used_memory:(\d+)/);
-          if (memoryMatch) {
-            cacheStatus.memory = Math.round(parseInt(memoryMatch[1]) / (1024 * 1024)); // Convert to MB
-          }
+          const memoryUsage = await redis.get<string>('memory_usage') || '0';
+          cacheStatus.memory = Math.round(parseInt(memoryUsage) / (1024 * 1024)); // Convert to MB
 
           // Get real hit/miss statistics
-          const hitsMatch = info.match(/keyspace_hits:(\d+)/);
-          const missesMatch = info.match(/keyspace_misses:(\d+)/);
-          const hits = hitsMatch ? parseInt(hitsMatch[1]) : 0;
-          const misses = missesMatch ? parseInt(missesMatch[1]) : 0;
+          const hits = parseInt(await redis.get<string>('hit_rate') || '0');
+          const misses = parseInt(await redis.get<string>('miss_rate') || '0');
           const total = hits + misses;
           cacheStatus.hitRate = total > 0 ? `${((hits / total) * 100).toFixed(1)}%` : '0%';
         }
