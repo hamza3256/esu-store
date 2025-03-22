@@ -147,21 +147,18 @@ export const Media: CollectionConfig = {
         return { ...data, user: req.user.id };
       },
     ],
+    afterChange: [
+      async ({ doc, operation }) => {
+        if (operation === 'create' || operation === 'update') {
+          // Cache the media URL
+          await mediaCache.setMediaUrl(doc.id, doc.url, 'original');
+        }
+      },
+    ],
     afterDelete: [
       async ({ doc }) => {
-        try {
-          if (doc.cloudinaryId) {
-            // Delete from Cloudinary
-            await cloudinary.uploader.destroy(doc.cloudinaryId, {
-              resource_type: doc.resourceType || 'image',
-            });
-
-            // Invalidate Redis cache
-            await mediaCache.invalidateMedia(doc.cloudinaryId);
-          }
-        } catch (error) {
-          console.error("Error deleting media:", error);
-        }
+        // Invalidate cache
+        await mediaCache.invalidateMedia(doc.id);
       },
     ],
   },

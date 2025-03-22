@@ -6,6 +6,9 @@ import { Card } from './ui/card';
 import { Progress } from './ui/progress';
 import { Loader2, Check, X, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
+import { ScrollArea } from './ui/scroll-area';
+import { Badge } from './ui/badge';
 
 type TestCategory = {
   name: string;
@@ -521,33 +524,35 @@ export const TestDashboard = () => {
           </div>
         )}
 
-        <div className="flex gap-2 overflow-x-auto py-2">
-          <Button
-            variant={selectedCategory === null ? "secondary" : "outline"}
-            onClick={() => setSelectedCategory(null)}
-            className="whitespace-nowrap"
-          >
-            All Tests
-          </Button>
-          {testCategories.map((category) => (
+        <ScrollArea className="w-full whitespace-nowrap rounded-md border">
+          <div className="flex gap-2 p-4">
             <Button
-              key={category.name}
-              variant={selectedCategory === category.name ? "secondary" : "outline"}
-              onClick={() => setSelectedCategory(category.name)}
+              variant={selectedCategory === null ? "secondary" : "outline"}
+              onClick={() => setSelectedCategory(null)}
               className="whitespace-nowrap"
             >
-              {category.name}
+              All Tests
             </Button>
-          ))}
-        </div>
+            {testCategories.map((category) => (
+              <Button
+                key={category.name}
+                variant={selectedCategory === category.name ? "secondary" : "outline"}
+                onClick={() => setSelectedCategory(category.name)}
+                className="whitespace-nowrap"
+              >
+                {category.name}
+              </Button>
+            ))}
+          </div>
+        </ScrollArea>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
         {testCategories
           .filter(category => selectedCategory === null || category.name === selectedCategory)
           .map((category, categoryIndex) => (
-          <Card key={categoryIndex} className="overflow-hidden">
-            <div className="border-b p-4">
+          <Card key={categoryIndex} className="overflow-hidden h-full flex flex-col">
+            <div className="border-b p-4 flex-shrink-0">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-lg font-semibold">{category.name}</h3>
@@ -564,65 +569,78 @@ export const TestDashboard = () => {
                 </Button>
               </div>
             </div>
-            <div className="divide-y">
-              {category.tests.map((testConfig, testIndex) => {
-                const result = results.find(r => r.name === testConfig.name) ?? {
-                  name: testConfig.name,
-                  duration: 0,
-                  success: false,
-                  status: 'idle' as const
-                };
+            <div className="flex-1 overflow-hidden">
+              <ScrollArea className="h-full">
+                <div className="divide-y">
+                  {category.tests.map((testConfig, testIndex) => {
+                    const result = results.find(r => r.name === testConfig.name) ?? {
+                      name: testConfig.name,
+                      duration: 0,
+                      success: false,
+                      status: 'idle' as const
+                    };
 
-                return (
-                  <div
-                    key={testIndex}
-                    className={cn(
-                      "p-4 transition-all duration-200",
-                      result.status === 'running' && "bg-blue-50",
-                      result.status === 'complete' && (result.success ? "bg-green-50" : "bg-red-50")
-                    )}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-3">
-                        <div className="w-5">
-                          {getStatusIcon(result.status, result.success)}
+                    return (
+                      <div
+                        key={testIndex}
+                        className={cn(
+                          "p-4 transition-all duration-200",
+                          result.status === 'running' && "bg-blue-50",
+                          result.status === 'complete' && (result.success ? "bg-green-50" : "bg-red-50")
+                        )}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-3">
+                            <div className="w-5">
+                              {getStatusIcon(result.status, result.success)}
+                            </div>
+                            <span className="font-medium">{testConfig.name}</span>
+                          </div>
+                          {result.status === 'complete' && (
+                            <Badge variant={result.success ? "default" : "destructive"}>
+                              {result.duration.toFixed(0)}ms
+                            </Badge>
+                          )}
                         </div>
-                        <span className="font-medium">{testConfig.name}</span>
-                      </div>
-                      {result.status === 'complete' && (
-                        <span className="text-sm font-medium text-gray-600">
-                          {result.duration.toFixed(0)}ms
-                        </span>
-                      )}
-                    </div>
-                    
-                    {result.status === 'complete' && (
-                      <div className="space-y-3 mt-3">
-                        {result.success ? (
-                          <>
-                            <div className="text-sm text-gray-600">{result.details}</div>
-                            {result.metrics && (
-                              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
-                                {Object.entries(result.metrics).map(([key, value]) => (
-                                  <div key={key} className="bg-white rounded p-2 border">
-                                    <div className="text-xs text-gray-500">{key}</div>
-                                    <div className="text-sm font-medium">{value}</div>
+                        
+                        {result.status === 'complete' && (
+                          <div className="space-y-3 mt-3">
+                            {result.success ? (
+                              <>
+                                <div className="text-sm text-gray-600 break-words">{result.details}</div>
+                                {result.metrics && (
+                                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
+                                    {Object.entries(result.metrics).map(([key, value]) => (
+                                      <TooltipProvider key={key}>
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <div className="bg-white rounded p-2 border cursor-help">
+                                              <div className="text-xs text-gray-500 truncate">{key}</div>
+                                              <div className="text-sm font-medium truncate">{value}</div>
+                                            </div>
+                                          </TooltipTrigger>
+                                          <TooltipContent>
+                                            <p>{key}: {value}</p>
+                                          </TooltipContent>
+                                        </Tooltip>
+                                      </TooltipProvider>
+                                    ))}
                                   </div>
-                                ))}
+                                )}
+                              </>
+                            ) : (
+                              <div className="flex items-start gap-2 text-red-600 bg-red-50 p-2 rounded">
+                                <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                                <span className="text-sm break-words">{result.error}</span>
                               </div>
                             )}
-                          </>
-                        ) : (
-                          <div className="flex items-start gap-2 text-red-600 bg-red-50 p-2 rounded">
-                            <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                            <span className="text-sm">{result.error}</span>
                           </div>
                         )}
                       </div>
-                    )}
-                  </div>
-                );
-              })}
+                    );
+                  })}
+                </div>
+              </ScrollArea>
             </div>
           </Card>
         ))}

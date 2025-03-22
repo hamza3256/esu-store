@@ -1,177 +1,139 @@
 import { NextResponse } from 'next/server';
 
-const TEST_ENDPOINTS = [
-  {
-    region: 'North America',
-    locations: [
-      { name: 'New York', url: 'https://nyc1.cloudflare.com/cdn-cgi/trace' },
-      { name: 'Los Angeles', url: 'https://lax1.cloudflare.com/cdn-cgi/trace' },
-      { name: 'Chicago', url: 'https://ord1.cloudflare.com/cdn-cgi/trace' }
-    ]
-  },
-  {
-    region: 'Europe',
-    locations: [
-      { name: 'London', url: 'https://lon1.cloudflare.com/cdn-cgi/trace' },
-      { name: 'Frankfurt', url: 'https://fra1.cloudflare.com/cdn-cgi/trace' },
-      { name: 'Paris', url: 'https://cdg1.cloudflare.com/cdn-cgi/trace' }
-    ]
-  },
-  {
-    region: 'Asia',
-    locations: [
-      { name: 'Tokyo', url: 'https://tyo1.cloudflare.com/cdn-cgi/trace' },
-      { name: 'Singapore', url: 'https://sin1.cloudflare.com/cdn-cgi/trace' },
-      { name: 'Hong Kong', url: 'https://hkg1.cloudflare.com/cdn-cgi/trace' }
-    ]
-  }
-];
+interface RegionMetrics {
+  region: string;
+  metrics: {
+    successRate: string;
+    avgLatency: number;
+    dataCenter: string;
+    tlsVersion: string;
+    httpVersion: string;
+    rayId: string;
+  };
+}
 
-async function testLocation(location: { name: string; url: string }) {
-  const startTime = performance.now();
-  try {
-    const response = await fetch(location.url, {
-      method: 'GET',
-      headers: {
-        'User-Agent': 'ESU-Store-CDN-Test/1.0',
-        'Accept': 'text/plain'
-      },
-      cache: 'no-store'
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    const endTime = performance.now();
-    const data = await response.text();
-    
-    // Parse Cloudflare trace data
-    const traceData = Object.fromEntries(
-      data.split('\n')
-        .filter(line => line.includes('='))
-        .map(line => line.split('='))
-    );
-
-    return {
-      name: location.name,
-      status: 'success',
-      latency: Math.round(endTime - startTime),
-      colo: traceData.colo || 'unknown',
-      tls: traceData.tls || 'unknown',
-      http: traceData.http || 'unknown',
-      ray: traceData.ray || 'unknown',
-      metrics: {
-        'Response Time': `${Math.round(endTime - startTime)}ms`,
-        'Data Center': traceData.colo || 'unknown',
-        'TLS Version': traceData.tls || 'unknown',
-        'HTTP Version': traceData.http || 'unknown',
-        'Ray ID': traceData.ray || 'unknown'
-      }
-    };
-  } catch (error) {
-    return {
-      name: location.name,
-      status: 'error',
-      latency: 0,
-      error: error instanceof Error ? error.message : 'Failed to connect',
-      metrics: {
-        'Error': error instanceof Error ? error.message : 'Failed to connect',
-        'Status': 'Failed'
-      }
-    };
-  }
+interface GlobalMetrics {
+  totalTests: number;
+  successfulTests: number;
+  failedTests: number;
+  averageLatency: number;
+  successRate: string;
+  totalLocations: number;
 }
 
 export async function GET() {
   try {
     const startTime = performance.now();
-    
-    const results = await Promise.all(
-      TEST_ENDPOINTS.map(async ({ region, locations }) => {
-        const locationResults = await Promise.all(
-          locations.map(location => testLocation(location))
-        );
+    const regions = [
+      { name: 'North America', url: 'https://cdn-cgi/trace' },
+      { name: 'Europe', url: 'https://cdn-cgi/trace' },
+      { name: 'Asia', url: 'https://cdn-cgi/trace' },
+      { name: 'Australia', url: 'https://cdn-cgi/trace' },
+      { name: 'South America', url: 'https://cdn-cgi/trace' },
+      { name: 'Africa', url: 'https://cdn-cgi/trace' }
+    ];
 
-        const successfulTests = locationResults.filter(r => r.status === 'success');
-        const avgLatency = successfulTests.length
-          ? successfulTests.reduce((sum, r) => sum + r.latency, 0) / successfulTests.length
-          : 0;
+    const regionResults: RegionMetrics[] = [];
+    let totalLatency = 0;
+    let successfulTests = 0;
+    let failedTests = 0;
 
-        return {
-          region,
-          locations: locationResults,
+    // Test each region
+    for (const region of regions) {
+      try {
+        const regionStartTime = performance.now();
+        const response = await fetch(region.url, {
+          headers: {
+            'User-Agent': 'ESU-Store-CDN-Test/1.0',
+            'Accept': 'text/plain',
+            'Cache-Control': 'no-store'
+          },
+          cache: 'no-store'
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.text();
+        const latency = performance.now() - regionStartTime;
+        totalLatency += latency;
+        successfulTests++;
+
+        // Parse Cloudflare trace data
+        const cfData = data.split('\n').reduce((acc: Record<string, string>, line: string) => {
+          const [key, value] = line.split('=');
+          if (key && value) acc[key.trim()] = value.trim();
+          return acc;
+        }, {});
+
+        regionResults.push({
+          region: region.name,
           metrics: {
-            total: locations.length,
-            successful: successfulTests.length,
-            failed: locations.length - successfulTests.length,
-            avgLatency: Math.round(avgLatency),
-            successRate: `${((successfulTests.length / locations.length) * 100).toFixed(1)}%`
+            successRate: '100%',
+            avgLatency: Math.round(latency),
+            dataCenter: cfData['colo'] || 'Unknown',
+            tlsVersion: cfData['tls'] || 'Unknown',
+            httpVersion: cfData['http'] || 'Unknown',
+            rayId: cfData['ray'] || 'Unknown'
           }
-        };
-      })
-    );
+        });
+      } catch (error) {
+        failedTests++;
+        regionResults.push({
+          region: region.name,
+          metrics: {
+            successRate: '0%',
+            avgLatency: 0,
+            dataCenter: 'Failed',
+            tlsVersion: 'Failed',
+            httpVersion: 'Failed',
+            rayId: 'Failed'
+          }
+        });
+      }
+    }
 
     // Calculate global metrics
-    const allLocations = results.flatMap(r => r.locations);
-    const successfulLocations = allLocations.filter(r => r.status === 'success');
-    const globalSuccessRate = successfulLocations.length / allLocations.length;
-    const globalAvgLatency = successfulLocations.length
-      ? successfulLocations.reduce((sum, r) => sum + r.latency, 0) / successfulLocations.length
-      : 0;
+    const totalTests = regions.length;
+    const averageLatency = successfulTests > 0 ? Math.round(totalLatency / successfulTests) : 0;
+    const successRate = ((successfulTests / totalTests) * 100).toFixed(1);
+
+    const globalMetrics: GlobalMetrics = {
+      totalTests,
+      successfulTests,
+      failedTests,
+      averageLatency,
+      successRate: `${successRate}%`,
+      totalLocations: regions.length
+    };
 
     const endTime = performance.now();
-    const duration = endTime - startTime;
+    const totalDuration = endTime - startTime;
 
     return NextResponse.json({
-      status: globalSuccessRate > 0.5 ? 'operational' : 'degraded',
-      timestamp: new Date().toISOString(),
-      duration: Math.round(duration),
-      global: {
-        totalLocations: allLocations.length,
-        successRate: `${(globalSuccessRate * 100).toFixed(1)}%`,
-        avgLatency: Math.round(globalAvgLatency),
-        metrics: {
-          'Total Tests': allLocations.length,
-          'Successful Tests': successfulLocations.length,
-          'Failed Tests': allLocations.length - successfulLocations.length,
-          'Average Latency': `${Math.round(globalAvgLatency)}ms`,
-          'Success Rate': `${(globalSuccessRate * 100).toFixed(1)}%`
-        }
-      },
-      regions: results.map(region => ({
-        region: region.region,
-        metrics: {
-          ...region.metrics,
-          'Status': region.metrics.successRate === '100.0%' ? 'Operational' : 'Degraded',
-          'Locations': region.locations.map(loc => ({
-            name: loc.name,
-            latency: loc.latency,
-            status: loc.status
-          }))
-        }
-      }))
+      status: 'success',
+      message: 'CDN performance test completed',
+      duration: Math.round(totalDuration),
+      global: globalMetrics,
+      regions: regionResults
     });
   } catch (error) {
-    console.error('CDN test failed:', error);
+    console.error('CDN test error:', error);
     return NextResponse.json(
       {
         status: 'error',
-        message: error instanceof Error ? error.message : 'Failed to check CDN performance',
-        timestamp: new Date().toISOString(),
+        message: error instanceof Error ? error.message : 'Failed to test CDN performance',
         duration: 0,
         global: {
-          totalLocations: 0,
-          successRate: '0.0%',
-          avgLatency: 0,
-          metrics: {
-            'Total Tests': 0,
-            'Successful Tests': 0,
-            'Failed Tests': 0,
-            'Average Latency': '0ms',
-            'Success Rate': '0.0%'
-          }
-        }
+          totalTests: 0,
+          successfulTests: 0,
+          failedTests: 0,
+          averageLatency: 0,
+          successRate: '0%',
+          totalLocations: 0
+        },
+        regions: []
       },
       { status: 500 }
     );
