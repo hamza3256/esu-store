@@ -263,7 +263,7 @@ const Page = ({ params }: PageProps) => {
           </div>
         </div>
 
-        {/* Mobile sticky cart button */}
+        {/* Mobile sticky cart button
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
@@ -282,7 +282,7 @@ const Page = ({ params }: PageProps) => {
           <TooltipContent>
             {product.inventory === 0 ? "Out of stock" : "Add to bag"}
           </TooltipContent>
-        </Tooltip>
+        </Tooltip> */}
 
         {/* Product details tabs */}
         <div className="mt-12 lg:mt-20 lg:max-w-7xl lg:mx-auto lg:px-8">

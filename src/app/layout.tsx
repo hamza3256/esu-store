@@ -11,6 +11,7 @@ import FreeShippingPopup from "@/components/FreeShippingPopup";
 import { Toaster } from "@/components/ui/sonner";
 import TopBanner from "@/components/TopBanner";
 import ChatbotWidget from "@/components/ChatbotWidget";
+import MobileBottomNav from '@/components/MobileBottomNav';
 
 export const metadata: Metadata = {
   title: "ESÜ Store | Jewellery, Clothing & Accessories",
@@ -135,11 +136,12 @@ export default async function RootLayout({
               <FreeShippingPopup />
             </div>
             <Footer />
+            <MobileBottomNav user={user} />
+            <ChatbotWidget className="!bottom-20 lg:!bottom-4" />
           </Providers>
         </main>
         <ToasterUI />
         <Toaster theme="light" position="top-center" richColors />
-        <ChatbotWidget />
       </body>
     </html>
   );
