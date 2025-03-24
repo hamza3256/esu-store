@@ -64,7 +64,7 @@ export default function OrderViewer() {
     range: filterRange,
   })
 
-  const filteredOrders = orders?.filter((order: any) =>
+  const filteredOrders = orders?.docs?.filter((order: any) =>
     order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) &&
     (selectedTab === "all" || order.status === selectedTab)
   ) || []
