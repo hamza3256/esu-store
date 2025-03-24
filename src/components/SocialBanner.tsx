@@ -69,6 +69,7 @@ const SocialBanner = React.memo(() => {
                 width={isMobile ? 400 : 600}
                 height={isMobile ? 400 : 600}
                 className="transition-transform duration-500 transform object-cover group-hover:scale-110"
+                loading="lazy"
               />
               {/* Show caption differently for mobile users */}
               <div

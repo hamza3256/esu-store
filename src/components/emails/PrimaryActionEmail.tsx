@@ -32,7 +32,7 @@ export const EmailTemplate = ({
       <Body style={main}>
         <Container style={container}>
           <Img
-            src={`https://esustore.com/bear_email_body.png`}
+            src={`https://esu.london/bear_email_body.png`}
             width="150"
             height="150"
             alt="ESUStore"

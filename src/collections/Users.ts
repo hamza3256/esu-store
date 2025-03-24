@@ -1,9 +1,12 @@
 import { PrimaryActionEmailHtml } from "../components/emails/PrimaryActionEmail";
 import { Access, CollectionConfig } from "payload/types";
 
-const adminsAndUser: Access = ({ req: { user } }) => {
-  if (user.role === "admin" || user.role === "superadmin") return true;
-
+// Access control function for admins, sellers, and employees
+const adminsSellersEmployees: Access = ({ req: { user } }) => {
+  const allowedRoles = ["admin", "seller", "employee"];
+  if (user && allowedRoles.includes(user.role)) {
+    return true;
+  }
   return { id: { equals: user.id } };
 };
 
@@ -21,20 +24,62 @@ export const Users: CollectionConfig = {
     },
   },
   access: {
-    read: adminsAndUser,
+    read: adminsSellersEmployees,
     create: () => true,
     update: ({ req }) => req.user.role === "admin",
-    delete: ({ req }) => req.user.role === "admin",
+    delete: ({ req }) => req.user.role === "admin", 
+    admin: ({ req: { user } }) => user.role !== "user",
   },
   admin: {
-    hidden: ({ user }) => user.role !== "admin",
-    defaultColumns: ["id"],
+    hidden: ({ user }) => user.role === "user",
+    defaultColumns: ["id", "name", "email"]
   },
   fields: [
     {
       name: "name",
       label: "Full Name",
       type: "text",
+    },
+    {
+      name: "phone",
+      label: "Phone Number",
+      type: "text",
+      admin: {
+        description: "Enter phone number with country code",
+      },
+    },
+    {
+      name: "address",
+      label: "Address",
+      type: "textarea",
+      admin: {
+        description: "Enter your full address",
+      },
+    },
+    {
+      name: "avatar",
+      label: "Profile Picture",
+      type: "upload",
+      relationTo: "media",
+      required: false,
+      admin: {
+        description: "Upload a profile picture",
+      },
+      filterOptions: {
+        mimeType: {
+          equals: 'image/*',
+        },
+      },
+    },
+    {
+      name: "wishlist",
+      label: "Wishlist",
+      type: "relationship",
+      relationTo: "products",
+      hasMany: true,
+      admin: {
+        description: "Products in user's wishlist",
+      },
     },
     {
       name: "stripeCustomerId",
@@ -64,17 +109,9 @@ export const Users: CollectionConfig = {
       hasMany: true,
     },
     {
-      name: "role", // "Super Admin", "Admins", "Users"
+      name: "role",
       defaultValue: "user",
       required: true,
-      admin: {
-        condition: ({ req }) => {
-          if (req?.user?.role === "admin" || req?.user?.role === "superadmin") {
-            return true;
-          }
-          return false;
-        },
-      },
       type: "select",
       options: [
         {
@@ -83,11 +120,11 @@ export const Users: CollectionConfig = {
         },
         {
           label: "Employee",
-          value: "employee"
+          value: "employee",
         },
         {
           label: "Seller",
-          value: "seller"
+          value: "seller",
         },
         {
           label: "User",

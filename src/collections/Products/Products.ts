@@ -4,7 +4,7 @@ import {
 } from "payload/dist/collections/config/types";
 import { PRODUCT_CATEGORIES } from "../../config";
 import { Access, CollectionConfig } from "payload/types";
-import { Product, User } from "../../payload-types";
+import { Media, Product, User } from "../../payload-types";
 import { stripe } from "../../lib/stripe";
 import type Stripe from "stripe";
 
@@ -72,6 +72,15 @@ const uploadImageToStripe = async (imageUrl: string): Promise<string> => {
 };
 
 const handleProductChange: BeforeChangeHook<Product> = async ({ operation, data, req }) => {
+
+  const isAdminRequest = req.user?.role === 'admin' || req?.payloadAPI === 'REST';
+
+  // Only run the Stripe sync if the request is from the admin dashboard
+  if (!isAdminRequest) {
+    // Skip Stripe syncing for non-admin (TRPC, API, etc.) updates
+    return data;
+  }
+  
   const productData = data as Product;
 
   // Ensure price is passed and a valid Stripe product exists
@@ -80,27 +89,17 @@ const handleProductChange: BeforeChangeHook<Product> = async ({ operation, data,
   let stripeProduct;
   let stripePrice;
 
-  const validUrls = await Promise.all(
-    productData.images.map(async ({ image }) => {
-      if (typeof image === "string") {
-        // Resolve the image URL from the Payload media collection
-        const mediaDoc = await req.payload.findByID({ collection: "media", id: image });
+  // Fetch the first image from the product's Media array
+  const firstImage = productData.images?.find(({ image }: { image: Media | string }) => {
+    return typeof image === "object" && (image.resourceType?.startsWith("image") || image.mimeType?.startsWith("image"));
+  })?.image;
 
-        // Ensure only images are considered (filter out videos based on mimeType)
-        if (mediaDoc?.mimeType?.startsWith("image/")) {
-          return mediaDoc.url;  // Use the URL field from the Cloudinary document
-        }
-      } else if (image.mimeType?.startsWith("image/")) {
-        return image.url; // If image is already an object with a valid mimeType
-      }
-    })
-  );
-  
-  const imageUrl = validUrls.filter(Boolean)[0]; // Get the first valid image URL
+  // If there is an image object, extract its Cloudinary URL
+  const imageUrl = firstImage ? (firstImage as Media).sizes?.thumbnail?.url : firstImage?.toString();
 
   let imageId: string | undefined;
 
-  // Upload the first image to Stripe if available
+  // If a valid image URL exists, upload it to Stripe
   if (imageUrl) {
     imageId = await uploadImageToStripe(imageUrl).catch((error) => {
       console.error("Error uploading image to Stripe:", error);
@@ -110,7 +109,7 @@ const handleProductChange: BeforeChangeHook<Product> = async ({ operation, data,
 
   if (operation === 'create') {
     const productPrice = productData.discountedPrice ?? productData.price;
-    
+
     // Create the Stripe product and associate the uploaded image
     stripeProduct = await stripe.products.create({
       name: productData.name,
@@ -131,7 +130,7 @@ const handleProductChange: BeforeChangeHook<Product> = async ({ operation, data,
 
   } else if (operation === 'update') {
     const productPrice = productData.discountedPrice ?? productData.price;
-    
+
     // Update the Stripe product and associate the new image, if applicable
     await stripe.products.update(productData.stripeId!, {
       name: productData.name,
@@ -160,15 +159,15 @@ const handleProductChange: BeforeChangeHook<Product> = async ({ operation, data,
 };
 
 
-
 // Access control modification to accommodate guest operations
 const isAdminOrHasAccess =
   (): Access =>
   ({ req: { user: _user } }) => {
     const user = _user as User | undefined;
+    const allowedRoles = ["admin", "seller", "employee"];
 
     if (!user) return false;
-    if (user.role === "admin") return true;
+    if (user && allowedRoles.includes(user.role!)) return true;
 
     const userProductIds = (user.products || []).reduce<Array<string>>(
       (acc, product) => {
@@ -336,7 +335,7 @@ export const Products: CollectionConfig = {
       type: "array",
       label: "Product images",
       minRows: 1,
-      maxRows: 4,
+      maxRows: 6,
       required: true,
       labels: {
         singular: "Image",

@@ -10,6 +10,7 @@ import { Media } from "./collections/Media";
 import { ProductFiles } from "./collections/ProductFile";
 import { Orders } from "./collections/Orders";
 import { Configuration as WebpackConfig } from 'webpack';
+import { PromoCodes } from "./collections/PromoCodes";
 
 dotenv.config({
   path: path.resolve(__dirname, "../.env"),
@@ -17,31 +18,18 @@ dotenv.config({
 
 console.log("Environment: " + process.env.NODE_ENV)
 
-// const db = (() => {
-//   if (process.env.NODE_ENV === "development") {
-//     console.log("Connecting to development database...")
-//     return process.env.MONGODB_DEV!;
-//   } else if (process.env.NODE_ENV === "production") {
-//     console.log("Connecting to production database...")
-//     return process.env.MONGODB_PROD!; // TODO: use production url
-//   } else {
-//     console.log("Connecting to default testing database...")
-//     return process.env.MONGODB_URI!;
-//   }
-// })();
-
 const db = process.env.MONGODB_URI!
 
 export default buildConfig({
   cors: [
     process.env.NEXT_PUBLIC_SERVER_URL!,
-    'https://esustore.com',
+    'https://esu.london',
   ],
   csrf: [process.env.NEXT_PUBLIC_SERVER_URL!, 
-    'https://esustore.com'
+    'https://esu.london'
   ],
   serverURL: process.env.NEXT_PUBLIC_SERVER_URL || "",
-  collections: [Users, Products, Media, ProductFiles, Orders],
+  collections: [Users, Products, Media, ProductFiles, Orders, PromoCodes],
   routes: {
     admin: "/sell",
   },
@@ -66,11 +54,11 @@ export default buildConfig({
     meta: {
       titleSuffix: "- esü",
       favicon: "/favicon.ico",
-      ogImage: "/thumbnail.jpg",
+      ogImage: "/esu-official.jpg",
     },
   },
   rateLimit: {
-    max: 500, //TODO: reduce to 500 for production
+    max: 500,
   },
   editor: slateEditor({}),
   db: mongooseAdapter({

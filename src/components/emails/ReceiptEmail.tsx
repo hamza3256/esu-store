@@ -1,3 +1,4 @@
+import { SHIPPING_FEE } from "../../lib/config";
 import { formatPrice } from "../../lib/utils";
 import { Media, Product } from "../../payload-types";
 import {
@@ -24,7 +25,12 @@ interface ReceiptEmailProps {
   orderId: string;
   products: Array<{ product: Product; quantity: number }>;
   orderNumber: string;
-  transactionFee?: number; // Optional transaction fee passed in as a prop
+  shippingFee?: number;
+  trackingNumber?: string;
+  trackingOrderDate?: string;
+  totalPrice?: number;
+  promoCode?: string;  // Add promoCode as optional
+  discountPercentage?: number;  // Add discountPercentage as optional
 }
 
 export const ReceiptEmail = ({
@@ -33,12 +39,31 @@ export const ReceiptEmail = ({
   orderId,
   products,
   orderNumber,
-  transactionFee = 2.5, // Default to 2.5 if not provided
+  shippingFee = SHIPPING_FEE,
+  trackingNumber,
+  trackingOrderDate,
+  totalPrice,
+  promoCode,
+  discountPercentage = 0,  // Default to 0 if no discount
 }: ReceiptEmailProps) => {
-  const total = products.reduce(
+  
+  // Calculate the subtotal
+  const subtotal = totalPrice ?? products.reduce(
     (acc, { product, quantity }) => acc + product.price * quantity,
     0
-  ) + transactionFee;
+  );
+
+  // Calculate the discount based on promo code
+  const discount = (discountPercentage / 100) * subtotal;
+  const discountedTotal = subtotal - discount;
+
+  // Final total including shipping fee
+  const total = discountedTotal + shippingFee;
+
+  // Tracking link generation
+  const trackingLink = trackingNumber
+    ? `https://www.trackingmore.com/track/en/${trackingNumber}?express=postex`
+    : null;
 
   return (
     <Html>
@@ -50,8 +75,7 @@ export const ReceiptEmail = ({
           <Section>
             <Column>
               <Img
-                src={`https://esustore.com/bear_email_sent.png`}
-                width="100"
+                src={`https://esu.london/esu-transparent.png`}
                 height="100"
                 alt="ESU BEAR"
               />
@@ -61,17 +85,13 @@ export const ReceiptEmail = ({
               <Text style={heading}>Receipt</Text>
             </Column>
           </Section>
+
+          {/* Order Info */}
           <Section style={informationTable}>
             <Row style={informationTableRow}>
               <Column style={informationTableColumn}>
                 <Text style={informationTableLabel}>EMAIL</Text>
-                <Link
-                  style={{
-                    ...informationTableValue,
-                  }}
-                >
-                  {email}
-                </Link>
+                <Link style={informationTableValue}>{email}</Link>
               </Column>
 
               <Column style={informationTableColumn}>
@@ -83,54 +103,63 @@ export const ReceiptEmail = ({
 
               <Column style={informationTableColumn}>
                 <Text style={informationTableLabel}>ORDER NUMBER</Text>
-                <Link
-                  style={{
-                    ...informationTableValue,
-                  }}
-                >
-                  {orderNumber}
-                </Link>
+                <Text style={informationTableValue}>{orderNumber}</Text>
               </Column>
             </Row>
+
+            {/* Tracking Info */}
+            {trackingLink && (
+              <Row style={informationTableRow}>
+                <Column style={informationTableColumn}>
+                  <Text style={informationTableLabel}>TRACKING NUMBER</Text>
+                  <Link href={trackingLink} style={informationTableValue}>
+                    {trackingNumber}
+                  </Link>
+                </Column>
+                {trackingOrderDate && (
+                  <Column style={informationTableColumn}>
+                    <Text style={informationTableLabel}>TRACKING DATE</Text>
+                    <Text style={informationTableValue}>
+                      {format(new Date(trackingOrderDate), "dd MMM yyyy")}
+                    </Text>
+                  </Column>
+                )}
+              </Row>
+            )}
           </Section>
+
+          {/* Order Summary */}
           <Section style={productTitleTable}>
             <Text style={productsTitle}>Order Summary</Text>
           </Section>
+
           {products.map(({ product, quantity }) => {
-             const image = product.images.find(({ image }) => {
+            const image = product.images.find(({ image }) => {
               return typeof image === "object" && image.mimeType?.startsWith("image/");
             })?.image as Media;
 
             return (
               <Section key={product.id}>
                 <Column style={{ width: "64px" }}>
-                  {typeof image !== "string" && image.url ? (
+                  {image?.url && (
                     <Img
-                      src={image.url}
+                      src={image.sizes?.thumbnail?.url ?? image.url}
                       width="64"
                       height="64"
                       alt="Product Image"
-                      style={productIcon}
-                    />
-                  ) : (
-                    <Img
-                      src="/placeholder-image.png"
-                      width="64"
-                      height="64"
-                      alt="Product Placeholder"
                       style={productIcon}
                     />
                   )}
                 </Column>
                 <Column style={{ paddingLeft: "22px" }}>
                   <Text style={productTitle}>{product.name}</Text>
-                  {product.description ? (
+                  {product.description && (
                     <Text style={productDescription}>
                       {product.description.length > 50
                         ? product.description.slice(0, 50) + "..."
                         : product.description}
                     </Text>
-                  ) : null}
+                  )}
                   <Link
                     href={`${process.env.NEXT_PUBLIC_SERVER_URL}/order-confirmation?orderId=${orderId}`}
                     style={productLink}
@@ -148,17 +177,35 @@ export const ReceiptEmail = ({
             );
           })}
 
+          {/* Promo Code Section */}
+          {promoCode && (
+            <Section>
+              <Column style={{ width: "64px" }}></Column>
+              <Column style={{ paddingLeft: "40px", paddingTop: 20 }}>
+                <Text style={productTitle}>Promo Code ({promoCode})</Text>
+              </Column>
+
+              <Column style={productPriceWrapper} align="right">
+                <Text style={productPrice}>- {formatPrice(discount)}</Text>
+              </Column>
+            </Section>
+          )}
+
+          {/* Shipping Fee */}
           <Section>
             <Column style={{ width: "64px" }}></Column>
             <Column style={{ paddingLeft: "40px", paddingTop: 20 }}>
-              <Text style={productTitle}>Transaction Fee</Text>
+              <Text style={productTitle}>Shipping Fee</Text>
             </Column>
 
             <Column style={productPriceWrapper} align="right">
-              <Text style={productPrice}>{formatPrice(transactionFee)}</Text>
+              <Text style={productPrice}>
+                {shippingFee === 0 ? "Free" : formatPrice(shippingFee)}
+              </Text>
             </Column>
           </Section>
 
+          {/* Total Section */}
           <Hr style={productPriceLine} />
           <Section align="right">
             <Column style={tableCell} align="right">
@@ -171,10 +218,17 @@ export const ReceiptEmail = ({
           </Section>
           <Hr style={productPriceLineBottom} />
 
+          {/* Footer */}
           <Text style={footerLinksWrapper}>
-            <Link href={`${process.env.NEXT_PUBLIC_SERVER_URL}/about`}>Company</Link> •{" "}
-            <Link href={`${process.env.NEXT_PUBLIC_SERVER_URL}/help-center`}>Help Center</Link> •{" "}
-            <Link href={`${process.env.NEXT_PUBLIC_SERVER_URL}/privacy-policy`}>Privacy Policy </Link>
+            <Link href={`${process.env.NEXT_PUBLIC_SERVER_URL}/about`}>Company</Link>{" "}
+            •{" "}
+            <Link href={`${process.env.NEXT_PUBLIC_SERVER_URL}/help-center`}>
+              Help Center
+            </Link>{" "}
+            •{" "}
+            <Link href={`${process.env.NEXT_PUBLIC_SERVER_URL}/privacy-policy`}>
+              Privacy Policy
+            </Link>
           </Text>
           <Text style={footerCopyright}>
             Copyright © 2024 ESÜ STORE LLC <br />{" "}
@@ -189,6 +243,7 @@ export const ReceiptEmail = ({
 export const ReceiptEmailHtml = (props: ReceiptEmailProps) =>
   render(<ReceiptEmail {...props} />, { pretty: true });
 
+/* Email Styles */
 
 const main = {
   fontFamily: '"Helvetica Neue",Helvetica,Arial,sans-serif',

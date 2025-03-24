@@ -16,7 +16,7 @@ export const Orders: CollectionConfig = {
     description: "A summary of all your orders on ESU Store.",
   },
   access: {
-    read: ({ req }) => req.user?.role === "admin" || !!req.user, // Allow admin and authenticated users to access orders
+    read: ({ req }) => req.user?.role === "admin" || req.user?.role === "seller" || !!req.user, // Allow admin and authenticated users to access orders
     update: ({ req }) => req.user?.role === "admin", // Only admin can update
     delete: ({ req }) => req.user?.role === "admin", // Only admin can delete
     create: () => true, // Allow creation without a logged-in user
@@ -26,7 +26,7 @@ export const Orders: CollectionConfig = {
       name: "_isPaid",
       type: "checkbox",
       access: {
-        read: ({ req }) => req.user.role === "admin",
+        read: ({ req }) => req.user.role === "admin" || req.user.role === "seller",
         create: () => false,
         update: () => false,
       },
@@ -34,6 +34,34 @@ export const Orders: CollectionConfig = {
         hidden: true,
       },
       required: true,
+    },
+    {
+      name: "_isPostexOrderCreated",
+      type: "checkbox",
+      access: {
+        read: ({ req }) => req.user.role === "admin" || req.user.role === "seller",
+        create: () => false,
+        update: () => false,
+      },
+      admin: {
+        hidden: true,
+      },
+      required: true,
+    },
+    {
+      name: "trackingInfo", // Add tracking information for PostEx
+      type: "group",
+      fields: [
+        { name: "trackingNumber", type: "text" },
+        { name: "orderStatus", type: "text" },
+        { name: "orderDate", type: "text" },
+      ],
+      admin: {
+        hidden: true, // Hidden from UI by default
+      },
+      access: {
+        read: ({ req }) => req.user.role === "admin",
+      },
     },
     {
       name: "user",
@@ -45,12 +73,22 @@ export const Orders: CollectionConfig = {
       required: false,
     },
     {
+      name: "name",
+      type: "text",
+      required: true,
+    },
+    {
       name: "email", // Collect email for anonymous orders
       type: "email",
       required: true,
     },
     {
-      name: "productItems", // Store both product and quantity
+      name: "phone", // Add phone field for customer phone number
+      type: "text",
+      required: true,
+    },
+    {
+      name: "productItems",
       type: "array",
       fields: [
         {
@@ -65,9 +103,18 @@ export const Orders: CollectionConfig = {
           required: true,
           defaultValue: 1,
         },
+        {
+          name: "priceAtPurchase",
+          label: "Price at Purchase",
+          type: "number",
+          required: true,
+          admin: {
+            readOnly: true, 
+          },
+        },
       ],
       required: true,
-    },
+    },    
     {
       name: "shippingAddress",
       type: "group",
@@ -75,8 +122,8 @@ export const Orders: CollectionConfig = {
         { name: "line1", type: "text", required: true },
         { name: "line2", type: "text" },
         { name: "city", type: "text", required: true },
-        { name: "state", type: "text", required: true },
-        { name: "postalCode", type: "text", required: true },
+        { name: "state", type: "text",},
+        { name: "postalCode", type: "text" },
         { name: "country", type: "text", required: true },
       ],
     },
@@ -101,13 +148,35 @@ export const Orders: CollectionConfig = {
     {
       name: "orderNumber",
       type: "text",
-      unique: true, // Ensures the order number is unique
+      unique: true, 
       required: true,
     },
     {
       name: "_emailSent",
       type: "checkbox",
       defaultValue: false
-    }
+    },
+    {
+      name: "paymentType",
+      label: "Payment Type",
+      type: "select",
+      options: [
+        { label: "Card", value: "card" },
+        { label: "Cash on Delivery", value: "cod" },
+      ],
+      required: true,
+      defaultValue: "card",
+    },
+    {
+      name: "appliedPromoCode",
+      label: "Applied Promo Code",
+      type: "relationship",
+      required: false,
+      relationTo: "promo-codes",
+      hasMany: false,
+      admin: {
+        description: "Promo code applied to this order, if any.",
+      },
+    },
   ],
 };

@@ -13,6 +13,7 @@ export interface Config {
     media: Media;
     product_files: ProductFile;
     orders: Order;
+    'promo-codes': PromoCode;
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
   };
@@ -25,10 +26,14 @@ export interface Config {
 export interface User {
   id: string;
   name?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  avatar?: string | Media | null;
+  wishlist?: (string | Product)[] | null;
   stripeCustomerId?: string | null;
   products?: (string | Product)[] | null;
   product_files?: (string | ProductFile)[] | null;
-  role?: ('admin' | 'employee' | 'seller' | 'user') | null;
+  role: 'admin' | 'employee' | 'seller' | 'user';
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -41,48 +46,6 @@ export interface User {
   loginAttempts?: number | null;
   lockUntil?: string | null;
   password: string | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "products".
- */
-export interface Product {
-  id: string;
-  user?: (string | null) | User;
-  name: string;
-  description?: string | null;
-  price: number;
-  discountedPrice?: number | null;
-  category: 'jewellery' | 'clothing' | 'accessories';
-  inventory: number;
-  numReviews: number;
-  rating: number;
-  product_files?: (string | null) | ProductFile;
-  approvedForSale?: ('pending' | 'approved' | 'denied') | null;
-  priceId?: string | null;
-  stripeId?: string | null;
-  images: {
-    image: string | Media;
-    id?: string | null;
-  }[];
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "product_files".
- */
-export interface ProductFile {
-  id: string;
-  user?: (string | null) | User;
-  updatedAt: string;
-  createdAt: string;
-  url?: string | null;
-  filename?: string | null;
-  mimeType?: string | null;
-  filesize?: number | null;
-  width?: number | null;
-  height?: number | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -134,30 +97,99 @@ export interface Media {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "products".
+ */
+export interface Product {
+  id: string;
+  user?: (string | null) | User;
+  name: string;
+  description?: string | null;
+  price: number;
+  discountedPrice?: number | null;
+  category: 'jewellery' | 'clothing' | 'accessories';
+  inventory: number;
+  numReviews: number;
+  rating: number;
+  product_files?: (string | null) | ProductFile;
+  approvedForSale?: ('pending' | 'approved' | 'denied') | null;
+  priceId?: string | null;
+  stripeId?: string | null;
+  images: {
+    image: string | Media;
+    id?: string | null;
+  }[];
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "product_files".
+ */
+export interface ProductFile {
+  id: string;
+  user?: (string | null) | User;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "orders".
  */
 export interface Order {
   id: string;
   _isPaid: boolean;
+  _isPostexOrderCreated: boolean;
+  trackingInfo?: {
+    trackingNumber?: string | null;
+    orderStatus?: string | null;
+    orderDate?: string | null;
+  };
   user?: (string | null) | User;
+  name: string;
   email: string;
+  phone: string;
   productItems: {
     product: string | Product;
     quantity: number;
+    priceAtPurchase: number;
     id?: string | null;
   }[];
   shippingAddress: {
     line1: string;
     line2?: string | null;
     city: string;
-    state: string;
-    postalCode: string;
+    state?: string | null;
+    postalCode?: string | null;
     country: string;
   };
   status?: ('pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled') | null;
   total: number;
   orderNumber: string;
   _emailSent?: boolean | null;
+  paymentType: 'card' | 'cod';
+  appliedPromoCode?: (string | null) | PromoCode;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "promo-codes".
+ */
+export interface PromoCode {
+  id: string;
+  code: string;
+  description?: string | null;
+  discountPercentage: number;
+  validFrom: string;
+  validUntil: string;
+  maxUses: number;
+  currentUses?: number | null;
   updatedAt: string;
   createdAt: string;
 }

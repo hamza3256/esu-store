@@ -16,7 +16,7 @@ const NavItems = ({
 }) => {
   const [activeIndex, setActiveIndex] = useState<null | number>(null);
   const navRef = useRef<HTMLDivElement | null>(null);
-  
+
   // Use for dynamic updates to the jewellery category (e.g., using hooks)
   const { products, isLoading } = useJewelleryProducts();
 
@@ -30,9 +30,13 @@ const NavItems = ({
           : products.map((product: any) => ({
               name: product.name,
               href: `/product/${product.id}`,
-              imageSrc: product.images.find(({ image } : {image: Media}) => {
-                return typeof image === "object" && image.mimeType?.startsWith("image/");
-              })?.image.sizes?.card?.url || "/fallback.jpg",
+              imageSrc:
+                product.images.find(({ image }: { image: Media }) => {
+                  return (
+                    typeof image === "object" &&
+                    image.mimeType?.startsWith("image/")
+                  );
+                })?.image.sizes?.thumbnail?.url || "/fallback.jpg",
             })),
       };
     }
@@ -44,9 +48,15 @@ const NavItems = ({
       if (e.key == "Escape") {
         setActiveIndex(null);
       } else if (e.key === "ArrowRight" && activeIndex !== null) {
-        setActiveIndex((prevIndex) => (prevIndex === updatedCategories.length - 1 ? 0 : (prevIndex ?? 0) + 1));
+        setActiveIndex((prevIndex) =>
+          prevIndex === updatedCategories.length - 1 ? 0 : (prevIndex ?? 0) + 1
+        );
       } else if (e.key === "ArrowLeft" && activeIndex !== null) {
-        setActiveIndex((prevIndex) => (prevIndex === 0 ? updatedCategories.length - 1 : (prevIndex ?? 0) - 1));
+        setActiveIndex((prevIndex) =>
+          prevIndex === 0
+            ? updatedCategories.length - 1
+            : (prevIndex ?? 0) - 1
+        );
       }
     };
 
@@ -60,6 +70,11 @@ const NavItems = ({
   const isAnyOpen = activeIndex !== null;
 
   useOnClickOutside(navRef, () => setActiveIndex(null));
+
+  // Close dropdown when an item is clicked
+  const closeMenu = () => {
+    setActiveIndex(null);
+  };
 
   return (
     <div className="flex gap-4 h-full" ref={navRef}>
@@ -83,6 +98,7 @@ const NavItems = ({
             isAnyOpen={isAnyOpen}
             isTransparent={isTransparent}
             isHovered={isHovered}
+            closeMenu={closeMenu} // Pass down the closeMenu function to NavItem
           />
         );
       })}

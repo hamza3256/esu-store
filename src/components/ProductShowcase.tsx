@@ -13,8 +13,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-import { Pointer} from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 interface ProductReelProps {
   title: string;
@@ -24,24 +23,37 @@ interface ProductReelProps {
 }
 
 const FALLBACK_LIMIT = 4;
+const INTERVAL = 5000; 
 
 const ProductShowcase = (props: ProductReelProps) => {
   const { title, subtitle, href, query } = props;
 
   const isMobile = useMediaQuery("(max-width: 767px)");
   const isTablet = useMediaQuery("(min-width: 768px) and (max-width: 1024px)");
-  const [showSwipeIndicator, setShowSwipeIndicator] = useState(true);
 
-  const { data: queryResults, isLoading } =
-    trpc.getInfiniteProducts.useInfiniteQuery(
-      {
-        limit: query.limit ?? FALLBACK_LIMIT,
-        query,
-      },
-      {
-        getNextPageParam: (lastPage) => lastPage.nextPage,
-      }
-    );
+  const [api, setApi] = useState<any>(null);
+  const [current, setCurrent] = useState(0);
+  // const [count, setCount] = useState(0);
+  const count = FALLBACK_LIMIT;
+  const [progress, setProgress] = useState(0);
+  const [autoPlay, setAutoPlay] = useState(true);
+  const carouselRef = useRef<HTMLDivElement | null>(null);
+
+  const { data: queryResults, isLoading } = trpc.getInfiniteProducts.useInfiniteQuery(
+    {
+      limit: query.limit ?? FALLBACK_LIMIT,
+      query,
+    },
+    {
+      getNextPageParam: (lastPage) => lastPage.nextPage,
+      staleTime: 60000, // Cache the data for 60 seconds
+      cacheTime: 600000, // Keep cached data for 5 minutes
+      refetchOnWindowFocus: false, // Avoid refetching when the window regains focus
+      refetchOnReconnect: false, // Disable refetching on network reconnection
+      retry: 2, // Retry the request up to 2 times in case of failure
+    }
+  );
+  
 
   const products = queryResults?.pages.flatMap((page) => page.items);
 
@@ -53,21 +65,82 @@ const ProductShowcase = (props: ProductReelProps) => {
     map = new Array<null>(query.limit ?? FALLBACK_LIMIT).fill(null);
   }
 
-  const handleSwipe = useCallback(() => {
-    setShowSwipeIndicator(false);
-    localStorage.setItem('hasSwipedProductReel', 'true');
-  }, []);
+  // Looping and current slide logic
+  useEffect(() => {
+    if (!api) return;
+
+    // setCount(api.scrollSnapList().length);
+    setCurrent(0); // Ensure current is set to the first slide.
+
+    api.on("select", () => {
+      setCurrent(api.selectedScrollSnap());
+      setProgress(0); // Reset progress whenever a new slide is selected.
+    });
+  }, [api]);
 
   useEffect(() => {
-    const hasSwipedBefore = localStorage.getItem('hasSwipedProductReel');
-    if (hasSwipedBefore) {
-      setShowSwipeIndicator(false);
-    }
-  }, []);
+    if (!autoPlay || !api) return;
+  
+    const timer = setInterval(() => {
+      if (current === count - 1) {
+        api.scrollTo(0); 
+      } else {
+        api.scrollNext();
+      }
+      setProgress(0); 
+    }, INTERVAL);
+  
+    return () => clearInterval(timer);
+  }, [api, current, count, autoPlay]);
+  
 
+  useEffect(() => {
+    const progressTimer = setInterval(() => {
+      if (autoPlay) {
+        setProgress((prevProgress) => {
+          const newProgress = prevProgress + (100 / (INTERVAL / 100));
+          return newProgress >= 100 ? 100 : newProgress;
+        });
+      }
+    }, 100); 
+  
+    return () => clearInterval(progressTimer);
+  }, [autoPlay]);
+  
+
+  // Pause autoplay when the carousel is not in view
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setAutoPlay(true);
+        } else {
+          setAutoPlay(false);
+        }
+      },
+      {
+        threshold: 0.5, // 50% of the carousel should be visible to trigger autoplay
+      }
+    );
+
+    if (carouselRef.current) {
+      observer.observe(carouselRef.current);
+    }
+
+    return () => {
+      if (carouselRef.current) {
+        observer.unobserve(carouselRef.current);
+      }
+    };
+  }, [carouselRef]);
+
+  const handleMouseEnter = () => setAutoPlay(false);
+  const handleMouseLeave = () => setAutoPlay(true);
+
+  
   return (
     <section className="sm:py-4">
-      <div className="container px-4 sm:px-6 lg:px-8">
+      <div className="container px-4 sm:px-6 lg:px-8" ref={carouselRef}>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
           <div className="max-w-2xl">
             {title ? (
@@ -92,44 +165,74 @@ const ProductShowcase = (props: ProductReelProps) => {
 
         <div className="relative">
           {isMobile ? (
-            <Carousel className="w-full overflow-hidden" onPointerLeave={handleSwipe}>
-              <CarouselContent className="-ml-2 md:-ml-4">
-                {map.map((product, i) => (
-                  product && (
-                    <CarouselItem key={`product-${i}`} className="pl-2 md:pl-4 w-full sm:w-1/2 lg:w-1/3 xl:w-1/4">
-                      <div className="h-full">
-                        <ProductListing
-                          product={product}
-                          index={i}
-                          isMobile={isMobile}
-                          isTablet={isTablet}
+            <div>
+              <Carousel
+                className="w-full overflow-hidden"
+                setApi={setApi}
+              >
+                <CarouselContent className="-ml-2 md:-ml-4">
+                  {map.map(
+                    (product, i) =>
+                      product && (
+                        <CarouselItem
+                          key={`product-${i}`}
+                          className="pl-2 md:pl-4 w-full sm:w-1/2 lg:w-1/3 xl:w-1/4"
+                        >
+                          <div
+                            className="h-full"
+                            onMouseEnter={handleMouseEnter}
+                            onMouseLeave={handleMouseLeave}
+                          >
+                            <ProductListing
+                              product={product}
+                              index={i}
+                              isMobile={isMobile}
+                              isTablet={isTablet}
+                            />
+                          </div>
+                        </CarouselItem>
+                      )
+                  )}
+                </CarouselContent>
+                <CarouselPrevious className="hidden sm:flex" />
+                <CarouselNext className="hidden sm:flex" />
+              </Carousel>
+
+              {/* Progress Bar and Slide Indicator */}
+              <div className="mt-6 relative">
+                <div className="flex justify-between mb-2">
+                  {map.map((_, index) => (
+                    <div
+                      key={index}
+                      className={`h-1 flex-1 mx-0.5 rounded-full overflow-hidden ${
+                        index === current ? "bg-primary" : "bg-muted"
+                      }`}
+                    >
+                      {index === current && (
+                        <div
+                          className="h-full bg-primary-foreground transition-all duration-100 ease-out"
+                          style={{ width: `${progress}%` }}
                         />
-                      </div>
-                    </CarouselItem>
-                  )
-                ))}
-              </CarouselContent>
-              <CarouselPrevious className="hidden sm:flex" />
-              <CarouselNext className="hidden sm:flex" />
-              {showSwipeIndicator && isMobile && (
-                <div className="absolute right-4 top-1/2   animate-swipe-indicator">
-                  <Pointer className="w-6 h-6 text-muted-foreground animate-swipe-gesture" />
+                      )}
+                    </div>
+                  ))}
                 </div>
-              )}
-            </Carousel>
+              </div>
+            </div>
           ) : (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-              {map.map((product, i) => (
-                product && (
-                  <ProductListing
-                    key={`product-${i}`}
-                    product={product}
-                    index={i}
-                    isMobile={isMobile}
-                    isTablet={isTablet}
-                  />
-                )
-              ))}
+              {map.map(
+                (product, i) =>
+                  product && (
+                    <ProductListing
+                      key={`product-${i}`}
+                      product={product}
+                      index={i}
+                      isMobile={isMobile}
+                      isTablet={isTablet}
+                    />
+                  )
+              )}
             </div>
           )}
         </div>

@@ -9,6 +9,7 @@ import { TRPCError } from "@trpc/server";
 import { User } from "@/payload-types";
 import { PayloadRequest } from "payload/types";
 import { Resend } from "resend";
+import { cartRouter } from "./cart-router";
 
 const submittedEmails = new Set<string>(); // Use a real DB in production
 
@@ -21,6 +22,7 @@ export const appRouter = router({
   auth: authRouter,
   payment: paymentRouter,
   order: orderRouter,
+  cart: cartRouter,
 
   getInfiniteProducts: publicProcedure
     .input(
@@ -65,6 +67,28 @@ export const appRouter = router({
       });
 
       return { items, nextPage: hasNextPage ? nextPage : null };
+    }),
+
+    getProductsByIds: publicProcedure
+    .input(
+      z.object({
+        productIds: z.array(z.string()),
+      })
+    )
+    .query(async ({ input }) => {
+      const { productIds } = input;
+      const payload = await getPayloadClient();
+
+      const { docs: products } = await payload.find({
+        collection: "products",
+        where: {
+          id: {
+            in: productIds,
+          },
+        },
+      });
+
+      return products;
     }),
 
   getJewelleryBestRated: publicProcedure
@@ -153,7 +177,7 @@ export const appRouter = router({
           //   equals: ctx.user.id, // Ensure the user only sees their own orders
           // },
         },
-        depth: 1, // Fetch relationships deeply (products, etc.)
+        depth: 1,
       });
 
       const product = products[0];

@@ -56,7 +56,7 @@ const Footer = () => {
         <div className="mt-8 border-t border-gray-800 pt-6 flex flex-col lg:flex-row lg:justify-between lg:items-center">
           <div className="text-center lg:text-left">
             <p className="text-sm text-gray-400">
-              &copy; {new Date().getFullYear()} esü. All rights reserved.
+              &copy; {new Date().getFullYear()} ESU STORE LLC. All rights reserved.
             </p>
           </div>
 

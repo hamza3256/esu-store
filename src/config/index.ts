@@ -16,17 +16,17 @@ export const PRODUCT_CATEGORIES = [
       {
         name: "Favourite Jewellery Picks",
         href: "#",
-        imageSrc: "/nav/jewelleries/picks.jpg",
+        imageSrc: "/nav/coming-soon.png",
       },
       {
         name: "New Arrivals",
         href: "#",
-        imageSrc: "/nav/jewelleries/new.jpg",
+        imageSrc: "/nav/coming-soon.png",
       },
       {
         name: "Bestselling Jewelleries",
         href: "#",
-        imageSrc: "/nav/jewelleries/bestsellers.jpg",
+        imageSrc: "/nav/coming-soon.png",
       },
     ],
   },
@@ -35,19 +35,19 @@ export const PRODUCT_CATEGORIES = [
     value: "clothing" as const,
     featured: [
       {
-        name: "Editor picks",
+        name: "Most popular",
         href: "#",
-        imageSrc: "/nav/clothings/mixed.jpg",
+        imageSrc: "/nav/coming-soon.png",
       },
       {
         name: "New Arrivals",
         href: "#",
-        imageSrc: "/nav/clothings/blue.jpg",
+        imageSrc: "/nav/coming-soon.png",
       },
       {
         name: "Bestsellers",
         href: "#",
-        imageSrc: "/nav/clothings/purple.jpg",
+        imageSrc: "/nav/coming-soon.png",
       },
     ],
   },
@@ -57,19 +57,19 @@ export const PRODUCT_CATEGORIES = [
     value: "accessories" as const,
     featured: [
       {
-        name: "Favourite Jewellery Picks",
+        name: "Favourite Accessories Pick",
         href: "#",
-        imageSrc: "/nav/jewelleries/picks.jpg",
+        imageSrc: "/nav/coming-soon.png",
       },
       {
         name: "New Arrivals",
         href: "#",
-        imageSrc: "/nav/jewelleries/new.jpg",
+        imageSrc: "/nav/coming-soon.png",
       },
       {
-        name: "Bestselling Jewelleries",
+        name: "Bestselling Accessories",
         href: "#",
-        imageSrc: "/nav/jewelleries/bestsellers.jpg",
+        imageSrc: "/nav/coming-soon.png",
       },
     ],
   },

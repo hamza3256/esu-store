@@ -22,7 +22,8 @@ import {
   TooltipProvider,
 } from "@/components/ui/tooltip";
 import { useCart } from "@/hooks/use-cart";
-import { Product } from "@/payload-types";
+import { Media, Product } from "@/payload-types";
+import { useMediaQuery } from "@/hooks/use-media-query";
 
 interface PageProps {
   params: {
@@ -40,52 +41,78 @@ const Page = ({ params }: PageProps) => {
   const [quantity, setQuantity] = useState(1);
   const { addItem, getItemCount } = useCart();
 
-  const { data: product, isLoading, error } = trpc.getProductById.useQuery({
+  const { data: productData, isLoading, error } = trpc.getProductById.useQuery({
     id: productId,
-  });
+  }) as { data: Product | undefined; isLoading: boolean; error: any };
 
   if (isLoading) {
     return <PageLoader />;
   }
 
-  if (error || !product) {
+  if (error || !productData) {
     return notFound();
   }
+
+  const product = productData;
 
   const label = PRODUCT_CATEGORIES.find(
     ({ value }) => value === product.category
   )?.label;
 
-  const validUrls: { type: 'image' | 'video'; url: string }[] = product.images
-    ?.map(({ image }) => {
-      if (typeof image === "string") {
-        return { type: 'image', url: image };
-      } else if (image?.url && image?.resourceType === "video") {
-        return { type: 'video', url: image.url };
-      } else if (image?.url) {
-        return { type: 'image', url: image.url };
+  const validUrls: { type: 'image' | 'video'; url: string }[] = (product.images || [])
+    .map(({ image }) => {
+      if (typeof image === "object" && image?.url) {
+        const mediaImage = image as Media;
+        const videoUrl = mediaImage?.sizes?.video?.url;
+        const tabletUrl = mediaImage?.sizes?.tablet?.url;
+        
+        if (mediaImage.resourceType === "video" && videoUrl) {
+          return { type: 'video', url: videoUrl };
+        } else if (tabletUrl) {
+          return { type: 'image', url: tabletUrl };
+        }
       }
       return null;
     })
-    .filter(Boolean) as { type: 'image' | 'video'; url: string }[];
+    .filter((item): item is { type: 'image' | 'video'; url: string } => item !== null);
 
   const cartItemCount = getItemCount(product.id);
 
   const handleQuantityChange = (action: "increment" | "decrement") => {
     setQuantity((prev) => {
-      if (action === "increment") {
-        return Math.min(prev + 1, product.inventory);
-      }
-      return Math.max(prev - 1, 1);
+      const newQuantity = action === "increment" 
+        ? Math.min(prev + 1, product.inventory)
+        : Math.max(prev - 1, 1);
+      return newQuantity;
     });
   };
 
+  const handleQuantityInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value);
+    if (isNaN(value) || value < 1) {
+      setQuantity(1);
+    } else {
+      setQuantity(Math.min(value, product.inventory));
+    }
+  };
+
   const handleAddToCart = () => {
-    if (quantity <= product.inventory) {
+    if (quantity <= 0) {
+      toast.error("Quantity must be at least 1");
+      return;
+    }
+    
+    if (quantity > product.inventory) {
+      toast.error(`Cannot add more than ${product.inventory} items`);
+      return;
+    }
+
+    try {
       addItem(product, quantity);
       toast.success(`Added ${quantity} ${quantity > 1 ? "items" : "item"} to cart`);
-    } else {
-      toast.error(`Cannot add more than ${product.inventory} items`);
+    } catch (error) {
+      toast.error("Failed to add item to cart");
+      console.error("Cart error:", error);
     }
   };
 
@@ -184,8 +211,7 @@ const Page = ({ params }: PageProps) => {
             {/* Product images */}
             <div className="mt-8 lg:col-start-2 lg:row-span-2 lg:mt-0 lg:self-center">
               <div className="aspect-square rounded-lg overflow-hidden shadow-md">
-                {/* ImageSlider component should handle both images and videos */}
-                <ImageSlider items={validUrls} productId={productId} />
+                <ImageSlider items={validUrls} productId={productId} isMain={true} />
               </div>
             </div>
 
@@ -211,9 +237,9 @@ const Page = ({ params }: PageProps) => {
                     <Input
                       type="number"
                       min="1"
-                      max={product.inventory as number}
+                      max={product.inventory}
                       value={quantity}
-                      onChange={(e) => setQuantity(Number(e.target.value))}
+                      onChange={handleQuantityInputChange}
                       className="w-12 text-center text-sm sm:w-16 sm:text-base"
                     />
 
@@ -261,7 +287,7 @@ const Page = ({ params }: PageProps) => {
           </div>
         </div>
 
-        {/* Mobile sticky cart button */}
+        {/* Mobile sticky cart button
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
@@ -280,7 +306,7 @@ const Page = ({ params }: PageProps) => {
           <TooltipContent>
             {product.inventory === 0 ? "Out of stock" : "Add to bag"}
           </TooltipContent>
-        </Tooltip>
+        </Tooltip> */}
 
         {/* Product details tabs */}
         <div className="mt-12 lg:mt-20 lg:max-w-7xl lg:mx-auto lg:px-8">
@@ -296,7 +322,7 @@ const Page = ({ params }: PageProps) => {
             </TabsContent>
             <TabsContent value="reviews" className="mt-4">
               <p className="text-gray-600 text-sm sm:text-base">
-                No reviews.
+                Publishing reviews soon.
               </p>
             </TabsContent>
           </Tabs>

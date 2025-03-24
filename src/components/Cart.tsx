@@ -21,6 +21,7 @@ import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Progress } from "@/components/ui/progress";
 import { motion, AnimatePresence } from "framer-motion";
+import { FREE_SHIPPING_THRESHOLD, SHIPPING_FEE } from "@/lib/config";
 
 const Cart = ({
   isTransparent,
@@ -31,7 +32,6 @@ const Cart = ({
 }) => {
   const { items, cartTotal } = useCart();
   const itemCount = items.length;
-  const shippingFee = 1;
   const [isMounted, setIsMounted] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isOpen, setIsOpen] = useState<boolean>(false);
@@ -39,7 +39,6 @@ const Cart = ({
   const router = useRouter();
   const pathname = usePathname();
 
-  const FREE_SHIPPING_THRESHOLD = 1500; // Set your free shipping threshold here
   const progress = Math.min((cartTotal() / FREE_SHIPPING_THRESHOLD) * 100, 100);
 
   useEffect(() => {
@@ -130,15 +129,11 @@ const Cart = ({
               <div className="space-y-1.5">
                 <div className="flex">
                   <span className="flex-1">Shipping</span>
-                  <span>{progress >= 100 ? 'Free' : formatPrice(shippingFee)}</span>
-                </div>
-                <div className="flex">
-                  <span className="flex-1">Transaction Fee</span>
-                  <span>{formatPrice(shippingFee)}</span>
+                  <span>{progress >= 100 ? 'Free' : formatPrice(SHIPPING_FEE)}</span>
                 </div>
                 <div className="flex font-semibold">
                   <span className="flex-1">Total</span>
-                  <span>{formatPrice(cartTotal() + (progress >= 100 ? 0 : shippingFee))}</span>
+                  <span>{formatPrice(cartTotal() + (progress >= 100 ? 0 : SHIPPING_FEE))}</span>
                 </div>
               </div>
 

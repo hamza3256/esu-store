@@ -6,8 +6,9 @@ import { Progress } from "@/components/ui/progress";
 import { X, ShoppingBag, Truck } from "lucide-react";
 import { useCart } from "@/hooks/use-cart";
 import { formatPrice } from "@/lib/utils";
+import { FREE_SHIPPING_THRESHOLD } from "@/lib/config";
 
-const FREE_SHIPPING_THRESHOLD = 5000;
+const POPUP_DELAY = 5500; 
 
 export default function FreeShippingPopup() {
   const { items, cartTotal } = useCart();
@@ -16,7 +17,13 @@ export default function FreeShippingPopup() {
   useEffect(() => {
     const hasItems = items.length > 0;
     const isQualified = cartTotal() >= FREE_SHIPPING_THRESHOLD;
-    setIsVisible(hasItems && !isQualified);
+
+    const timer = setTimeout(() => {
+      setIsVisible(hasItems && !isQualified);
+    }, POPUP_DELAY);
+
+    // Cleanup the timer when the component unmounts or when `items`/`cartTotal` change
+    return () => clearTimeout(timer);
   }, [items, cartTotal]);
 
   const progress = Math.min((cartTotal() / FREE_SHIPPING_THRESHOLD) * 100, 100);

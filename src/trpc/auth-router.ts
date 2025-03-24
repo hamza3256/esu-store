@@ -1,6 +1,6 @@
-import { AccountCredentialsValidator } from "../lib/validators/account-credentials-validator"; // TODO: fix using @ instead of ..
-import { publicProcedure, router } from "./trpc";
-import { getPayloadClient } from "../get-payload"; // TODO: fix using @ instead of ..
+import { AccountCredentialsValidator } from "../lib/validators/account-credentials-validator";
+import { publicProcedure, router, privateProcedure } from "./trpc";
+import { getPayloadClient } from "../get-payload";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { AuthCredentialsValidator } from "../lib/validators/auth-credentials-validator";
@@ -79,5 +79,37 @@ export const authRouter = router({
       } catch (err) {
         throw new TRPCError({ code: "UNAUTHORIZED" });
       }
+    }),
+
+  updateUser: privateProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        name: z.string().optional(),
+        email: z.string().email().optional(),
+        phone: z.string().optional(),
+        address: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const { id, ...data } = input;
+
+      // Ensure user can only update their own profile
+      if (id !== ctx.user.id) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "You can only update your own profile",
+        });
+      }
+
+      const payload = await getPayloadClient();
+
+      const updatedUser = await payload.update({
+        collection: "users",
+        id,
+        data,
+      });
+
+      return updatedUser;
     }),
 });

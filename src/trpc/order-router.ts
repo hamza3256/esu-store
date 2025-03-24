@@ -4,14 +4,16 @@ import { getPayloadClient } from "../get-payload";
 import { TRPCError } from "@trpc/server";
 import Stripe from "stripe";
 import { stripe } from "../lib/stripe";
-import { PDFDocument, rgb } from "pdf-lib";
+import { PDFDocument } from "pdf-lib";
+import { FREE_SHIPPING_THRESHOLD, SHIPPING_FEE } from "../lib/config";
+import { PromoCode } from "@/lib/types";
 
 const shippingAddressSchema = z.object({
   line1: z.string(),
   line2: z.string().optional(),
   city: z.string(),
-  state: z.string(),
-  postalCode: z.string(),
+  state: z.string().optional(),
+  postalCode: z.string().optional(),
   country: z.string(),
 });
 
@@ -19,8 +21,8 @@ interface ShippingAddressType {
   line1: string;
   line2?: string | null;
   city: string;
-  state: string;
-  postalCode: string;
+  state?: string | null;
+  postalCode?: string | null;
   country: string;
 }
 
@@ -47,18 +49,29 @@ interface ProductItem {
   };
 }
 
+const phoneSchema = z.string().regex(/^03\d{9}$/, {
+  message: "Phone number must start with '03' and be 11 digits long.",
+});
+
 const generateOrderNumber = () => {
-  const timestamp = Date.now().toString(); 
-  const randomPart = Math.floor(1000 + Math.random() * 9000).toString(); 
-  return `ESU-2410${timestamp.slice(-3)}-${randomPart}`; 
+  const timestamp = Date.now().toString(); // Current timestamp in milliseconds
+  const randomPart = Math.floor(1000 + Math.random() * 9000).toString(); // Generate a random 4-digit number
+  return `ESU-2410${timestamp.slice(-3)}-${randomPart}`; // Use last 6 digits of timestamp + random number
 };
 
 export const orderRouter = router({
   getOrders: privateProcedure
-    .input(z.object({ range: z.string().optional() })) 
+    .input(z.object({ 
+      page: z.number().optional(),
+      limit: z.number().optional(),
+      user: z.string().optional(),
+      range: z.string().optional() 
+    }))
     .query(async ({ input, ctx }) => {
       const payload = await getPayloadClient();
       const now = new Date();
+      const page = input.page || 1;
+      const limit = input.limit || 10;
 
       let dateFilter: { greater_than?: string } = {};
 
@@ -84,20 +97,30 @@ export const orderRouter = router({
           break;
       }
 
-      const { docs: orders } = await payload.find({
+      const where = {
+        ...(input.user && { user: { equals: input.user } }),
+        ...(dateFilter.greater_than && {
+          createdAt: {
+            greater_than: dateFilter.greater_than,
+          },
+        }),
+      };
+
+      const { docs: orders, totalDocs } = await payload.find({
         collection: "orders",
-        where: {
-          user: { equals: ctx.user.id },
-          ...(dateFilter.greater_than && {
-            createdAt: {
-              greater_than: dateFilter.greater_than,
-            },
-          }),
-        },
+        where,
         depth: 2,
+        limit,
+        page,
       });
 
-      return orders;
+      return {
+        docs: orders,
+        totalDocs,
+        totalPages: Math.ceil(totalDocs / limit),
+        page,
+        limit,
+      };
     }),
 
   // Get a single order by ID
@@ -140,10 +163,10 @@ export const orderRouter = router({
           equals: input.orderNumber,
         },
         user: {
-          equals: ctx.user.id, // Ensure the user only sees their own orders
+          equals: ctx.user.id,
         },
       },
-      depth: 2, // Fetch relationships deeply (products, etc.)
+      depth: 2, 
     });
 
     const order = orders[0];
@@ -190,233 +213,305 @@ export const orderRouter = router({
     }),
 
     createPublicSession: publicProcedure
-      .input(
-        z.object({
-          productItems: z.array(
-            z.object({
-              productId: z.string(),
-              quantity: z.number(),
-            })
-          ),
-          shippingAddress: z.object({
-            line1: z.string(),
-            line2: z.string().optional(),
-            city: z.string(),
-            state: z.string(),
-            postalCode: z.string(),
-            country: z.string(),
-          }),
-          email: z.string().email(), // Collect email for guest checkout
-        })
-      )
-      .mutation(async ({ input }) => {
-        const { productItems, shippingAddress, email } = input;
+    .input(
+      z.object({
+        productItems: z.array(
+          z.object({
+            productId: z.string(),
+            quantity: z.number(),
+          })
+        ),
+        shippingAddress: shippingAddressSchema,
+        name: z.string(),
+        email: z.string().email(),
+        phone: z.string(),
+        promoCode: z.string().optional(),  // Add promoCode input
+      })
+    )
+    .mutation(async ({ input }) => {
+      const { productItems, shippingAddress, email, phone, name, promoCode } = input;
 
-        if (productItems.length === 0) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "No products in the order",
-          });
-        }
-
-        const payload = await getPayloadClient();
-
-        // Fetch products to ensure they exist and have enough inventory
-        const { docs: products } = await payload.find({
-          collection: "products",
-          where: {
-            id: {
-              in: productItems.map((item) => item.productId),
-            },
-          },
+      if (productItems.length === 0) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "No products in the order",
         });
+      }
 
-        // Ensure products exist and have prices
-        const filteredProductsHavePrice = products.filter((product) =>
-          Boolean(product.priceId)
+      const payload = await getPayloadClient();
+
+      // Fetch products to ensure they exist and have enough inventory
+      const { docs: products } = await payload.find({
+        collection: "products",
+        where: {
+          id: {
+            in: productItems.map((item) => item.productId),
+          },
+        },
+      });
+
+      // Ensure products exist and have prices
+      const filteredProductsHavePrice = products.filter((product) =>
+        Boolean(product.priceId)
+      );
+
+      if (filteredProductsHavePrice.length !== productItems.length) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Some products do not have prices or were not found",
+        });
+      }
+
+      // Calculate the total and gather product details with priceAtPurchase
+      let orderTotal = 0;
+      const orderProductItems = productItems.map((item) => {
+        const product = filteredProductsHavePrice.find(
+          (p) => p.id === item.productId
         );
-
-        if (filteredProductsHavePrice.length !== productItems.length) {
+        if (!product) {
           throw new TRPCError({
             code: "BAD_REQUEST",
-            message: "Some products do not have prices or were not found",
+            message: `Product with ID ${item.productId} not found`,
           });
         }
 
-        // Calculate the total
-        const total = productItems.reduce((acc, item) => {
-          const product = filteredProductsHavePrice.find(
-            (p) => p.id === item.productId
-          );
-          if (!product) {
-            throw new TRPCError({
-              code: "BAD_REQUEST",
-              message: `Product with ID ${item.productId} not found`,
-            });
-          }
-          const productPrice = product.discountedPrice ?? product.price;
-          return acc + (productPrice as number) * item.quantity;
-        }, 0);
+        const productPrice = (product.discountedPrice ?? product.price) as number;
+        orderTotal += productPrice * item.quantity;
 
-        // Generate unique order number
-        const orderNumber = generateOrderNumber();
-
-        // Step 1: Create the order without associating with a user (guest checkout)
-        const order = await payload.create({
-          collection: "orders",
-          data: {
-            _isPaid: false,
-            productItems: productItems.map((item) => ({
-              product: item.productId,
-              quantity: item.quantity,
-            })),
-            email, // Store guest email
-            shippingAddress,
-            orderNumber,
-            total,
-          },
-        });
-
-        const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
-
-        // Prepare line items for Stripe session
-        for (const item of productItems) {
-          const product = filteredProductsHavePrice.find(
-            (p) => p.id === item.productId
-          );
-          if (product) {
-            // Prepare line item for Stripe
-            line_items.push({
-              price: product.priceId!.toString(),
-              quantity: item.quantity,
-            });
-          }
-        }
-
-        if (line_items.length === 0) {
-          // Rollback the order if no valid products are found
-          await payload.delete({
-            collection: "orders",
-            id: order.id,
-          });
+        // Check if product has enough inventory
+        if ((product.inventory as number) < item.quantity) {
           throw new TRPCError({
             code: "BAD_REQUEST",
-            message: "No valid products in the order.",
+            message: `Insufficient inventory for product: ${product.name}`,
           });
         }
 
-        // Create a guest customer in Stripe
-        const customer = await stripe.customers.create({
-          email,
-          shipping: {
-            name: email, // Use email as name for guests
-            address: {
-              line1: shippingAddress.line1,
-              line2: shippingAddress.line2 || '',
-              city: shippingAddress.city,
-              state: shippingAddress.state,
-              postal_code: shippingAddress.postalCode,
-              country: shippingAddress.country,
+        return {
+          product: item.productId,
+          quantity: item.quantity,
+          priceAtPurchase: productPrice,  // Add priceAtPurchase here
+        };
+      });
+
+      // Validate and apply promo code if provided
+      let discountPercentage = 0;
+      let promo;
+      let stripeCouponId: string | null = null;
+
+      if (promoCode) {
+        const now = new Date().toISOString();
+        const { docs: promoCodes } = await payload.find({
+          collection: "promo-codes",
+          where: {
+            code: {
+              equals: promoCode,
+            },
+            validFrom: {
+              less_than_equal: now,
+            },
+            validUntil: {
+              greater_than_equal: now,
             },
           },
+          limit: 1,
         });
 
-        // Step 2: Create Stripe session
-        let stripeSession;
+        if (!promoCodes || promoCodes.length === 0) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Invalid or expired promo code.",
+          });
+        }
+
+        promo = promoCodes[0] as PromoCode;
+        const currentUses = promo.currentUses ?? 0; // Ensure currentUses is initialized
+        if (currentUses >= promo.maxUses) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "This promo code has reached its usage limit.",
+          });
+        }
+
+        discountPercentage = promo.discountPercentage;
+
         try {
-          stripeSession = await stripe.checkout.sessions.create({
-            customer: customer.id,
-            success_url: `${process.env.NEXT_PUBLIC_SERVER_URL}/order-confirmation?orderId=${order.id}&guestEmail=${email}`,
-            cancel_url: `${process.env.NEXT_PUBLIC_SERVER_URL}/cart`,
-            payment_method_types: ["card"],
-            mode: "payment",
-            metadata: {
-              orderId: order.id,
-              orderNumber,
-              email, // Store guest email in metadata
-            },
-            line_items,
-            shipping_address_collection: {
-              allowed_countries: ["PK"], // Specify allowed shipping countries
-            },
-            shipping_options: [
-              {
-                shipping_rate_data: {
-                  type: "fixed_amount",
-                  fixed_amount: {
-                    amount: 500, // Flat shipping cost in cents
-                    currency: "pkr",
-                  },
-                  display_name: "Standard Shipping",
-                  delivery_estimate: {
-                    minimum: {
-                      unit: "business_day",
-                      value: 5,
+          // Create a Stripe coupon with the applied promo code discount
+          const coupon = await stripe.coupons.create({
+            percent_off: promo.discountPercentage, // Use the discount percentage from the promo code
+            duration: 'once', // This means the coupon applies only once
+          });
+
+          stripeCouponId = coupon.id;
+        } catch (error) {
+          console.error('Error creating Stripe coupon:', error);
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to create Stripe coupon.",
+          });
+        }
+      }
+
+      // Apply the discount to the order total if applicable
+      const discount = (discountPercentage / 100) * orderTotal;
+      const total = Math.round(orderTotal - discount);
+
+      // Generate unique order number
+      const orderNumber = generateOrderNumber();
+
+      const paymentType: "card" | "cod" = "card";
+
+      // Step 1: Create the order without associating with a user (guest checkout)
+      const order = await payload.create({
+        collection: "orders",
+        data: {
+          _isPaid: false,
+          _isPostexOrderCreated: false,
+          productItems: orderProductItems,
+          name,
+          email,
+          phone,
+          shippingAddress,
+          orderNumber,
+          total,
+          paymentType: paymentType,
+          appliedPromoCode: promo ? promo.id : null
+        },
+      });
+
+      const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
+
+      // Prepare line items for Stripe session
+      for (const item of productItems) {
+        const product = filteredProductsHavePrice.find(
+          (p) => p.id === item.productId
+        );
+        if (product) {
+          // Prepare line item for Stripe
+          line_items.push({
+            price: product.priceId!.toString(),
+            quantity: item.quantity,
+          });
+        }
+      }
+
+      if (line_items.length === 0) {
+        // Rollback the order if no valid products are found
+        await payload.delete({
+          collection: "orders",
+          id: order.id,
+        });
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "No valid products in the order.",
+        });
+      }
+
+      // Create a guest customer in Stripe
+      const customer = await stripe.customers.create({
+        email,
+        shipping: {
+          name: name, // Use email as name for guests
+          address: {
+            line1: shippingAddress.line1,
+            line2: shippingAddress.line2 || '',
+            city: shippingAddress.city,
+            state: shippingAddress.state || '',
+            postal_code: shippingAddress.postalCode || '',
+            country: shippingAddress.country,
+          },
+          phone: phone, // Include the phone number
+        },
+      });
+
+      const isFreeShipping = total >= FREE_SHIPPING_THRESHOLD;
+
+      // Step 2: Create Stripe session
+      let stripeSession;
+      try {
+        stripeSession = await stripe.checkout.sessions.create({
+          customer: customer.id,
+          success_url: `${process.env.NEXT_PUBLIC_SERVER_URL}/order-confirmation?orderId=${order.id}&guestEmail=${email}`,
+          cancel_url: `${process.env.NEXT_PUBLIC_SERVER_URL}/cart`,
+          payment_method_types: ["card"],
+          mode: "payment",
+          metadata: {
+            orderId: order.id,
+            userId: customer.id,
+            orderNumber: orderNumber,
+            name,
+            email: email,
+            phone,
+          },
+          line_items,
+          shipping_address_collection: {
+            allowed_countries: ["PK"], // Specify allowed shipping countries
+          },
+          shipping_options: isFreeShipping
+            ? [
+                {
+                  shipping_rate_data: {
+                    type: "fixed_amount",
+                    fixed_amount: {
+                      amount: 0, // Free shipping
+                      currency: "pkr",
                     },
-                    maximum: {
-                      unit: "business_day",
-                      value: 7,
+                    display_name: "Free Shipping",
+                    delivery_estimate: {
+                      minimum: {
+                        unit: "business_day",
+                        value: 5,
+                      },
+                      maximum: {
+                        unit: "business_day",
+                        value: 7,
+                      },
                     },
                   },
                 },
-              },
-            ],
-          });
-        } catch (error) {
-          // Enhanced error logging for debugging
-          console.error("Error creating Stripe session:", error);
+              ]
+            : [
+                {
+                  shipping_rate_data: {
+                    type: "fixed_amount",
+                    fixed_amount: {
+                      amount: SHIPPING_FEE * 100,
+                      currency: "pkr",
+                    },
+                    display_name: "Standard Shipping",
+                    delivery_estimate: {
+                      minimum: {
+                        unit: "business_day",
+                        value: 5,
+                      },
+                      maximum: {
+                        unit: "business_day",
+                        value: 7,
+                      },
+                    },
+                  },
+                },
+              ],
+          discounts: stripeCouponId ? [{ coupon: stripeCouponId }] : undefined,
+        });
+      } catch (error) {
+        // Enhanced error logging for debugging
+        console.error("Error creating Stripe session:", error);
 
-          // Rollback the order if Stripe session creation fails
-          await payload.delete({
-            collection: "orders",
-            id: order.id,
-          });
+        // Rollback the order if Stripe session creation fails
+        await payload.delete({
+          collection: "orders",
+          id: order.id,
+        });
 
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: "Failed to create Stripe session.",
-          });
-        }
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to create Stripe session.",
+        });
+      }
 
-        // Step 3: Deduct product inventory after Stripe session creation succeeds
-        for (const item of productItems) {
-          const product = filteredProductsHavePrice.find(
-            (p) => p.id === item.productId
-          );
-
-          if (!product || !product.id) {
-            throw new TRPCError({
-              code: "BAD_REQUEST",
-              message: `Product ID is missing for product: ${product?.name}`,
-            });
-          }
-
-          // Check if product has enough inventory
-          if ((product.inventory as number) < item.quantity) {
-            throw new TRPCError({
-              code: "BAD_REQUEST",
-              message: `Insufficient inventory for product: ${product.name}`,
-            });
-          }
-
-          const updatedInventory = Math.max(
-            (product.inventory as number) - item.quantity,
-            0
-          );
-
-          // Deduct the quantity from the product's inventory
-          await payload.update({
-            collection: "products",
-            id: product.id,
-            data: {
-              inventory: updatedInventory,
-            },
-          });
-        }
-
-        // Step 4: Return the Stripe session URL for the client to redirect
-        return { url: stripeSession.url };
-      }),
+      // Step 3: Return the Stripe session URL for the client to redirect
+      return { url: stripeSession.url };
+    }),
 
 
     trackOrder: publicProcedure
@@ -495,14 +590,18 @@ export const orderRouter = router({
             ST PETERSBURG FL 33702-4305
           `;
 
+          const optionalField = (field?: string | null) => {
+            return field ? `${field}, ` : ""
+          }
+
           const shippingAddress = order.shippingAddress as ShippingAddressType;
           const orderSummary = `
             Order Number: ${order.orderNumber}
             Date: ${new Date(order.createdAt as string).toLocaleDateString()}
             Status: ${order.status ?? "N/A"}
             Shipping Address: ${shippingAddress.line1}, 
-            ${shippingAddress.line2 ? `${shippingAddress.line2}, ` : ""} 
-            ${shippingAddress.city}, ${shippingAddress.state}, ${shippingAddress.postalCode}
+            ${optionalField(shippingAddress.line2)}
+            ${shippingAddress.city}, ${optionalField(shippingAddress.line2)} ${optionalField(shippingAddress.line2)}
           `;
 
           // Draw the invoice title and company address
@@ -538,6 +637,20 @@ export const orderRouter = router({
           return pdfBytes;
         }),
 
+  getUserOrders: privateProcedure
+    .query(async ({ ctx }) => {
+      const payload = await getPayloadClient();
+
+      const { docs: orders } = await payload.find({
+        collection: "orders",
+        where: {
+          user: { equals: ctx.user.id },
+        },
+        depth: 2,
+      });
+
+      return orders;
+    }),
 
   // Admin: Create an order (for testing purposes)
 //   createOrder: privateProcedure
