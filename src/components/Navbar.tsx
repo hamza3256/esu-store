@@ -72,11 +72,11 @@ const Navbar = ({ user }: NavbarProps) => {
                 href="/"
                 className="lg:static absolute left-1/2 transform -translate-x-1/2 lg:transform-none flex items-center lg:left-0"
               >
-                <div className="h-14 w-auto">
+                <div className="h-20 w-auto">
                   {isTransparent && !isHovered && !isMenuOpen ? (
-                    <Icons.logoWhite className="text-white h-14 w-auto" />
+                    <Icons.logoWhite className="text-white h-20 w-auto" />
                   ) : (
-                    <Icons.logoBlack className="text-black h-14 w-auto" />
+                    <Icons.logoBlack className="text-black h-20 w-auto" />
                   )}
                 </div>
               </Link>
