@@ -197,7 +197,7 @@ export default function SearchBar({
 
   return (
     <div
-      className={`relative transition-all duration-300 ease-in-out ${bgColor} ${
+      className={`relative transition-all duration-300 ease-in-out ${
         isMobile ? "w-auto" : "w-full max-w-3xl"
       } mx-auto px-2`}
       ref={searchBarRef}
@@ -215,7 +215,7 @@ export default function SearchBar({
               onChange={handleInputChange}
               onFocus={handleFocus}
               onBlur={handleBlur}
-              className={`w-full py-2 pl-10 pr-4 ${textColor} ${bgColor} bg-opacity-80 backdrop-blur-sm border ${borderColor} rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 ease-in-out`}
+              className={`w-full py-2 pl-10 pr-4 ${textColor} bg-transparent border ${borderColor} rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 ease-in-out`}
               aria-label="Search products"
             />
           )}
