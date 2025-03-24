@@ -139,65 +139,66 @@ export default function AccountPage() {
   const user = userData.user;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white">
+    <div className="min-h-screen bg-background">
       <MaxWidthWrapper>
         <div className="py-12">
           {/* Profile Header */}
-          <div className="relative mb-12">
-            <div className="absolute inset-0 bg-gradient-to-r from-gold-500/20 to-purple-500/20 rounded-2xl" />
-            <div className="relative p-8 flex items-center gap-6">
-              <div className="relative w-24 h-24 rounded-full overflow-hidden border-4 border-gold-500">
-                {(user.avatar as { url: string })?.url ? (
-                  <Image
-                    src={(user.avatar as { url: string })?.url}
-                    alt="Profile"
-                    fill
-                    className="object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gold-500/20 text-gold-500 text-2xl font-bold">
-                    {profileData.name?.split(' ').map(n => n[0]).join('').toUpperCase()}
-                  </div>
-                )}
-                {isEditing && (
-                  <Button
-                    variant="secondary"
-                    size="icon"
-                    className="absolute bottom-0 right-0 rounded-full bg-gold-500 hover:bg-gold-600"
-                  >
-                    <Edit2 className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold text-gold-500">{profileData.name}</h1>
-                <p className="text-gray-300">{profileData.email}</p>
-                {user.role === 'admin' && (
-                  <div className="flex items-center gap-2 mt-2">
-                    <Crown className="h-4 w-4 text-gold-500" />
-                    <span className="text-sm text-gold-500">Admin</span>
-                  </div>
-                )}
+          <div className="mb-12">
+            <div className="p-8 bg-card rounded-lg shadow-sm border">
+              <div className="flex items-center gap-6">
+                <div className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-border">
+                  {(user.avatar as { url: string })?.url ? (
+                    <Image
+                      src={(user.avatar as { url: string })?.url}
+                      alt="Profile"
+                      fill
+                      className="object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-muted text-muted-foreground text-2xl font-medium">
+                      {profileData.name?.split(' ').map(n => n[0]).join('').toUpperCase()}
+                    </div>
+                  )}
+                  {isEditing && (
+                    <Button
+                      variant="secondary"
+                      size="icon"
+                      className="absolute bottom-0 right-0 rounded-full bg-primary hover:bg-primary/90"
+                    >
+                      <Edit2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+                <div>
+                  <h1 className="text-3xl font-semibold text-foreground">{profileData.name}</h1>
+                  <p className="text-muted-foreground">{profileData.email}</p>
+                  {user.role === 'admin' && (
+                    <div className="flex items-center gap-2 mt-2">
+                      <Crown className="h-4 w-4 text-primary" />
+                      <span className="text-sm text-primary">Admin</span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
 
           {/* Main Content */}
           <Tabs defaultValue="profile" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4 lg:w-[400px] bg-white/5 border border-white/10">
-              <TabsTrigger value="profile" className="flex items-center gap-2 data-[state=active]:bg-gold-500/20 data-[state=active]:text-gold-500">
+            <TabsList className="grid w-full grid-cols-4 lg:w-[400px] bg-muted">
+              <TabsTrigger value="profile" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                 <User className="h-4 w-4" />
                 Profile
               </TabsTrigger>
-              <TabsTrigger value="orders" className="flex items-center gap-2 data-[state=active]:bg-gold-500/20 data-[state=active]:text-gold-500">
+              <TabsTrigger value="orders" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                 <ShoppingBag className="h-4 w-4" />
                 Orders
               </TabsTrigger>
-              <TabsTrigger value="wishlist" className="flex items-center gap-2 data-[state=active]:bg-gold-500/20 data-[state=active]:text-gold-500">
+              <TabsTrigger value="wishlist" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                 <Heart className="h-4 w-4" />
                 Wishlist
               </TabsTrigger>
-              <TabsTrigger value="settings" className="flex items-center gap-2 data-[state=active]:bg-gold-500/20 data-[state=active]:text-gold-500">
+              <TabsTrigger value="settings" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                 <Settings className="h-4 w-4" />
                 Settings
               </TabsTrigger>
@@ -205,16 +206,15 @@ export default function AccountPage() {
 
             {/* Profile Tab */}
             <TabsContent value="profile" className="space-y-6">
-              <Card className="bg-white/5 border border-white/10">
+              <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center justify-between text-gold-500">
+                  <CardTitle className="flex items-center justify-between text-foreground">
                     <span>Personal Information</span>
                     {!isEditing ? (
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => setIsEditing(true)}
-                        className="border-gold-500/50 text-gold-500 hover:bg-gold-500/20"
                       >
                         <Edit2 className="h-4 w-4 mr-2" />
                         Edit Profile
@@ -224,7 +224,6 @@ export default function AccountPage() {
                         variant="outline"
                         size="sm"
                         onClick={handleSaveProfile}
-                        className="border-gold-500/50 text-gold-500 hover:bg-gold-500/20"
                       >
                         <Save className="h-4 w-4 mr-2" />
                         Save Changes
@@ -235,44 +234,44 @@ export default function AccountPage() {
                 <CardContent className="space-y-4">
                   <div className="grid gap-4">
                     <div className="grid gap-2">
-                      <Label htmlFor="name" className="text-gray-300">Name</Label>
+                      <Label htmlFor="name" className="text-foreground">Name</Label>
                       <Input
                         id="name"
                         value={profileData.name}
                         onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
                         disabled={!isEditing}
-                        className="bg-white/5 border-white/10 focus:border-gold-500"
+                        className="bg-background"
                       />
                     </div>
                     <div className="grid gap-2">
-                      <Label htmlFor="email" className="text-gray-300">Email</Label>
+                      <Label htmlFor="email" className="text-foreground">Email</Label>
                       <Input
                         id="email"
                         type="email"
                         value={profileData.email}
                         onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
                         disabled={!isEditing}
-                        className="bg-white/5 border-white/10 focus:border-gold-500"
+                        className="bg-background"
                       />
                     </div>
                     <div className="grid gap-2">
-                      <Label htmlFor="phone" className="text-gray-300">Phone</Label>
+                      <Label htmlFor="phone" className="text-foreground">Phone</Label>
                       <Input
                         id="phone"
                         value={profileData.phone}
                         onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
                         disabled={!isEditing}
-                        className="bg-white/5 border-white/10 focus:border-gold-500"
+                        className="bg-background"
                       />
                     </div>
                     <div className="grid gap-2">
-                      <Label htmlFor="address" className="text-gray-300">Address</Label>
+                      <Label htmlFor="address" className="text-foreground">Address</Label>
                       <Textarea
                         id="address"
                         value={profileData.address}
                         onChange={(e) => setProfileData({ ...profileData, address: e.target.value })}
                         disabled={!isEditing}
-                        className="bg-white/5 border-white/10 focus:border-gold-500"
+                        className="bg-background"
                       />
                     </div>
                   </div>
@@ -282,24 +281,24 @@ export default function AccountPage() {
 
             {/* Orders Tab */}
             <TabsContent value="orders" className="space-y-6">
-              <Card className="bg-white/5 border border-white/10">
+              <Card>
                 <CardHeader>
-                  <CardTitle className="text-gold-500">Order History</CardTitle>
+                  <CardTitle className="text-foreground">Order History</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
                     {isLoadingOrders ? (
                       <div className="animate-pulse space-y-4">
-                        <div className="h-20 bg-white/5 rounded-lg" />
-                        <div className="h-20 bg-white/5 rounded-lg" />
-                        <div className="h-20 bg-white/5 rounded-lg" />
+                        <div className="h-20 bg-muted rounded-lg" />
+                        <div className="h-20 bg-muted rounded-lg" />
+                        <div className="h-20 bg-muted rounded-lg" />
                       </div>
                     ) : !ordersData?.docs || ordersData.docs.length === 0 ? (
                       <div className="text-center py-8">
-                        <p className="text-gray-300">No orders found</p>
+                        <p className="text-muted-foreground">No orders found</p>
                         <Button 
                           onClick={() => router.push('/products')} 
-                          className="mt-4 bg-gold-500 hover:bg-gold-600"
+                          className="mt-4"
                         >
                           Start Shopping
                         </Button>
@@ -307,36 +306,36 @@ export default function AccountPage() {
                     ) : (
                       <>
                         {ordersData.docs.map((order: any) => (
-                          <div key={order.id} className="flex items-center justify-between p-4 bg-white/5 rounded-lg border border-white/10">
+                          <div key={order.id} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
                             <div className="flex items-center gap-4">
-                              <Package className="h-8 w-8 text-gold-500" />
+                              <Package className="h-8 w-8 text-primary" />
                               <div>
-                                <p className="font-medium text-gold-500">Order #{order.id}</p>
+                                <p className="font-medium text-foreground">Order #{order.id}</p>
                                 {user.role === 'admin' && order.user && (
-                                  <p className="text-sm text-gray-300">
+                                  <p className="text-sm text-muted-foreground">
                                     Customer: {(order.user as any).name || (order.user as any).email}
                                   </p>
                                 )}
-                                <p className="text-sm text-gray-300">
+                                <p className="text-sm text-muted-foreground">
                                   {(order.items as any[])?.length || 0} items • £{(order.totalAmount as number) || 0}
                                 </p>
                               </div>
                             </div>
                             <div className="text-right">
                               <p className={`${
-                                order.status === 'delivered' ? 'text-green-400' :
-                                order.status === 'processing' ? 'text-yellow-400' :
-                                'text-gray-400'
+                                order.status === 'delivered' ? 'text-green-600' :
+                                order.status === 'processing' ? 'text-yellow-600' :
+                                'text-muted-foreground'
                               }`}>
                                 {order.status ? (order.status as string).charAt(0).toUpperCase() + (order.status as string).slice(1) : ''}
                               </p>
-                              <p className="text-sm text-gray-300">
+                              <p className="text-sm text-muted-foreground">
                                 {new Date(order.createdAt as string).toLocaleDateString()}
                               </p>
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="text-gold-500 hover:text-gold-400 mt-2"
+                                className="mt-2"
                                 onClick={() => router.push(`/orders/${order.id}`)}
                               >
                                 View Details
@@ -351,11 +350,10 @@ export default function AccountPage() {
                               size="sm"
                               onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                               disabled={currentPage === 1}
-                              className="border-gold-500/50 text-gold-500 hover:bg-gold-500/20"
                             >
                               Previous
                             </Button>
-                            <span className="flex items-center text-gray-300">
+                            <span className="flex items-center text-muted-foreground">
                               Page {currentPage} of {ordersData.totalPages}
                             </span>
                             <Button
@@ -363,7 +361,6 @@ export default function AccountPage() {
                               size="sm"
                               onClick={() => setCurrentPage(p => Math.min(ordersData.totalPages, p + 1))}
                               disabled={currentPage === ordersData.totalPages}
-                              className="border-gold-500/50 text-gold-500 hover:bg-gold-500/20"
                             >
                               Next
                             </Button>
@@ -376,105 +373,55 @@ export default function AccountPage() {
               </Card>
             </TabsContent>
 
-            {/* Wishlist Tab */}
-            {/* <TabsContent value="wishlist" className="space-y-6">
-              <Card className="bg-white/5 border border-white/10">
-                <CardHeader>
-                  <CardTitle className="text-gold-500">Saved Items</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {!user.wishlist || user.wishlist.length === 0 ? (
-                      <div className="col-span-full text-center py-8">
-                        <p className="text-gray-300">Your wishlist is empty</p>
-                        <Button 
-                          onClick={() => router.push('/products')} 
-                          className="mt-4 bg-gold-500 hover:bg-gold-600"
-                        >
-                          Browse Products
-                        </Button>
-                      </div>
-                    ) : (
-                      user.wishlist.map((product) => (
-                        <div key={product.id} className="relative group">
-                          <div className="relative aspect-square rounded-lg overflow-hidden border border-white/10">
-                            <Image
-                              src={product.images?.[0]?.url || "https://images.unsplash.com/photo-1605100804763-247f67b3557e?q=80&w=2940&auto=format&fit=crop"}
-                              alt={product.name}
-                              fill
-                              className="object-cover group-hover:scale-105 transition-transform duration-300"
-                            />
-                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                              <Button 
-                                variant="secondary" 
-                                className="bg-gold-500 hover:bg-gold-600"
-                                onClick={() => router.push(`/products/${product.id}`)}
-                              >
-                                View Details
-                              </Button>
-                            </div>
-                          </div>
-                          <div className="mt-2">
-                            <h3 className="font-medium text-gold-500">{product.name}</h3>
-                            <p className="text-gray-300">£{product.price}</p>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent> */}
-
             {/* Settings Tab */}
             <TabsContent value="settings" className="space-y-6">
-              <Card className="bg-white/5 border border-white/10">
+              <Card>
                 <CardHeader>
-                  <CardTitle className="text-gold-500">Account Settings</CardTitle>
+                  <CardTitle className="text-foreground">Account Settings</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   {/* Payment Methods */}
                   <div className="space-y-4">
-                    <h3 className="text-lg font-semibold flex items-center gap-2 text-gold-500">
+                    <h3 className="text-lg font-semibold flex items-center gap-2 text-foreground">
                       <CreditCard className="h-5 w-5" />
                       Payment Methods
                     </h3>
-                    <Button variant="outline" className="w-full border-gold-500/50 text-gold-500 hover:bg-gold-500/20">
+                    <Button variant="outline" className="w-full">
                       Add New Card
                     </Button>
                   </div>
 
                   {/* Notifications */}
                   <div className="space-y-4">
-                    <h3 className="text-lg font-semibold flex items-center gap-2 text-gold-500">
+                    <h3 className="text-lg font-semibold flex items-center gap-2 text-foreground">
                       <Bell className="h-5 w-5" />
                       Notifications
                     </h3>
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="text-gray-300">Order Updates</span>
-                        <Button variant="outline" size="sm" className="border-gold-500/50 text-gold-500 hover:bg-gold-500/20">Configure</Button>
+                        <span className="text-muted-foreground">Order Updates</span>
+                        <Button variant="outline" size="sm">Configure</Button>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-gray-300">Promotional Emails</span>
-                        <Button variant="outline" size="sm" className="border-gold-500/50 text-gold-500 hover:bg-gold-500/20">Configure</Button>
+                        <span className="text-muted-foreground">Promotional Emails</span>
+                        <Button variant="outline" size="sm">Configure</Button>
                       </div>
                     </div>
                   </div>
 
                   {/* Privacy */}
                   <div className="space-y-4">
-                    <h3 className="text-lg font-semibold flex items-center gap-2 text-gold-500">
+                    <h3 className="text-lg font-semibold flex items-center gap-2 text-foreground">
                       <Shield className="h-5 w-5" />
                       Privacy
                     </h3>
-                    <Button variant="outline" className="w-full border-gold-500/50 text-gold-500 hover:bg-gold-500/20">
+                    <Button variant="outline" className="w-full">
                       Manage Privacy Settings
                     </Button>
                   </div>
 
                   {/* Sign Out */}
-                  <div className="pt-4 border-t border-white/10">
+                  <div className="pt-4 border-t">
                     <Button
                       variant="destructive"
                       className="w-full"

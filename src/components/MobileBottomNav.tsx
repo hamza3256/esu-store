@@ -87,13 +87,13 @@ export default function MobileBottomNav({ user }: MobileBottomNavProps) {
                     >
                       <item.icon
                         className={cn("w-6 h-6", {
-                          "text-purple-600 dark:text-purple-400": isActive,
+                          "text-zinc-600 dark:text-zinc-400": isActive,
                           "text-gray-500 dark:text-gray-400": !isActive,
                         })}
                       />
                       <span
                         className={cn("text-xs", {
-                          "text-purple-600 dark:text-purple-400": isActive,
+                          "text-zinc-600 dark:text-zinc-400": isActive,
                           "text-gray-500 dark:text-gray-400": !isActive,
                         })}
                       >
@@ -135,20 +135,20 @@ export default function MobileBottomNav({ user }: MobileBottomNavProps) {
               >
                 <item.icon
                   className={cn("w-6 h-6", {
-                    "text-purple-600 dark:text-purple-400": isActive,
+                    "text-zinc-600 dark:text-zinc-400": isActive,
                     "text-gray-500 dark:text-gray-400": !isActive,
                   })}
                 />
                 <span
                   className={cn("text-xs", {
-                    "text-purple-600 dark:text-purple-400": isActive,
+                    "text-zinc-600 dark:text-zinc-400": isActive,
                     "text-gray-500 dark:text-gray-400": !isActive,
                   })}
                 >
                   {item.label}
                 </span>
                 {item.label === "Cart" && items.length > 0 && (
-                  <span className="absolute top-1 right-1/4 rounded-full bg-purple-600 px-1.5 py-0.5 text-xs text-white">
+                  <span className="absolute top-1 right-1/4 rounded-full bg-zinc-600 px-1.5 py-0.5 text-xs text-white">
                     {items.length}
                   </span>
                 )}
