@@ -41,6 +41,47 @@ export const Users: CollectionConfig = {
       type: "text",
     },
     {
+      name: "phone",
+      label: "Phone Number",
+      type: "text",
+      admin: {
+        description: "Enter phone number with country code",
+      },
+    },
+    {
+      name: "address",
+      label: "Address",
+      type: "textarea",
+      admin: {
+        description: "Enter your full address",
+      },
+    },
+    {
+      name: "avatar",
+      label: "Profile Picture",
+      type: "upload",
+      relationTo: "media",
+      required: false,
+      admin: {
+        description: "Upload a profile picture",
+      },
+      filterOptions: {
+        mimeType: {
+          equals: 'image/*',
+        },
+      },
+    },
+    {
+      name: "wishlist",
+      label: "Wishlist",
+      type: "relationship",
+      relationTo: "products",
+      hasMany: true,
+      admin: {
+        description: "Products in user's wishlist",
+      },
+    },
+    {
       name: "stripeCustomerId",
       type: "text",
       admin: {

@@ -620,6 +620,20 @@ export const orderRouter = router({
           return pdfBytes;
         }),
 
+  getUserOrders: privateProcedure
+    .query(async ({ ctx }) => {
+      const payload = await getPayloadClient();
+
+      const { docs: orders } = await payload.find({
+        collection: "orders",
+        where: {
+          user: { equals: ctx.user.id },
+        },
+        depth: 2,
+      });
+
+      return orders;
+    }),
 
   // Admin: Create an order (for testing purposes)
 //   createOrder: privateProcedure

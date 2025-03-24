@@ -26,6 +26,10 @@ export interface Config {
 export interface User {
   id: string;
   name?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  avatar?: string | Media | null;
+  wishlist?: (string | Product)[] | null;
   stripeCustomerId?: string | null;
   products?: (string | Product)[] | null;
   product_files?: (string | ProductFile)[] | null;
@@ -42,48 +46,6 @@ export interface User {
   loginAttempts?: number | null;
   lockUntil?: string | null;
   password: string | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "products".
- */
-export interface Product {
-  id: string;
-  user?: (string | null) | User;
-  name: string;
-  description?: string | null;
-  price: number;
-  discountedPrice?: number | null;
-  category: 'jewellery' | 'clothing' | 'accessories';
-  inventory: number;
-  numReviews: number;
-  rating: number;
-  product_files?: (string | null) | ProductFile;
-  approvedForSale?: ('pending' | 'approved' | 'denied') | null;
-  priceId?: string | null;
-  stripeId?: string | null;
-  images: {
-    image: string | Media;
-    id?: string | null;
-  }[];
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "product_files".
- */
-export interface ProductFile {
-  id: string;
-  user?: (string | null) | User;
-  updatedAt: string;
-  createdAt: string;
-  url?: string | null;
-  filename?: string | null;
-  mimeType?: string | null;
-  filesize?: number | null;
-  width?: number | null;
-  height?: number | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -123,6 +85,48 @@ export interface Media {
       url?: string | null;
     };
   };
+  user?: (string | null) | User;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "products".
+ */
+export interface Product {
+  id: string;
+  user?: (string | null) | User;
+  name: string;
+  description?: string | null;
+  price: number;
+  discountedPrice?: number | null;
+  category: 'jewellery' | 'clothing' | 'accessories';
+  inventory: number;
+  numReviews: number;
+  rating: number;
+  product_files?: (string | null) | ProductFile;
+  approvedForSale?: ('pending' | 'approved' | 'denied') | null;
+  priceId?: string | null;
+  stripeId?: string | null;
+  images: {
+    image: string | Media;
+    id?: string | null;
+  }[];
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "product_files".
+ */
+export interface ProductFile {
+  id: string;
   user?: (string | null) | User;
   updatedAt: string;
   createdAt: string;
