@@ -1,5 +1,5 @@
 "use client";
-import { Home, Search, ShoppingBag, User, Sparkles, TrendingUp, Crown, Percent } from 'lucide-react';
+import { Home, Search, ShoppingBag, User, Gamepad2 } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useCart } from '@/hooks/use-cart';
@@ -8,13 +8,41 @@ import { Button } from './ui/button';
 import { useState } from 'react';
 import { Input } from './ui/input';
 import { ScrollArea } from './ui/scroll-area';
-import { formatPrice } from '@/lib/utils';
-import Image from 'next/image';
 import { User as UserType } from '@/payload-types';
+import Link from "next/link";
 
 interface MobileBottomNavProps {
   user: UserType | null;
 }
+
+const bottomNavItems = [
+  {
+    label: "Home",
+    icon: Home,
+    href: "/",
+  },
+  {
+    label: "Search",
+    icon: Search,
+    href: "/search",
+    isSheet: true,
+  },
+  {
+    label: "Games",
+    icon: Gamepad2,
+    href: "/discover",
+  },
+  {
+    label: "Cart",
+    icon: ShoppingBag,
+    href: "/cart",
+  },
+  {
+    label: "Account",
+    icon: User,
+    href: "/account",
+  },
+];
 
 export default function MobileBottomNav({ user }: MobileBottomNavProps) {
   const pathname = usePathname();
@@ -38,194 +66,97 @@ export default function MobileBottomNav({ user }: MobileBottomNavProps) {
     }
   };
 
-  const routes = [
-    {
-      href: '/',
-      icon: Home,
-      label: 'Home',
-    },
-    {
-      icon: Search,
-      label: 'Search',
-      onClick: () => setIsSearching(true)
-    },
-    {
-      href: '/cart',
-      icon: ShoppingBag,
-      label: 'Cart',
-      badge: items.length > 0 ? items.length : undefined,
-    },
-    {
-      href: user ? '/account' : '/sign-in',
-      icon: User,
-      label: user ? 'Account' : 'Sign In',
-      requiresAuth: true
-    },
-  ];
-
-  const discoverSections = [
-    {
-      title: "Trending Now",
-      icon: TrendingUp,
-      description: "See what's hot and trending in our store",
-      items: [
-        { 
-          name: "Best Sellers", 
-          href: "/trending/best-sellers",
-          description: "Our most popular items",
-          image: "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?q=80&w=2940&auto=format&fit=crop"
-        },
-        { 
-          name: "Most Viewed", 
-          href: "/trending/most-viewed",
-          description: "Products everyone's looking at",
-          image: "https://images.unsplash.com/photo-1569397288884-4d43d6738fbd?q=80&w=3018&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-        },
-        { 
-          name: "New Arrivals", 
-          href: "/trending/new-arrivals",
-          description: "Fresh additions to our collection",
-          image: "https://images.unsplash.com/photo-1602173574767-37ac01994b2a?q=80&w=2940&auto=format&fit=crop"
-        },
-      ]
-    },
-    {
-      title: "Premium Collection",
-      icon: Crown,
-      description: "Exclusive and limited edition pieces",
-      items: [
-        { 
-          name: "Signature Series", 
-          href: "/premium/signature",
-          description: "Our finest craftsmanship",
-          image: "https://images.unsplash.com/photo-1603561591411-07134e71a2a9?q=80&w=2940&auto=format&fit=crop"
-        },
-        { 
-          name: "Limited Edition", 
-          href: "/premium/limited-edition",
-          description: "Once-in-a-lifetime pieces",
-          image: "https://images.unsplash.com/photo-1543294001-f7cd5d7fb516?q=80&w=3540&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-        },
-        { 
-          name: "Curated Sets", 
-          href: "/premium/curated-sets",
-          description: "Perfectly matched collections",
-          image: "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?q=80&w=2940&auto=format&fit=crop"
-        },
-      ]
-    },
-    {
-      title: "Special Offers",
-      icon: Percent,
-      description: "Best deals and exclusive discounts",
-      items: [
-        { 
-          name: "Flash Sales", 
-          href: "/offers/flash-sales",
-          description: "Limited-time special prices",
-          image: "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?q=80&w=2940&auto=format&fit=crop"
-        },
-        { 
-          name: "Bundle Deals", 
-          href: "/offers/bundles",
-          description: "Save more when buying together",
-          image: "https://images.unsplash.com/photo-1617038220319-276d3cfab638?q=80&w=2940&auto=format&fit=crop"
-        },
-        { 
-          name: "Clearance", 
-          href: "/offers/clearance",
-          description: "Last chance to buy",
-          image: "https://images.unsplash.com/photo-1605100804763-247f67b3557e?q=80&w=2940&auto=format&fit=crop"
-        },
-      ]
-    }
-  ];
-
   return (
     <>
-      <nav className="fixed bottom-0 left-0 right-0 z-40 h-16 bg-white border-t lg:hidden">
-        <div className="grid h-full grid-cols-5 mx-auto">
-          {routes.map((route, i) => (
-            <button
-              key={route.label}
-              onClick={() => {
-                if (route.onClick) {
-                  route.onClick();
-                } else {
-                  handleNavigation(route);
-                }
-              }}
-              className={cn(
-                'flex flex-col items-center justify-center gap-1 relative',
-                pathname === route?.href ? 'text-black' : 'text-gray-500'
-              )}
-            >
-              <route.icon className="w-6 h-6" />
-              <span className="text-xs">{route.label}</span>
-              {route.badge && (
-                <span className="absolute top-0 right-1/4 rounded-full bg-black px-1.5 py-0.5 text-xs text-white">
-                  {route.badge}
-                </span>
-              )}
-            </button>
-          ))}
-          
-          <Sheet>
-            <SheetTrigger asChild>
-              <button className="flex flex-col items-center justify-center gap-1 text-gray-500 hover:text-black">
-                <Sparkles className="w-6 h-6" />
-                <span className="text-xs">Discover</span>
-              </button>
-            </SheetTrigger>
-            <SheetContent side="bottom" className="h-[85vh] w-full p-0">
-              <SheetHeader className="p-4 border-b">
-                <SheetTitle>Discover Amazing Products</SheetTitle>
-              </SheetHeader>
-              <ScrollArea className="h-full">
-                <div className="p-4 space-y-8">
-                  {discoverSections.map((section) => (
-                    <div key={section.title} className="space-y-4">
-                      <div className="flex items-center gap-2">
-                        <section.icon className="w-6 h-6 text-primary" />
-                        <div>
-                          <h3 className="text-lg font-semibold">{section.title}</h3>
-                          <p className="text-sm text-gray-500">{section.description}</p>
+      <div className="fixed bottom-0 left-0 z-50 w-full h-16 bg-white border-t border-gray-200 dark:bg-gray-800 dark:border-gray-600 md:hidden">
+        <div className="grid h-full max-w-lg grid-cols-5 mx-auto">
+          {bottomNavItems.map((item) => {
+            const isActive = pathname === item.href;
+
+            if (item.isSheet) {
+              return (
+                <Sheet key={item.label}>
+                  <SheetTrigger asChild>
+                    <button
+                      className={cn(
+                        "inline-flex flex-col items-center justify-center px-5 hover:bg-gray-50 dark:hover:bg-gray-700/50",
+                        {
+                          "bg-gray-50 dark:bg-gray-700/50": isActive,
+                        }
+                      )}
+                    >
+                      <item.icon
+                        className={cn("w-6 h-6", {
+                          "text-purple-600 dark:text-purple-400": isActive,
+                          "text-gray-500 dark:text-gray-400": !isActive,
+                        })}
+                      />
+                      <span
+                        className={cn("text-xs", {
+                          "text-purple-600 dark:text-purple-400": isActive,
+                          "text-gray-500 dark:text-gray-400": !isActive,
+                        })}
+                      >
+                        {item.label}
+                      </span>
+                    </button>
+                  </SheetTrigger>
+                  <SheetContent side="bottom" className="h-96">
+                    <div className="grid gap-4 py-4">
+                      <div className="grid gap-4">
+                        <div className="flex items-center gap-4">
+                          <Search className="w-4 h-4 text-gray-500" />
+                          <Input
+                            id="search"
+                            placeholder="Search products..."
+                            className="col-span-3"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                          />
+                          <Button onClick={handleSearch}>Search</Button>
                         </div>
                       </div>
-                      <div className="grid grid-cols-1 gap-3">
-                        {section.items.map((item) => (
-                          <SheetClose asChild key={item.name}>
-                            <Button
-                              variant="outline"
-                              className="w-full p-0 h-auto overflow-hidden"
-                              onClick={() => router.push(item.href)}
-                            >
-                              <div className="flex items-center w-full">
-                                <div className="relative w-20 h-20 flex-shrink-0">
-                                  <Image
-                                    src={item.image}
-                                    alt={item.name}
-                                    fill
-                                    className="object-cover"
-                                  />
-                                </div>
-                                <div className="p-4 text-left">
-                                  <h4 className="font-medium">{item.name}</h4>
-                                  <p className="text-sm text-gray-500">{item.description}</p>
-                                </div>
-                              </div>
-                            </Button>
-                          </SheetClose>
-                        ))}
-                      </div>
                     </div>
-                  ))}
-                </div>
-              </ScrollArea>
-            </SheetContent>
-          </Sheet>
+                  </SheetContent>
+                </Sheet>
+              );
+            }
+
+            return (
+              <Link
+                key={item.label}
+                href={item.href}
+                className={cn(
+                  "inline-flex flex-col items-center justify-center px-5 hover:bg-gray-50 dark:hover:bg-gray-700/50",
+                  {
+                    "bg-gray-50 dark:bg-gray-700/50": isActive,
+                  }
+                )}
+              >
+                <item.icon
+                  className={cn("w-6 h-6", {
+                    "text-purple-600 dark:text-purple-400": isActive,
+                    "text-gray-500 dark:text-gray-400": !isActive,
+                  })}
+                />
+                <span
+                  className={cn("text-xs", {
+                    "text-purple-600 dark:text-purple-400": isActive,
+                    "text-gray-500 dark:text-gray-400": !isActive,
+                  })}
+                >
+                  {item.label}
+                </span>
+                {item.label === "Cart" && items.length > 0 && (
+                  <span className="absolute top-1 right-1/4 rounded-full bg-purple-600 px-1.5 py-0.5 text-xs text-white">
+                    {items.length}
+                  </span>
+                )}
+              </Link>
+            );
+          })}
         </div>
-      </nav>
+      </div>
 
       {/* Mobile Search Sheet */}
       <Sheet open={isSearching} onOpenChange={setIsSearching}>
