@@ -4,7 +4,6 @@ import { PropsWithChildren, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink } from "@trpc/client";
 import { trpc } from "@/trpc/client";
-import { ThemeProvider } from "next-themes";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 const Providers = ({ children }: PropsWithChildren) => {
@@ -26,7 +25,6 @@ const Providers = ({ children }: PropsWithChildren) => {
   );
 
   return (
-    <ThemeProvider attribute="class" defaultTheme="light">
       <trpc.Provider client={trpcClient} queryClient={queryClient}>
         <QueryClientProvider client={queryClient}>
           <TooltipProvider>
@@ -34,7 +32,6 @@ const Providers = ({ children }: PropsWithChildren) => {
           </TooltipProvider>
         </QueryClientProvider>
       </trpc.Provider>
-    </ThemeProvider>
   );
 };
 
