@@ -61,10 +61,17 @@ const generateOrderNumber = () => {
 
 export const orderRouter = router({
   getOrders: privateProcedure
-    .input(z.object({ range: z.string().optional() })) 
+    .input(z.object({ 
+      page: z.number().optional(),
+      limit: z.number().optional(),
+      user: z.string().optional(),
+      range: z.string().optional() 
+    }))
     .query(async ({ input, ctx }) => {
       const payload = await getPayloadClient();
       const now = new Date();
+      const page = input.page || 1;
+      const limit = input.limit || 10;
 
       let dateFilter: { greater_than?: string } = {};
 
@@ -90,20 +97,30 @@ export const orderRouter = router({
           break;
       }
 
-      const { docs: orders } = await payload.find({
+      const where = {
+        ...(input.user && { user: { equals: input.user } }),
+        ...(dateFilter.greater_than && {
+          createdAt: {
+            greater_than: dateFilter.greater_than,
+          },
+        }),
+      };
+
+      const { docs: orders, totalDocs } = await payload.find({
         collection: "orders",
-        where: {
-          user: { equals: ctx.user.id },
-          ...(dateFilter.greater_than && {
-            createdAt: {
-              greater_than: dateFilter.greater_than,
-            },
-          }),
-        },
+        where,
         depth: 2,
+        limit,
+        page,
       });
 
-      return orders;
+      return {
+        docs: orders,
+        totalDocs,
+        totalPages: Math.ceil(totalDocs / limit),
+        page,
+        limit,
+      };
     }),
 
   // Get a single order by ID

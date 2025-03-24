@@ -33,6 +33,8 @@ import { User as UserType, Order as OrderType, Product as ProductType } from '@/
 
 export default function AccountPage() {
   const [isEditing, setIsEditing] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ordersPerPage = 10;
   const [profileData, setProfileData] = useState({
     name: '',
     email: '',
@@ -45,11 +47,17 @@ export default function AccountPage() {
   // Fetch user data
   const { data: userData, isLoading: isLoadingUser } = trpc.getUserInfo.useQuery();
 
-  // Fetch orders
-  const { data: orders, isLoading: isLoadingOrders } = trpc.order.getUserOrders.useQuery(
-    undefined,
+  // Fetch orders with pagination
+  const { data: ordersData, isLoading: isLoadingOrders } = trpc.order.getOrders.useQuery(
+    {
+      page: currentPage,
+      limit: ordersPerPage,
+      user: userData?.user?.role !== 'admin' ? userData?.user?.id : undefined,
+    },
     { enabled: !!userData?.user }
   );
+
+  const totalPages = Math.ceil((ordersData?.totalDocs || 0) / ordersPerPage);
 
   // Update user mutation
   const { mutate: updateUser } = trpc.auth.updateUser.useMutation({
@@ -286,7 +294,7 @@ export default function AccountPage() {
                         <div className="h-20 bg-white/5 rounded-lg" />
                         <div className="h-20 bg-white/5 rounded-lg" />
                       </div>
-                    ) : orders?.length === 0 ? (
+                    ) : !ordersData?.docs || ordersData.docs.length === 0 ? (
                       <div className="text-center py-8">
                         <p className="text-gray-300">No orders found</p>
                         <Button 
@@ -297,31 +305,71 @@ export default function AccountPage() {
                         </Button>
                       </div>
                     ) : (
-                      orders?.map((order) => (
-                        <div key={order.id} className="flex items-center justify-between p-4 bg-white/5 rounded-lg border border-white/10">
-                          <div className="flex items-center gap-4">
-                            <Package className="h-8 w-8 text-gold-500" />
-                            <div>
-                              <p className="font-medium text-gold-500">Order #{order.id}</p>
-                              <p className="text-sm text-gray-300">
-                                {(order.items as any[])?.length || 0} items • £{(order.totalAmount as number) || 0}
+                      <>
+                        {ordersData.docs.map((order: any) => (
+                          <div key={order.id} className="flex items-center justify-between p-4 bg-white/5 rounded-lg border border-white/10">
+                            <div className="flex items-center gap-4">
+                              <Package className="h-8 w-8 text-gold-500" />
+                              <div>
+                                <p className="font-medium text-gold-500">Order #{order.id}</p>
+                                {user.role === 'admin' && order.user && (
+                                  <p className="text-sm text-gray-300">
+                                    Customer: {(order.user as any).name || (order.user as any).email}
+                                  </p>
+                                )}
+                                <p className="text-sm text-gray-300">
+                                  {(order.items as any[])?.length || 0} items • £{(order.totalAmount as number) || 0}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className={`${
+                                order.status === 'delivered' ? 'text-green-400' :
+                                order.status === 'processing' ? 'text-yellow-400' :
+                                'text-gray-400'
+                              }`}>
+                                {order.status ? (order.status as string).charAt(0).toUpperCase() + (order.status as string).slice(1) : ''}
                               </p>
+                              <p className="text-sm text-gray-300">
+                                {new Date(order.createdAt as string).toLocaleDateString()}
+                              </p>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-gold-500 hover:text-gold-400 mt-2"
+                                onClick={() => router.push(`/orders/${order.id}`)}
+                              >
+                                View Details
+                              </Button>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <p className={`${
-                              order.status === 'delivered' ? 'text-green-400' :
-                              order.status === 'processing' ? 'text-yellow-400' :
-                              'text-gray-400'
-                            }`}>
-                              {order.status ? (order.status as string).charAt(0).toUpperCase() + (order.status as string).slice(1) : ''}
-                            </p>
-                            <p className="text-sm text-gray-300">
-                              {new Date(order.createdAt as string).toLocaleDateString()}
-                            </p>
+                        ))}
+                        {ordersData && ordersData.totalPages > 1 && (
+                          <div className="flex justify-center gap-2 mt-6">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                              disabled={currentPage === 1}
+                              className="border-gold-500/50 text-gold-500 hover:bg-gold-500/20"
+                            >
+                              Previous
+                            </Button>
+                            <span className="flex items-center text-gray-300">
+                              Page {currentPage} of {ordersData.totalPages}
+                            </span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setCurrentPage(p => Math.min(ordersData.totalPages, p + 1))}
+                              disabled={currentPage === ordersData.totalPages}
+                              className="border-gold-500/50 text-gold-500 hover:bg-gold-500/20"
+                            >
+                              Next
+                            </Button>
                           </div>
-                        </div>
-                      ))
+                        )}
+                      </>
                     )}
                   </div>
                 </CardContent>
