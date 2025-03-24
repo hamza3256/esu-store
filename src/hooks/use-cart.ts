@@ -6,6 +6,7 @@ import { createJSONStorage, persist } from "zustand/middleware";
 export type CartItem = {
   product: Product;
   quantity: number;
+  addedAt: number; // Track when item was added
 };
 
 type CartState = {
@@ -28,6 +29,14 @@ export const useCart = create<CartState>()(
 
       addItem: (product, quantity = 1) =>
         set((state) => {
+          if (quantity <= 0) {
+            throw new Error("Quantity must be greater than 0");
+          }
+
+          if (quantity > product.inventory) {
+            throw new Error(`Cannot add more than ${product.inventory} items`);
+          }
+
           const existingItem = state.items.find(
             (item) => item.product.id === product.id
           );
@@ -49,7 +58,11 @@ export const useCart = create<CartState>()(
           return {
             items: [
               ...state.items,
-              { product, quantity: Math.min(quantity, product.inventory) },
+              { 
+                product, 
+                quantity: Math.min(quantity, product.inventory),
+                addedAt: Date.now()
+              },
             ],
           };
         }),
@@ -61,11 +74,19 @@ export const useCart = create<CartState>()(
 
       updateQuantity: (id, quantity) =>
         set((state) => {
+          const item = state.items.find((item) => item.product.id === id);
+          if (!item) return state;
+
           if (quantity <= 0) {
             return {
               items: state.items.filter((item) => item.product.id !== id),
             };
           }
+
+          if (quantity > item.product.inventory) {
+            throw new Error(`Cannot update quantity to more than ${item.product.inventory}`);
+          }
+
           return {
             items: state.items.map((item) =>
               item.product.id === id ? { ...item, quantity } : item

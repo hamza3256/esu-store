@@ -63,10 +63,13 @@ const Page = ({ params }: PageProps) => {
     .map(({ image }) => {
       if (typeof image === "object" && image?.url) {
         const mediaImage = image as Media;
-        if (mediaImage.resourceType === "video") {
-          return { type: 'video', url: mediaImage?.sizes?.video?.url || '' };
-        } else {
-          return { type: 'image', url: mediaImage?.sizes?.tablet?.url || '' };
+        const videoUrl = mediaImage?.sizes?.video?.url;
+        const tabletUrl = mediaImage?.sizes?.tablet?.url;
+        
+        if (mediaImage.resourceType === "video" && videoUrl) {
+          return { type: 'video', url: videoUrl };
+        } else if (tabletUrl) {
+          return { type: 'image', url: tabletUrl };
         }
       }
       return null;
@@ -77,19 +80,39 @@ const Page = ({ params }: PageProps) => {
 
   const handleQuantityChange = (action: "increment" | "decrement") => {
     setQuantity((prev) => {
-      if (action === "increment") {
-        return Math.min(prev + 1, product.inventory);
-      }
-      return Math.max(prev - 1, 1);
+      const newQuantity = action === "increment" 
+        ? Math.min(prev + 1, product.inventory)
+        : Math.max(prev - 1, 1);
+      return newQuantity;
     });
   };
 
+  const handleQuantityInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value);
+    if (isNaN(value) || value < 1) {
+      setQuantity(1);
+    } else {
+      setQuantity(Math.min(value, product.inventory));
+    }
+  };
+
   const handleAddToCart = () => {
-    if (quantity <= product.inventory) {
+    if (quantity <= 0) {
+      toast.error("Quantity must be at least 1");
+      return;
+    }
+    
+    if (quantity > product.inventory) {
+      toast.error(`Cannot add more than ${product.inventory} items`);
+      return;
+    }
+
+    try {
       addItem(product, quantity);
       toast.success(`Added ${quantity} ${quantity > 1 ? "items" : "item"} to cart`);
-    } else {
-      toast.error(`Cannot add more than ${product.inventory} items`);
+    } catch (error) {
+      toast.error("Failed to add item to cart");
+      console.error("Cart error:", error);
     }
   };
 
@@ -216,7 +239,7 @@ const Page = ({ params }: PageProps) => {
                       min="1"
                       max={product.inventory}
                       value={quantity}
-                      onChange={(e) => setQuantity(Number(e.target.value))}
+                      onChange={handleQuantityInputChange}
                       className="w-12 text-center text-sm sm:w-16 sm:text-base"
                     />
 
