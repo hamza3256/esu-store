@@ -41,35 +41,37 @@ const Page = ({ params }: PageProps) => {
   const [quantity, setQuantity] = useState(1);
   const { addItem, getItemCount } = useCart();
 
-  const { data: product, isLoading, error } = trpc.getProductById.useQuery({
+  const { data: productData, isLoading, error } = trpc.getProductById.useQuery({
     id: productId,
-  });
+  }) as { data: Product | undefined; isLoading: boolean; error: any };
 
   if (isLoading) {
     return <PageLoader />;
   }
 
-  if (error || !product) {
+  if (error || !productData) {
     return notFound();
   }
+
+  const product = productData;
 
   const label = PRODUCT_CATEGORIES.find(
     ({ value }) => value === product.category
   )?.label;
 
-  const validUrls: { type: 'image' | 'video'; url: string }[] = product.images
-  ?.map(({ image }) => {
-    if (typeof image === "object" && image?.url) {
-      if (image.resourceType === "video") {
-        return { type: 'video', url: image?.sizes?.video?.url };
-      } else {
-        return { type: 'image', url: image?.sizes?.tablet?.url };
+  const validUrls: { type: 'image' | 'video'; url: string }[] = (product.images || [])
+    .map(({ image }) => {
+      if (typeof image === "object" && image?.url) {
+        const mediaImage = image as Media;
+        if (mediaImage.resourceType === "video") {
+          return { type: 'video', url: mediaImage?.sizes?.video?.url || '' };
+        } else {
+          return { type: 'image', url: mediaImage?.sizes?.tablet?.url || '' };
+        }
       }
-    }
-    return null;
-  })
-  .filter(Boolean) as { type: 'image' | 'video'; url: string }[];
-
+      return null;
+    })
+    .filter((item): item is { type: 'image' | 'video'; url: string } => item !== null);
 
   const cartItemCount = getItemCount(product.id);
 
@@ -186,7 +188,6 @@ const Page = ({ params }: PageProps) => {
             {/* Product images */}
             <div className="mt-8 lg:col-start-2 lg:row-span-2 lg:mt-0 lg:self-center">
               <div className="aspect-square rounded-lg overflow-hidden shadow-md">
-                {/* ImageSlider component should handle both images and videos */}
                 <ImageSlider items={validUrls} productId={productId} isMain={true} />
               </div>
             </div>
@@ -213,7 +214,7 @@ const Page = ({ params }: PageProps) => {
                     <Input
                       type="number"
                       min="1"
-                      max={product.inventory as number}
+                      max={product.inventory}
                       value={quantity}
                       onChange={(e) => setQuantity(Number(e.target.value))}
                       className="w-12 text-center text-sm sm:w-16 sm:text-base"
