@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 const TestPage = async () => {
-  const { user } = await getServerSideUser(cookies());
+  const { user } = await getServerSideUser(await cookies());
 
   if (!user || user.role !== "admin") {
     redirect("/");

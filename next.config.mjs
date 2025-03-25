@@ -28,7 +28,6 @@ const nextConfig = withPayload(
       ],
     },
     reactStrictMode: true,
-    swcMinify: true,
   },
   {
     configPath: path.resolve(

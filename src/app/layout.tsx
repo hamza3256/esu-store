@@ -54,7 +54,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const nextCookies = cookies();
+  const nextCookies = await cookies();
   const { user } = await getServerSideUser(nextCookies);
 
   const openGraphImages = Array.isArray(metadata.openGraph?.images)

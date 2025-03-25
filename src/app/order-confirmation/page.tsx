@@ -14,7 +14,7 @@ import { FREE_SHIPPING_THRESHOLD, SHIPPING_FEE } from "@/lib/config";
 import { Truck } from "lucide-react";
 
 interface PageProps {
-  searchParams: { [key: string]: string | string[] | undefined };
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
 interface OrderProduct {
@@ -23,10 +23,11 @@ interface OrderProduct {
   priceAtPurchase: number;
 }
 
-const OrderConfirmationPage = async ({ searchParams }: PageProps) => {
+const OrderConfirmationPage = async (props: PageProps) => {
+  const searchParams = await props.searchParams;
   const orderId = searchParams.orderId as string;
   const guestEmail = searchParams.guestEmail as string;
-  const nextCookies = cookies();
+  const nextCookies = await cookies();
 
   const { user } = await getServerSideUser(nextCookies);
   const payload = await getPayloadClient();

@@ -5,13 +5,14 @@ import { PRODUCT_CATEGORIES } from "@/config";
 type Param = string | string[] | undefined;
 
 interface ProductsPageProps {
-  searchParams: { [key: string]: Param };
+  searchParams: Promise<{ [key: string]: Param }>;
 }
 
 const parse = (param: Param) => {
   return typeof param === "string" ? param : undefined;
 };
-const ProductsPage = ({ searchParams }: ProductsPageProps) => {
+const ProductsPage = async (props: ProductsPageProps) => {
+  const searchParams = await props.searchParams;
   const sort = parse(searchParams.sort);
   const category = parse(searchParams.category);
 

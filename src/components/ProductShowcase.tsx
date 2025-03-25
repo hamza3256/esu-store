@@ -33,11 +33,11 @@ const ProductShowcase = (props: ProductReelProps) => {
 
   const [api, setApi] = useState<any>(null);
   const [current, setCurrent] = useState(0);
-  // const [count, setCount] = useState(0);
   const count = FALLBACK_LIMIT;
   const [progress, setProgress] = useState(0);
   const [autoPlay, setAutoPlay] = useState(true);
   const carouselRef = useRef<HTMLDivElement | null>(null);
+  const progressTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const { data: queryResults, isLoading } = trpc.getInfiniteProducts.useInfiniteQuery(
     {
@@ -46,16 +46,15 @@ const ProductShowcase = (props: ProductReelProps) => {
     },
     {
       getNextPageParam: (lastPage) => lastPage.nextPage,
-      staleTime: 60000, // Cache the data for 60 seconds
-      cacheTime: 600000, // Keep cached data for 5 minutes
-      refetchOnWindowFocus: false, // Avoid refetching when the window regains focus
-      refetchOnReconnect: false, // Disable refetching on network reconnection
-      retry: 2, // Retry the request up to 2 times in case of failure
+      staleTime: 60000,
+      cacheTime: 600000,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      retry: 2,
     }
   );
-  
 
-  const products = queryResults?.pages.flatMap((page) => page.items);
+  const products = queryResults?.pages.flatMap((page) => page.items as unknown as Product[]) ?? [];
 
   let map: (Product | null)[] = [];
 
@@ -65,50 +64,57 @@ const ProductShowcase = (props: ProductReelProps) => {
     map = new Array<null>(query.limit ?? FALLBACK_LIMIT).fill(null);
   }
 
-  // Looping and current slide logic
   useEffect(() => {
     if (!api) return;
 
-    // setCount(api.scrollSnapList().length);
-    setCurrent(0); // Ensure current is set to the first slide.
+    setCurrent(0);
 
     api.on("select", () => {
       setCurrent(api.selectedScrollSnap());
-      setProgress(0); // Reset progress whenever a new slide is selected.
+      setProgress(0);
     });
   }, [api]);
 
   useEffect(() => {
     if (!autoPlay || !api) return;
-  
+
     const timer = setInterval(() => {
       if (current === count - 1) {
-        api.scrollTo(0); 
+        api.scrollTo(0);
       } else {
         api.scrollNext();
       }
-      setProgress(0); 
+      setProgress(0);
     }, INTERVAL);
-  
+
     return () => clearInterval(timer);
   }, [api, current, count, autoPlay]);
-  
 
+  // Update progress effect
   useEffect(() => {
-    const progressTimer = setInterval(() => {
-      if (autoPlay) {
-        setProgress((prevProgress) => {
-          const newProgress = prevProgress + (100 / (INTERVAL / 100));
-          return newProgress >= 100 ? 100 : newProgress;
-        });
+    if (!autoPlay) {
+      if (progressTimerRef.current) {
+        clearInterval(progressTimerRef.current);
+        progressTimerRef.current = null;
       }
-    }, 100); 
-  
-    return () => clearInterval(progressTimer);
-  }, [autoPlay]);
-  
+      return;
+    }
 
-  // Pause autoplay when the carousel is not in view
+    progressTimerRef.current = setInterval(() => {
+      setProgress((prevProgress) => {
+        if (prevProgress >= 100) return 0;
+        return prevProgress + (100 / (INTERVAL / 100));
+      });
+    }, 100);
+
+    return () => {
+      if (progressTimerRef.current) {
+        clearInterval(progressTimerRef.current);
+        progressTimerRef.current = null;
+      }
+    };
+  }, [autoPlay]);
+
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -119,7 +125,7 @@ const ProductShowcase = (props: ProductReelProps) => {
         }
       },
       {
-        threshold: 0.5, // 50% of the carousel should be visible to trigger autoplay
+        threshold: 0.5,
       }
     );
 

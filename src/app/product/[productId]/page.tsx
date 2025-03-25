@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, use } from "react";
 import { Check, Minus, Plus, Star, ShoppingBag } from "lucide-react";
 import { notFound } from "next/navigation";
 import { Input } from "@/components/ui/input";
@@ -26,9 +26,9 @@ import { Media, Product } from "@/payload-types";
 import { useMediaQuery } from "@/hooks/use-media-query";
 
 interface PageProps {
-  params: {
+  params: Promise<{
     productId: string;
-  };
+  }>;
 }
 
 const BREADCRUMBS = [
@@ -36,7 +36,8 @@ const BREADCRUMBS = [
   { id: 2, name: "Products", href: "/products" },
 ];
 
-const Page = ({ params }: PageProps) => {
+const Page = (props: PageProps) => {
+  const params = use(props.params);
   const { productId } = params;
   const [quantity, setQuantity] = useState(1);
   const { addItem, getItemCount } = useCart();

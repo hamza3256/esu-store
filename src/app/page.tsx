@@ -7,10 +7,8 @@ import { Perks } from "@/components/Perks"
 import { Section } from "@/components/Section"
 import ParallaxSection from "@/components/ParallaxSection"
 import ProductShowcase from "@/components/ProductShowcase"
-import dynamic from 'next/dynamic';
+import ClientSocialBanner from '@/components/ClientSocialBanner'
 import { Metadata } from "next";
-
-const SocialBanner = dynamic(() => import('@/components/SocialBanner'), { ssr: false });
 
 export const metadata: Metadata = {
   title: "ESÜ Store | Jewellery, Clothing & Accessories",
@@ -55,7 +53,7 @@ export default function Home() {
         <ParallaxSection />
       </Suspense>
       <Suspense fallback={<SocialBannerSkeleton />}>
-        <SocialBanner />
+        <ClientSocialBanner />
       </Suspense>
       <TestimonialsSection />
       <CallToActionSection />

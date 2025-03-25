@@ -26,9 +26,10 @@ const UserAccountNav = ({ user }: { user: User }) => {
       return (nameParts[0][0] + nameParts[1][0]).toUpperCase();
     }
   }
+
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild className="overflow-visible">
+      <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="sm" className="relative">
           <Avatar>
             {/* <AvatarImage src="https://github.com/shadcn.png" /> */}

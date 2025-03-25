@@ -3,12 +3,13 @@
 import { useRouter } from "next/navigation";
 import { trpc } from "@/trpc/client";
 import { formatPrice } from "@/lib/utils";
-import { useEffect } from "react";
+import { useEffect, use } from "react";
 import Link from "next/link";
 import PageLoader from "@/components/PageLoader";
 import { Order } from "@/lib/types";
 
-const OrderDetailPage = ({ params }: { params: { id: string } }) => {
+const OrderDetailPage = (props: { params: Promise<{ id: string }> }) => {
+  const params = use(props.params);
   const router = useRouter();
 
   // Add type information for the `order`
