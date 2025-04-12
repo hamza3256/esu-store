@@ -221,8 +221,8 @@ export const appRouter = router({
           // Send email using Resend
           const resend = new Resend(process.env.RESEND_API_KEY);
           await resend.emails.send({
-            from: 'info@esustore.com',
-            to: 'info@esustore.com',
+            from: `info@${process.env.DOMAIN_NAME}`,
+            to: `info@${process.env.DOMAIN_NAME}`,
             subject: 'Notify',
             html: `<p>New Notification Request from: ${email}</p>`,
           });

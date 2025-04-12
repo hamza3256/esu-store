@@ -20,7 +20,7 @@ const HelpCenterPage = () => {
         <h2 className="text-2xl font-semibold mb-4">Contact Us</h2>
         <p>
           If you have any further questions, please reach out to us at
-          support@esustore.com, and we’ll be happy to assist you.
+          support@${process.env.DOMAIN_NAME}, and we’ll be happy to assist you.
         </p>
       </div>
   );

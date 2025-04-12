@@ -232,7 +232,7 @@ export const stripeWebhookHandler = async (
       // 5. Send receipt email
       try {
         await resend.emails.send({
-          from: "ESÜ TEAM <info@esustore.com>",
+          from: `ESÜ TEAM <info@${process.env.DOMAIN_NAME}>`,
           to: [userEmail],
           subject: "Thanks for your order! Here’s your receipt.",
           html: ReceiptEmailHtml({
@@ -268,7 +268,7 @@ export const stripeWebhookHandler = async (
         });
   
         await resend.emails.send({
-          from: "ESÜ STORE <info@esustore.com>",
+          from: `ESÜ STORE <info@${process.env.DOMAIN_NAME}>`,
           to: ["esugemsgallery@gmail.com", "esuorders@gmail.com"],
           subject: `New Order Notification - Order #${order.orderNumber}`,
           html: notificationHtml,

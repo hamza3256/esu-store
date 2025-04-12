@@ -109,8 +109,8 @@ export const generateInvoice = async (orderId: string, logoUrl?: string): Promis
   drawText(page, "7901 4TH ST N # 16774", 50, height - 135, helvetica, 10, secondaryColor);
   drawText(page, "ST PETERSBURG FL 33702-4305", 50, height - 150, helvetica, 10, secondaryColor);
   drawText(page, "Phone: +1 (727) 405-6739", 50, height - 165, helvetica, 10, secondaryColor);
-  drawText(page, "Email: info@esustore.com", 50, height - 180, helvetica, 10, secondaryColor);
-  drawText(page, "Website: www.esustore.com", 50, height - 195, helvetica, 10, secondaryColor);
+  drawText(page, `Email: info@${process.env.DOMAIN_NAME}`, 50, height - 180, helvetica, 10, secondaryColor);
+  drawText(page, `Website: www.${process.env.DOMAIN_NAME}`, 50, height - 195, helvetica, 10, secondaryColor);
 
   // Invoice Title and Number
   drawText(page, "INVOICE", width - 200, height - 50, helveticaBold, 28, primaryColor);
