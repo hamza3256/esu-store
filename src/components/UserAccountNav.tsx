@@ -52,7 +52,11 @@ const UserAccountNav = ({ user }: { user: User }) => {
 
         {isAdminEmployeeSeller && (
           <DropdownMenuItem asChild>
-            <Link href="/sell">Seller Dashboard</Link>
+            <Link href="/sell">
+              {user.role === 'admin' ? 'Admin Dashboard' : 
+               user.role === 'employee' ? 'Employee Dashboard' : 
+               'Seller Dashboard'}
+            </Link>
           </DropdownMenuItem>
         )}
 
