@@ -11,6 +11,7 @@ import { ProductFiles } from "./collections/ProductFile";
 import { Orders } from "./collections/Orders";
 import { Configuration as WebpackConfig } from 'webpack';
 import { PromoCodes } from "./collections/PromoCodes";
+import AdminLogo from "./components/AdminLogo";
 
 dotenv.config({
   path: path.resolve(__dirname, "../.env"),
@@ -36,6 +37,11 @@ export default buildConfig({
   admin: {
     user: "users",
     bundler: webpackBundler(),
+    components: {
+      graphics: {
+        Logo: AdminLogo,
+      },
+    },
     webpack: (config: WebpackConfig): WebpackConfig => {
       const isServer = config.target === 'node';  // Determine if it's server or client
 
