@@ -44,7 +44,7 @@ export const EmailTemplate = ({
             <Text style={greeting}>Hello,</Text>
             <Text style={paragraph}>
               Thank you for choosing ESÜ Store, your premier destination for high-quality products. 
-              We're excited to have you join our community. Please use the button below to {actionLabel}.
+              We&apos;re excited to have you join our community. Please use the button below to {actionLabel}.
             </Text>
             <Section style={btnContainer}>
               <Button style={button} href={href}>
@@ -52,13 +52,13 @@ export const EmailTemplate = ({
               </Button>
             </Section>
             <Section style={infoSection}>
-              <Text style={infoTitle}>We're here to help</Text>
+              <Text style={infoTitle}>We&apos;re here to help</Text>
               <Text style={infoText}>
                 Our dedicated support team is ready to assist you with any questions or concerns you may have. 
-                We're committed to providing you with the best possible experience.
+                We&apos;re committed to providing you with the best possible experience.
               </Text>
               <Text style={infoText}>
-                Email: support@esu.london
+                Email: {`support@${process.env.DOMAIN_NAME}`}
                 <br />
                 Phone: +44 (0) 79 5529 0709
               </Text>
@@ -68,7 +68,7 @@ export const EmailTemplate = ({
               <Text style={infoText}>
                 Stay updated with our latest collections, exclusive offers, and behind-the-scenes content:
                 <br />
-                • Instagram: @esustoreofficial
+                • Instagram: @esu.gems.gallery
                 <br />
                 • Twitter: @esustoreofficial
                 <br />
