@@ -1,0 +1,48 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'yarn'
+    
+    - name: Install dependencies
+      run: yarn install --frozen-lockfile
+    
+    - name: Run ESLint
+      run: yarn lint
+    
+    - name: Run TypeScript check
+      run: yarn tsc --noEmit
+    
+    - name: Check for outdated dependencies
+      run: yarn outdated || true
+    
+    - name: Check for security vulnerabilities
+      run: yarn audit || true
+    
+    - name: Build application
+      run: yarn build
+      env:
+        NODE_ENV: production
+        PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
+        MONGODB_URI: ${{ secrets.MONGODB_URI }}
+        STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+        STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+        CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+        CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+        CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+        RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
